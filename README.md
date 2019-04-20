@@ -75,3 +75,4 @@ This code is licensed under [GPLv3](LICENSE).
 ## Author
 
 jjos
+Donation address: BURST-JJQS-MMA4-GHB4-4ZNZU
