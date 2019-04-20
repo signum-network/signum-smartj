@@ -5,8 +5,8 @@ package bt;
  * 
  * Users should extend this class and implement at least the {@link #txReceived()} method.
  * 
- * The class should be public but please be extremely careful when setting a method public
- * since it be called from external sources in the blockchain (by incoming transactions
+ * The class should be public but please be extremely careful when setting a method public.
+ * Public methods can be called from external sources in the blockchain (by incoming transactions
  * of other accounts or contracts).
  * Further, public methods should not return values and should take at most 3 arguments.
  * 
