@@ -26,6 +26,47 @@ test it exhaustively on the [testnet](https://burstwiki.org/wiki/Testnet) before
 ## Sample Contracts
 Take a look on the [samples source folder](src/main/java/bt/sample/).
 
+## Using (write your own contract)
+
+### Sample application
+The easiest way to start with BlockTalk is to clone the [blocktalk-sample](https://github.com/jjos2372/blocktalk-sample).
+This sample application is actually a [VSCode Java Application](https://code.visualstudio.com/docs/languages/java).
+Just clone or download the sample application and open its folder with VSCode.
+
+### Manually add BlockTalk to your gradle project
+Edit your gradle.build with the following:
+```
+repositories {
+ ...
+ maven { url 'https://jitpack.io' }
+}
+```
+Also add the dependency:
+```
+dependencies {
+ implementation 'com.github.jjos2372:blocktalk:-SNAPSHOT'
+}
+```
+
+### Manually add BlockTalk to your maven project
+Add the repository:
+```
+<repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+</repositories>
+```
+And then the dependency:
+```
+<dependency>
+	    <groupId>com.github.jjos2372</groupId>
+	    <artifactId>blocktalk</artifactId>
+	    <version>-SNAPSHOT</version>
+</dependency>
+```
+
 ## License
 
 This code is licensed under [GPLv3](LICENSE).
