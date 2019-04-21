@@ -35,36 +35,29 @@ This sample application is actually a [VSCode Java Application](https://code.vis
 Just clone or download the sample application and open its folder with VSCode.
 
 ### Manually add BlockTalk to your gradle project
-Edit your gradle.build with the following:
+Add the following to your gradle.build file:
 ```
 repositories {
- ...
- maven { url 'https://jitpack.io' }
+	maven { url 'https://jitpack.io' }
 }
-```
-Also add the dependency:
-```
 dependencies {
- implementation 'com.github.jjos2372:blocktalk:-SNAPSHOT'
+	implementation 'com.github.jjos2372:blocktalk:-SNAPSHOT'
 }
 ```
 
 ### Manually add BlockTalk to your maven project
-Add the repository:
+Add the repository to your configuration:
 ```
 <repositories>
-		<repository>
-		    <id>jitpack.io</id>
-		    <url>https://jitpack.io</url>
-		</repository>
+	<repository>
+	    <id>jitpack.io</id>
+	    <url>https://jitpack.io</url>
+	</repository>
 </repositories>
-```
-And then the dependency:
-```
 <dependency>
-	    <groupId>com.github.jjos2372</groupId>
-	    <artifactId>blocktalk</artifactId>
-	    <version>-SNAPSHOT</version>
+	<groupId>com.github.jjos2372</groupId>
+	<artifactId>blocktalk</artifactId>
+	<version>-SNAPSHOT</version>
 </dependency>
 ```
 
