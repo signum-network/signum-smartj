@@ -1,6 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
+import bt.EmulatorWindow;
 import bt.Address;
 import bt.Timestamp;
 
@@ -91,6 +92,10 @@ class Will extends Contract {
 			pay();
 		}
 		// Otherwise do nothing, wait for the timeout
+	}
+
+	public static void main(String[] args) {
+		new EmulatorWindow(Will.class);
 	}
 }
 

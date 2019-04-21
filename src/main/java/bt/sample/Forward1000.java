@@ -2,6 +2,7 @@ package bt.sample;
 
 import bt.Address;
 import bt.Contract;
+import bt.EmulatorWindow;
 
 /**
  * A smart contract that forwards all funds received to another account
@@ -29,6 +30,10 @@ public class Forward1000 extends Contract {
 	public void txReceived(){
 		if(getCurrentBalance() > minAmount)
 			sendBalance(bmf);
+	}
+
+	public static void main(String[] args) {
+		new EmulatorWindow(Forward1000.class);
 	}
 }
 

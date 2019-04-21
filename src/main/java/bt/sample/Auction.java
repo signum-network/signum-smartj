@@ -1,6 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
+import bt.EmulatorWindow;
 import bt.Address;
 import bt.Timestamp;
 
@@ -80,6 +81,10 @@ public class Auction extends Contract {
 	private void returnThisTx() {
 		if(getCurrentTx().getAmount()>0)
 			sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
+	}
+
+	public static void main(String[] args) {
+		new EmulatorWindow(Auction.class);
 	}
 }
 

@@ -1,6 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
+import bt.EmulatorWindow;
 
 /**
  * A contract that simply refunds any funds received (minus activation fee).
@@ -13,5 +14,9 @@ public class Refund extends Contract {
 	public void txReceived() {
 		sendAmount(getCurrentTx().getAmount(),
 				getCurrentTx().getSenderAddress());
+	}
+
+	public static void main(String[] args) {
+		new EmulatorWindow(Refund.class);
 	}
 }

@@ -37,6 +37,7 @@ import burst.kit.entity.BurstID;
 public class Compiler {
 
 	public static final String INIT_METHOD = "<init>";
+	public static final String MAIN_METHOD = "main";
 	public static final int MAX_SIZE = 10 * 256;
 
 	ClassNode cn;
@@ -235,6 +236,9 @@ public class Compiler {
 	private void readMethods() {
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
+			if(mnode.name.equals(MAIN_METHOD))
+				continue; // skyp the main function (should be for deubgging only)
+
 			Method m = new Method();
 			m.node = mnode;
 

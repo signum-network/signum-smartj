@@ -1,6 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
+import bt.EmulatorWindow;
 import bt.Address;
 import bt.Timestamp;
 import bt.Transaction;
@@ -82,6 +83,10 @@ class Crowdfund extends Contract {
 		if(expired()){
 			pay();
 		}
+	}
+
+	public static void main(String[] args) {
+		new EmulatorWindow(Crowdfund.class);
 	}
 }
 
