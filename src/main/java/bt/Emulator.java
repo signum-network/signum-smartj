@@ -80,8 +80,14 @@ public class Emulator {
 			return ret;
 
 		BurstCrypto bc = BurstCrypto.getInstance();
-		BurstID ad = bc.rsDecode(rs);
-		long id = ad.getSignedLongId();
+		long id = 0L;
+		try{
+			BurstID ad = bc.rsDecode(rs);
+			id = ad.getSignedLongId();
+		}
+		catch(IllegalArgumentException e){
+			// not a valid address, do nothing on the emulator
+		}
 		ret = new Address(id, 0, rs);
 		addresses.add(ret);
 		
