@@ -2,6 +2,9 @@ package bt;
 
 import java.util.ArrayList;
 
+import burst.kit.burst.BurstCrypto;
+import burst.kit.entity.BurstID;
+
 /**
  * Emulates the blockchain for debugging/testing purposes.
  * 
@@ -9,21 +12,21 @@ import java.util.ArrayList;
  *
  */
 public class Emulator {
-	
+
 	static final Emulator instance = new Emulator();
-	
+
 	Block genesis;
-	
+
 	/**
 	 * Block being forged, also representing the mempool.
 	 */
 	Block currentBlock;
 	Block prevBlock;
-	
+
 	ArrayList<Block> blocks = new ArrayList<Block>();
 	ArrayList<Transaction> txs = new ArrayList<Transaction>();
 	ArrayList<Address> addresses = new ArrayList<Address>();
-	
+
 	public ArrayList<Block> getBlocks() {
 		return blocks;
 	}
@@ -45,39 +48,40 @@ public class Emulator {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void main(String[] args) throws Exception {
 		Emulator e = Emulator.getInstance();
-		
+
 		Address add1 = e.getAddress("BURST-C6HC-TZF2-FXPU-GCCSC");
 		Address add2 = e.getAddress("BURST-9VBL-B3KR-HE6P-98L5G");
-		
+
 		e.airDrop(add1, 100000);
 		e.airDrop(add2, 100000);
-		
 
 		Address c1 = e.getAddress("AUCTION-1");
 		e.createConctract(add1, c1, "test.Auction", Contract.ONE_BURST);
 		e.forgeBlock();
-		
-		e.send(add1, c1, 1000*Contract.ONE_BURST, null);
+
+		e.send(add1, c1, 1000 * Contract.ONE_BURST, null);
 		e.forgeBlock();
 	}
-	
+
 	public Address findAddress(String rs) {
-		for(Address a : addresses) {
-			if(a.rsAddress.equals(rs))
+		for (Address a : addresses) {
+			if (a.rsAddress.equals(rs))
 				return a;
 		}
 		return null;
 	}
-	
+
 	public Address getAddress(String rs) {
 		Address ret = findAddress(rs);
-		if(ret!=null)
+		if (ret != null)
 			return ret;
-		
-		long id = ReedSolomon.rsDecode(rs);
+
+		BurstCrypto bc = BurstCrypto.getInstance();
+		BurstID ad = bc.rsDecode(rs);
+		long id = ad.getSignedLongId();
 		ret = new Address(id, 0, rs);
 		addresses.add(ret);
 		

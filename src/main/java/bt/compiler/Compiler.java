@@ -23,10 +23,11 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import bt.Address;
 import bt.Contract;
-import bt.ReedSolomon;
 import bt.Register;
 import bt.Timestamp;
 import bt.Transaction;
+import burst.kit.burst.BurstCrypto;
+import burst.kit.entity.BurstID;
 
 /**
  * Class to convert a {@link Contract} java bytecode to ciyam bytecode.
@@ -36,16 +37,17 @@ import bt.Transaction;
 public class Compiler {
 
 	public static final String INIT_METHOD = "<init>";
-	public static final int MAX_SIZE = 10*256;
+	public static final int MAX_SIZE = 10 * 256;
 
 	ClassNode cn;
 	ByteBuffer code;
-	
+
 	class Call {
 		public Call(Method m, int pos) {
 			this.m = m;
 			this.pos = pos;
 		}
+
 		Method m;
 		int pos;
 	}
@@ -53,7 +55,7 @@ public class Compiler {
 	LinkedList<StackVar> stack = new LinkedList<StackVar>();
 	HashMap<String, Method> methods = new HashMap<String, Method>();
 	HashMap<String, Field> fields = new HashMap<String, Field>();
-	
+
 	ArrayList<Call> pendingCalls = new ArrayList<Call>();
 
 	boolean hasPulicMethods = false;
@@ -66,9 +68,9 @@ public class Compiler {
 	public Compiler(String className) throws IOException {
 		this.className = className;
 
-		//read in, build classNode
-		ClassNode classNode=new ClassNode();
-		ClassReader cr=new ClassReader(className);
+		// read in, build classNode
+		ClassNode classNode = new ClassNode();
+		ClassReader cr = new ClassReader(className);
 		cr.accept(classNode, 0);
 
 		this.cn = classNode;
@@ -77,17 +79,19 @@ public class Compiler {
 	static final int STACK_LOCAL = 0;
 	static final int STACK_VAR_ADDRESS = 1;
 	static final int STACK_CONSTANT = 2;
+
 	class StackVar {
 		public StackVar(int type, Object value) {
 			this.type = type;
-			if(value instanceof String)
+			if (value instanceof String)
 				this.svalue = (String) value;
-			else if(value instanceof Long)
+			else if (value instanceof Long)
 				this.lvalue = (Long) value;
-			else if(value instanceof Integer)
+			else if (value instanceof Integer)
 				this.address = (Integer) value;
 
 		}
+
 		int type;
 		Integer address;
 		Long lvalue;
@@ -95,59 +99,58 @@ public class Compiler {
 
 		@Override
 		public String toString() {
-			switch(type){
-				case STACK_LOCAL:
+			switch (type) {
+			case STACK_LOCAL:
 				return "local: " + address;
-				case STACK_VAR_ADDRESS:
+			case STACK_VAR_ADDRESS:
 				return "var addr: " + address;
-				case STACK_CONSTANT:
-				default:
-				return "cst: " + (svalue!=null ? svalue : lvalue!=null ? lvalue : address);
+			case STACK_CONSTANT:
+			default:
+				return "cst: " + (svalue != null ? svalue : lvalue != null ? lvalue : address);
 			}
 		}
 	}
-	
+
 	public ByteBuffer getCode() {
 		return code;
 	}
 
 	private void readFields() {
 
-		if(!cn.superName.replace('/', '.').equals(Contract.class.getName())){
+		if (!cn.superName.replace('/', '.').equals(Contract.class.getName())) {
 			addError(null, "A contract should derive from " + Contract.class.getName());
 		}
 
-		for(FieldNode f : cn.fields) {
+		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
 			int nvars = 0;
 
-			if(f.desc.charAt(0) == 'L'){
+			if (f.desc.charAt(0) == 'L') {
 				// this is a class reference
-				f.desc = f.desc.substring(1, f.desc.length()-1);
+				f.desc = f.desc.substring(1, f.desc.length() - 1);
 
 				f.desc = f.desc.replace('/', '.');
 
-				if(f.desc.equals(Address.class.getName()))
+				if (f.desc.equals(Address.class.getName()))
 					nvars = 1;
-				else if(f.desc.equals(Transaction.class.getName()))
+				else if (f.desc.equals(Transaction.class.getName()))
 					nvars = 1;
-				else if(f.desc.equals(Timestamp.class.getName()))
+				else if (f.desc.equals(Timestamp.class.getName()))
 					nvars = 1;
-				else if(f.desc.equals(Register.class.getName()))
+				else if (f.desc.equals(Register.class.getName()))
 					nvars = 4;
-			}
-			else if(f.desc.equals("Z"))
+			} else if (f.desc.equals("Z"))
 				nvars = 1; // boolean
-			else if(f.desc.equals("I"))
+			else if (f.desc.equals("I"))
 				nvars = 1; // integer
-			else if(f.desc.equals("J"))
+			else if (f.desc.equals("J"))
 				nvars = 1; // long
 
-			if(nvars==0){
+			if (nvars == 0) {
 				addError(null, "Invalid field type: " + f.desc);
 				continue;
 			}
-			
+
 			Field fld = new Field();
 			fld.address = lastFreeVar;
 			fields.put(f.name, fld);
@@ -165,12 +168,12 @@ public class Compiler {
 		readFields();
 		readMethods();
 	}
-	
+
 	private void initialCode() {
 		// First add the jump for the constructor
 		code.put(OpCode.e_op_code_JMP_SUB);
 		code.putInt(methods.get(INIT_METHOD).address);
-		
+
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
 
@@ -187,14 +190,14 @@ public class Compiler {
 		// if zero we will FINISH, otherwise continue
 		code.put(OpCode.e_op_code_BNZ_DAT);
 		code.putInt(lastTxReceived);
-		code.put((byte)7);
+		code.put((byte) 7);
 		code.put(OpCode.e_op_code_FIN_IMD);
 
 		// Store the timestamp of the last transaction
 		code.put(OpCode.e_op_code_EXT_FUN_RET);
 		code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 		code.putInt(lastTxTimestamp);
-		
+
 		// TODO: handle external method calls here
 
 		// call the txReceived method
@@ -206,41 +209,41 @@ public class Compiler {
 	public void link() {
 		code = ByteBuffer.allocate(MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
-		
+
 		initialCode();
 		int startMethodsPosition = code.position();
-		
+
 		// determine the address of each method
 		int address = startMethodsPosition; // position of the first method
-		for(Method m : methods.values()) {
+		for (Method m : methods.values()) {
 			m.address = address;
 			address += m.code.position();
 		}
 
 		// TODO: resolve function call positions here
-		
+
 		// now with the correct positions
 		code.rewind();
 		initialCode();
-		
+
 		// add methods
-		for(Method m : methods.values()) {
+		for (Method m : methods.values()) {
 			code.put(m.code.array(), 0, m.code.position());
 		}
 	}
 
 	private void readMethods() {
 		// First list all methods available
-		for(MethodNode mnode: cn.methods) {
+		for (MethodNode mnode : cn.methods) {
 			Method m = new Method();
 			m.node = mnode;
 
-			methods.put(mnode.name, m);			
+			methods.put(mnode.name, m);
 		}
 
 		// Then parse then
-		for(Method m : methods.values()) {
-			if(m.code==null) {
+		for (Method m : methods.values()) {
+			if (m.code == null) {
 				parseMethod(m);
 
 				System.out.println("METHOD: " + m.node.name);
@@ -249,33 +252,32 @@ public class Compiler {
 		}
 	}
 
-	private StackVar newTmpVar(Method m){
+	private StackVar newTmpVar(Method m) {
 		return new StackVar(STACK_VAR_ADDRESS, lastFreeVar + m.nLocalVars++);
 	}
 
 	private void parseMethod(Method m) {
 		m.parsing = true;
-		Iterator<AbstractInsnNode> ite=m.node.instructions.iterator();
+		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		ByteBuffer code = ByteBuffer.allocate(Compiler.MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
 		m.code = code;
 
-		if(m.node.name.equals(INIT_METHOD)) {
-			if(m.node.access!=1)
+		if (m.node.name.equals(INIT_METHOD)) {
+			if (m.node.access != 1)
 				addError(m.node.instructions.get(0), "Contract constructor must be public");
 
-			if(!m.node.desc.equals("()V"))
+			if (!m.node.desc.equals("()V"))
 				addError(m.node.instructions.get(0), "Contract constructor cannot have arguments");
 		}
 
-
-		while(ite.hasNext()) {
+		while (ite.hasNext()) {
 			AbstractInsnNode insn = ite.next();
 
-			int opcode=insn.getOpcode();
+			int opcode = insn.getOpcode();
 
-			if(stack.size()>0)
+			if (stack.size() > 0)
 				System.out.print("Stack");
 			for (StackVar var : stack) {
 				System.out.print(": " + var.toString());
@@ -288,13 +290,12 @@ public class Compiler {
 				System.err.println("problem");
 				break;
 			case ALOAD:
-				if(insn instanceof VarInsnNode) {
+				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
 					stack.add(new StackVar(STACK_LOCAL, vi.var));
 
-					System.out.println((opcode<ISTORE ? "load" : "store") + " local: " + vi.var);
-				}
-				else {
+					System.out.println((opcode < ISTORE ? "load" : "store") + " local: " + vi.var);
+				} else {
 					System.err.println("problem");
 				}
 				break;
@@ -302,12 +303,11 @@ public class Compiler {
 			case ISTORE:
 			case LSTORE:
 			case ASTORE:
-				if(insn instanceof VarInsnNode) {
+				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
 
 					System.out.println("store local: " + vi.var);
-				}
-				else {
+				} else {
 					System.err.println("problem");
 				}
 				break;
@@ -325,31 +325,28 @@ public class Compiler {
 			case ICONST_2:
 			case ICONST_3:
 			case ICONST_4:
-			case ICONST_5:
-			{
+			case ICONST_5: {
 				StackVar ret = newTmpVar(m);
 				stack.addLast(ret);
 				code.put(OpCode.e_op_code_SET_VAL);
 				code.putInt(ret.address);
 				code.putLong(opcode - ICONST_0);
-				System.out.println("iconstant : " + (opcode-ICONST_0));
+				System.out.println("iconstant : " + (opcode - ICONST_0));
 			}
 				break;
 
 			case LCONST_0:
-			case LCONST_1:
-			{
+			case LCONST_1: {
 				StackVar ret = newTmpVar(m);
 				stack.addLast(ret);
 				code.put(OpCode.e_op_code_SET_VAL);
 				code.putInt(ret.address);
 				code.putLong(opcode - LCONST_0);
-				System.out.println("lconstant : " + (opcode-LCONST_0));
+				System.out.println("lconstant : " + (opcode - LCONST_0));
 			}
 				break;
 
-			case ACONST_NULL:
-			{
+			case ACONST_NULL: {
 				StackVar ret = newTmpVar(m);
 				stack.addLast(ret);
 				code.put(OpCode.e_op_code_CLR_DAT);
@@ -365,55 +362,53 @@ public class Compiler {
 			case IDIV:
 			case LDIV:
 			case IREM:
-			case LREM:
-				{
-					StackVar l = stack.pollLast(), r = stack.pollLast();
-					StackVar ret = newTmpVar(m);
-					code.put(OpCode.e_op_code_SET_DAT);
-					code.putInt(ret.address);
-					code.putInt(l.address);
-					switch (opcode){		
-						case ISUB:
-						case LSUB:
-							System.out.println("sub");
-							code.put(OpCode.e_op_code_SUB_DAT);
-							break;
-						case IMUL:
-						case LMUL:
-							System.out.println("mul");
-							code.put(OpCode.e_op_code_MUL_DAT);
-							break;
-						case IDIV:
-						case LDIV:
-							System.out.println("div");
-							code.put(OpCode.e_op_code_DIV_DAT);
-							break;
-						case IREM:
-						case LREM:
-							System.out.println("mod");
-							code.put(OpCode.e_op_code_MOD_DAT);
-							break;
-						default:
-							System.out.println("add");
-							code.put(OpCode.e_op_code_ADD_DAT);
-							break;
-					}
-					code.putInt(ret.address);
-					code.putInt(r.address);
+			case LREM: {
+				StackVar l = stack.pollLast(), r = stack.pollLast();
+				StackVar ret = newTmpVar(m);
+				code.put(OpCode.e_op_code_SET_DAT);
+				code.putInt(ret.address);
+				code.putInt(l.address);
+				switch (opcode) {
+				case ISUB:
+				case LSUB:
+					System.out.println("sub");
+					code.put(OpCode.e_op_code_SUB_DAT);
+					break;
+				case IMUL:
+				case LMUL:
+					System.out.println("mul");
+					code.put(OpCode.e_op_code_MUL_DAT);
+					break;
+				case IDIV:
+				case LDIV:
+					System.out.println("div");
+					code.put(OpCode.e_op_code_DIV_DAT);
+					break;
+				case IREM:
+				case LREM:
+					System.out.println("mod");
+					code.put(OpCode.e_op_code_MOD_DAT);
+					break;
+				default:
+					System.out.println("add");
+					code.put(OpCode.e_op_code_ADD_DAT);
+					break;
 				}
+				code.putInt(ret.address);
+				code.putInt(r.address);
+			}
 				break;
 			case INEG:
-			case LNEG:
-				{
-					StackVar ret = newTmpVar(m);
-					System.out.println("neg");
-					code.put(OpCode.e_op_code_CLR_DAT);
-					code.putInt(ret.address);
-					code.put(OpCode.e_op_code_SUB_DAT);
-					code.putInt(ret.address);
-					code.putInt(stack.pollLast().address);
+			case LNEG: {
+				StackVar ret = newTmpVar(m);
+				System.out.println("neg");
+				code.put(OpCode.e_op_code_CLR_DAT);
+				code.putInt(ret.address);
+				code.put(OpCode.e_op_code_SUB_DAT);
+				code.putInt(ret.address);
+				code.putInt(stack.pollLast().address);
 
-				}
+			}
 				break;
 
 			case RETURN:
@@ -426,12 +421,12 @@ public class Compiler {
 				break;
 
 			case DUP: // duplicate the value on top of the stack
-				{
-					StackVar l = stack.pollLast();
-					stack.addLast(l);
-					stack.addLast(l);
-					System.out.println("dup");
-				}
+			{
+				StackVar l = stack.pollLast();
+				stack.addLast(l);
+				stack.addLast(l);
+				System.out.println("dup");
+			}
 				break;
 
 			case INVOKEVIRTUAL:
@@ -439,24 +434,22 @@ public class Compiler {
 			case INVOKESTATIC:
 			case INVOKEINTERFACE:
 			case INVOKEDYNAMIC:
-				if(insn instanceof MethodInsnNode) {
+				if (insn instanceof MethodInsnNode) {
 					MethodInsnNode mi = (MethodInsnNode) insn;
 					String owner = mi.owner.replace('/', '.');
 
 					System.out.println("invoke, name:" + mi.name + " owner:" + owner);
 
-					if(owner.equals(Contract.class.getName())) {
-						if(mi.name.equals(INIT_METHOD)) {
+					if (owner.equals(Contract.class.getName())) {
+						if (mi.name.equals(INIT_METHOD)) {
 							// Contract super constructor call, do nothing
 							stack.pollLast(); // remove the "this" from stack
-						}
-						else {
+						} else {
 							addError(insn, "Cannot access " + owner + "." + mi.name);
 						}
-					}
-					else if(owner.equals(Timestamp.class.getName())){
+					} else if (owner.equals(Timestamp.class.getName())) {
 						// a call on the timestamp object
-						if(mi.name.equals("ge") || mi.name.equals("le")){
+						if (mi.name.equals("ge") || mi.name.equals("le")) {
 							StackVar r = stack.pollLast(), l = stack.pollLast();
 							StackVar ret = newTmpVar(m);
 							stack.addLast(ret);
@@ -464,32 +457,31 @@ public class Compiler {
 							code.put(OpCode.e_op_code_CLR_DAT);
 							code.putInt(ret.address);
 
-							if(mi.name.equals("ge"))
+							if (mi.name.equals("ge"))
 								code.put(OpCode.e_op_code_BLT_DAT);
 							else
 								code.put(OpCode.e_op_code_BGT_DAT);
 							code.putInt(l.address);
 							code.putInt(r.address);
-							code.put((byte)0x0e); // offset
+							code.put((byte) 0x0e); // offset
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(ret.address);
-						}
-						else
+						} else
 							System.err.println("Problem");
-					}
-					else if(owner.equals(className)) {
+					} else if (owner.equals(className)) {
 						// call on the contract itself
-						if(mi.name.equals("getCurrentTx")) {
+						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
 							stack.add(new StackVar(STACK_VAR_ADDRESS, lastTxReceived));
-						}
-						else if(mi.name.equals("parseAddress")) {
+						} else if (mi.name.equals("parseAddress")) {
 							StackVar address = stack.pollLast();
 							stack.pollLast(); // remove the "this" from stack
 							StackVar ret = newTmpVar(m);
 							stack.add(ret);
-							
-							long value = ReedSolomon.rsDecode(address.svalue);
+
+							BurstCrypto bc = BurstCrypto.getInstance();
+							BurstID ad = bc.rsDecode(address.svalue);
+							long value = ad.getSignedLongId();
 							
 							code.put(OpCode.e_op_code_SET_VAL);
 							code.putInt(ret.address);
