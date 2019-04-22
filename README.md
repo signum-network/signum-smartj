@@ -17,7 +17,7 @@ BlockTalk consists of the following key components:
  - **Emulator**: an emulated blockchain and respective UI
  - **Compiler**: a system to convert Java bytecode into Burst AT bytecode that can run on the Burst blockchain 
 
-[![Simple hello world contract](http://img.youtube.com/vi/z06nThjLTQ0/0.jpg)](https://www.youtube.com/watch?v=z06nThjLTQ0 "BlockTalk hello world")
+[![Simple hello world contract](http://img.youtube.com/vi/XcN5WxqjjGw/0.jpg)](https://www.youtube.com/watch?v=XcN5WxqjjGw "BlockTalk sample application")
 
 This project is in **pre-alpha**. Most contracts still cannot be compiled into CIYAM bytecode.
 Please carefully inspect your compiled AT contracts and
