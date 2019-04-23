@@ -29,6 +29,13 @@ public class UniqueToken extends Contract {
 		owner = getCreator();
 	}
 
+	/**
+	 * Transfers the ownership of this token.
+	 * 
+	 * Only the current owner can transfer the ownership.
+	 * 
+	 * @param newOwner
+	 */
 	public void transfer(Address newOwner){
 		if(owner.equals(this.getCurrentTx().getSenderAddress())){
 			// only owner can transfer ownership
