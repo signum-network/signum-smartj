@@ -82,7 +82,8 @@ public class Emulator {
 		BurstCrypto bc = BurstCrypto.getInstance();
 		long id = 0L;
 		try{
-			BurstID ad = bc.rsDecode(rs);
+			// Decode without the BURST- prefix
+			BurstID ad = bc.rsDecode(rs.substring(6));
 			id = ad.getSignedLongId();
 		}
 		catch(IllegalArgumentException e){

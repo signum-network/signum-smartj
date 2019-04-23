@@ -22,6 +22,9 @@ public class Printer {
 	}
 
 	static void print(int v, PrintStream out) {
+		if(v<0) // handled signed value as unsigned
+			v += 256;
+
 		out.print(hexArray[v >>> 4]);
 		out.print(hexArray[v & 0x0F]);
 	}
@@ -77,10 +80,10 @@ public class Printer {
 				p+=printOp(code, p, 1, out);
 				out.println(" SET_DAT");
 				out.print(tab);
-				p+=print(code, p, 8, out);
+				p+=print(code, p, 4, out);
 				out.println(" address");
 				out.print(tab);
-				p+=print(code, p, 8, out);
+				p+=print(code, p, 4, out);
 				out.println(" address");
 				break;
 			case OpCode.e_op_code_CLR_DAT:

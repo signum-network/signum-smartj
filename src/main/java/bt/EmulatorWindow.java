@@ -441,6 +441,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 				dlg.setVisible(true);
 			}
 			catch (Exception ex) {
+				ex.printStackTrace();
 				JOptionPane.showMessageDialog(EmulatorWindow.this,
 						"AT compile problem: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 				return;				

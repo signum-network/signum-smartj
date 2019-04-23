@@ -122,6 +122,12 @@ public class Compiler {
 			addError(null, "A contract should derive from " + Contract.class.getName());
 		}
 
+		lastFreeVar = 0;
+		// A variable is reserved the lastTxReceived so we
+		// can easily have the 'current' tx variable available
+		lastTxTimestamp = lastFreeVar++;
+		lastTxReceived = lastFreeVar++;
+
 		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
 			int nvars = 0;
@@ -158,11 +164,6 @@ public class Compiler {
 
 			lastFreeVar += nvars;
 		}
-
-		// A variable is reserved the lastTxReceived so we
-		// can easily have the 'current' tx variable available
-		lastTxTimestamp = lastFreeVar++;
-		lastTxReceived = lastFreeVar++;
 	}
 
 	public void compile() {
@@ -252,6 +253,7 @@ public class Compiler {
 
 				System.out.println("METHOD: " + m.node.name);
 				Printer.print(m.code, System.out);
+				Printer.printCode(m.code, System.out);
 			}
 		}
 	}
@@ -483,9 +485,16 @@ public class Compiler {
 							StackVar ret = newTmpVar(m);
 							stack.add(ret);
 
-							BurstCrypto bc = BurstCrypto.getInstance();
-							BurstID ad = bc.rsDecode(address.svalue);
-							long value = ad.getSignedLongId();
+							long value = 0;
+							try{
+								BurstCrypto bc = BurstCrypto.getInstance();
+								// Decode without the BURST- prefix
+								BurstID ad = bc.rsDecode(address.svalue.substring(6));
+								value = ad.getSignedLongId();
+							}
+							catch(IllegalArgumentException ex){
+								addError(mi, ex.getMessage());
+							}
 							
 							code.put(OpCode.e_op_code_SET_VAL);
 							code.putInt(ret.address);
@@ -662,7 +671,13 @@ public class Compiler {
 						stack.addLast(new StackVar(STACK_VAR_ADDRESS, fields.get(fi.name).address));
 					}
 					else{
-						System.err.println("TODO");
+						StackVar value = stack.pollLast();
+						stack.pollLast(); // remove the 'this'
+						Field field = fields.get(fi.name);
+
+						code.put(OpCode.e_op_code_SET_DAT);
+						code.putInt(field.address);
+						code.putInt(value.address);
 					}
 				}
 				else {
