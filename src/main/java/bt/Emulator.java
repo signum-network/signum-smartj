@@ -129,7 +129,7 @@ public class Emulator {
 			}
 
 			if(tx.type==Transaction.TYPE_AT_CREATE) {
-				Object ocontract = Class.forName(tx.msg).newInstance();
+				Object ocontract = Class.forName(tx.msg).getConstructor().newInstance();
 				if(ocontract instanceof Contract) {
 					Contract c = (Contract) ocontract;
 
