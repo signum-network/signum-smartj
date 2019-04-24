@@ -169,7 +169,7 @@ public class Compiler {
 			lastFreeVar += nvars;
 		}
 
-		// Temperary variables
+		// Temporary variables come last (used for pushing and poping values from user stack)
 		tmpVar1 = lastFreeVar++;
 		tmpVar2 = lastFreeVar++;
 		tmpVar3 = lastFreeVar++;
