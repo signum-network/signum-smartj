@@ -1,5 +1,6 @@
 # BlockTalk: easy to use smart contracts for Burstcoin
 [![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+[![](https://jitpack.io/v/jjos2372/blocktalk.svg)](https://jitpack.io/#jjos2372/blocktalk)
 
 [Burstcoin](https://www.burst-coin.org/) was the world's first HDD-mined
 cryptocurrency using an energy efficient
