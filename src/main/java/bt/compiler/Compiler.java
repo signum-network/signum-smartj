@@ -65,6 +65,7 @@ public class Compiler {
 	int lastFreeVar;
 	int lastTxReceived;
 	int lastTxTimestamp;
+	int tmpVar1, tmpVar2, tmpVar3;
 
 	public Compiler(String className) throws IOException {
 		this.className = className;
@@ -80,6 +81,7 @@ public class Compiler {
 	static final int STACK_LOCAL = 0;
 	static final int STACK_VAR_ADDRESS = 1;
 	static final int STACK_CONSTANT = 2;
+	static final int STACK_PUSH = 3;
 
 	class StackVar {
 		public StackVar(int type, Object value) {
@@ -105,6 +107,8 @@ public class Compiler {
 				return "local: " + address;
 			case STACK_VAR_ADDRESS:
 				return "var addr: " + address;
+			case STACK_PUSH:
+				return "ustack";
 			case STACK_CONSTANT:
 			default:
 				return "cst: " + (svalue != null ? svalue : lvalue != null ? lvalue : address);
@@ -164,6 +168,11 @@ public class Compiler {
 
 			lastFreeVar += nvars;
 		}
+
+		// Temperary variables
+		tmpVar1 = lastFreeVar++;
+		tmpVar2 = lastFreeVar++;
+		tmpVar3 = lastFreeVar++;
 	}
 
 	public void compile() {
@@ -237,7 +246,7 @@ public class Compiler {
 	private void readMethods() {
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
-			if(mnode.name.equals(MAIN_METHOD))
+			if (mnode.name.equals(MAIN_METHOD))
 				continue; // skyp the main function (should be for deubgging only)
 
 			Method m = new Method();
@@ -258,8 +267,20 @@ public class Compiler {
 		}
 	}
 
-	private StackVar newTmpVar(Method m) {
-		return new StackVar(STACK_VAR_ADDRESS, lastFreeVar + m.nLocalVars++);
+	private StackVar pushVar(Method m, int address) {
+		StackVar v = new StackVar(STACK_PUSH, 0);
+		stack.add(v);
+
+		m.code.put(OpCode.e_op_code_PSH_DAT);
+		m.code.putInt(address);
+		return v;
+	}
+
+	private void popVar(Method m, int address) {
+		stack.pollLast();
+
+		m.code.put(OpCode.e_op_code_POP_DAT);
+		m.code.putInt(address);
 	}
 
 	private void parseMethod(Method m) {
@@ -283,12 +304,13 @@ public class Compiler {
 
 			int opcode = insn.getOpcode();
 
-			if (stack.size() > 0)
+			if (stack.size() > 0) {
 				System.out.print("Stack");
-			for (StackVar var : stack) {
-				System.out.print(": " + var.toString());
+				for (StackVar var : stack) {
+					System.out.print(": " + var.toString());
+				}
+				System.out.println();
 			}
-			System.out.println();
 
 			switch (opcode) {
 			case ILOAD:
@@ -331,34 +353,31 @@ public class Compiler {
 			case ICONST_2:
 			case ICONST_3:
 			case ICONST_4:
-			case ICONST_5: {
-				StackVar ret = newTmpVar(m);
-				stack.addLast(ret);
+			case ICONST_5:
 				code.put(OpCode.e_op_code_SET_VAL);
-				code.putInt(ret.address);
+				code.putInt(tmpVar1);
 				code.putLong(opcode - ICONST_0);
+
+				pushVar(m, tmpVar1);
 				System.out.println("iconstant : " + (opcode - ICONST_0));
-			}
 				break;
 
 			case LCONST_0:
-			case LCONST_1: {
-				StackVar ret = newTmpVar(m);
-				stack.addLast(ret);
+			case LCONST_1:
 				code.put(OpCode.e_op_code_SET_VAL);
-				code.putInt(ret.address);
+				code.putInt(tmpVar1);
 				code.putLong(opcode - LCONST_0);
+
+				pushVar(m, tmpVar1);
 				System.out.println("lconstant : " + (opcode - LCONST_0));
-			}
 				break;
 
-			case ACONST_NULL: {
-				StackVar ret = newTmpVar(m);
-				stack.addLast(ret);
+			case ACONST_NULL:
 				code.put(OpCode.e_op_code_CLR_DAT);
-				code.putInt(ret.address);
+				code.putInt(tmpVar1);
+
+				pushVar(m, tmpVar1);
 				System.out.println("load null");
-			}
 				break;
 
 			case IADD:
@@ -368,12 +387,11 @@ public class Compiler {
 			case IDIV:
 			case LDIV:
 			case IREM:
-			case LREM: {
-				StackVar l = stack.pollLast(), r = stack.pollLast();
-				StackVar ret = newTmpVar(m);
-				code.put(OpCode.e_op_code_SET_DAT);
-				code.putInt(ret.address);
-				code.putInt(l.address);
+			case LREM:
+				// we should have two arguments on the stack
+				popVar(m, tmpVar1);
+				popVar(m, tmpVar2);
+
 				switch (opcode) {
 				case ISUB:
 				case LSUB:
@@ -400,21 +418,24 @@ public class Compiler {
 					code.put(OpCode.e_op_code_ADD_DAT);
 					break;
 				}
-				code.putInt(ret.address);
-				code.putInt(r.address);
-			}
+				code.putInt(tmpVar1);
+				code.putInt(tmpVar2);
+
+				pushVar(m, tmpVar1);
 				break;
 			case INEG:
-			case LNEG: {
-				StackVar ret = newTmpVar(m);
+			case LNEG:
 				System.out.println("neg");
-				code.put(OpCode.e_op_code_CLR_DAT);
-				code.putInt(ret.address);
-				code.put(OpCode.e_op_code_SUB_DAT);
-				code.putInt(ret.address);
-				code.putInt(stack.pollLast().address);
 
-			}
+				popVar(m, tmpVar2);
+
+				code.put(OpCode.e_op_code_CLR_DAT);
+				code.putInt(tmpVar1);
+				code.put(OpCode.e_op_code_SUB_DAT);
+				code.putInt(tmpVar1);
+				code.putInt(tmpVar2);
+
+				pushVar(m, tmpVar1);
 				break;
 
 			case RETURN:
@@ -428,9 +449,10 @@ public class Compiler {
 
 			case DUP: // duplicate the value on top of the stack
 			{
-				StackVar l = stack.pollLast();
-				stack.addLast(l);
-				stack.addLast(l);
+				popVar(m, tmpVar1);
+				pushVar(m, tmpVar1);
+				pushVar(m, tmpVar1);
+
 				System.out.println("dup");
 			}
 				break;
@@ -456,247 +478,230 @@ public class Compiler {
 					} else if (owner.equals(Timestamp.class.getName())) {
 						// a call on the timestamp object
 						if (mi.name.equals("ge") || mi.name.equals("le")) {
-							StackVar r = stack.pollLast(), l = stack.pollLast();
-							StackVar ret = newTmpVar(m);
-							stack.addLast(ret);
+							// we should have two arguments
+							popVar(m, tmpVar1);
+							popVar(m, tmpVar2);
 
 							code.put(OpCode.e_op_code_CLR_DAT);
-							code.putInt(ret.address);
-
+							code.putInt(tmpVar3);
 							if (mi.name.equals("ge"))
 								code.put(OpCode.e_op_code_BLT_DAT);
 							else
 								code.put(OpCode.e_op_code_BGT_DAT);
-							code.putInt(l.address);
-							code.putInt(r.address);
+							code.putInt(tmpVar1);
+							code.putInt(tmpVar2);
 							code.put((byte) 0x0e); // offset
 							code.put(OpCode.e_op_code_INC_DAT);
-							code.putInt(ret.address);
+							code.putInt(tmpVar3);
+							pushVar(m, tmpVar3);
 						} else
 							System.err.println("Problem");
 					} else if (owner.equals(className)) {
 						// call on the contract itself
 						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
-							stack.add(new StackVar(STACK_VAR_ADDRESS, lastTxReceived));
+							pushVar(m, lastTxReceived);
 						} else if (mi.name.equals("parseAddress")) {
 							StackVar address = stack.pollLast();
 							stack.pollLast(); // remove the "this" from stack
-							StackVar ret = newTmpVar(m);
-							stack.add(ret);
 
 							long value = 0;
-							try{
+							try {
 								BurstCrypto bc = BurstCrypto.getInstance();
 								// Decode without the BURST- prefix
 								BurstID ad = bc.rsDecode(address.svalue.substring(6));
 								value = ad.getSignedLongId();
-							}
-							catch(IllegalArgumentException ex){
+							} catch (IllegalArgumentException ex) {
 								addError(mi, ex.getMessage());
 							}
-							
+
 							code.put(OpCode.e_op_code_SET_VAL);
-							code.putInt(ret.address);
+							code.putInt(tmpVar1);
 							code.putLong(value);
-						}
-						else if(mi.name.equals("getCreator")) {
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getCreator")) {
 							stack.pollLast(); // remove the "this" from stack
-							StackVar ret = newTmpVar(m);
-							stack.add(ret);
-							
+
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.B_To_Address_Of_Creator);
-							
+
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_B1);
-							code.putInt(ret.address);
-						}
-						else if(mi.name.equals("getBlockTimestamp")) {
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getBlockTimestamp")) {
 							stack.pollLast(); // remove the "this" from stack
-							StackVar ret = newTmpVar(m);
-							stack.add(ret);
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Block_Timestamp);
-							code.putInt(ret.address);
-						}
-						else if(mi.name.equals("sendAmount")) {
-							StackVar address = stack.pollLast();
-							StackVar amount = stack.pollLast();
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("sendAmount")) {
+							popVar(m, tmpVar1); // address
+							popVar(m, tmpVar2); // amount
 							stack.pollLast(); // remove the 'this'
-							
+
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
-							code.putInt(address.address);
-							
+							code.putInt(tmpVar1); // address
+
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Send_To_Address_In_B);
-							code.putInt(amount.address);							
-						}
-						else if(mi.name.equals("sendBalance")) {
+							code.putInt(tmpVar2); // amount
+						} else if (mi.name.equals("sendBalance")) {
 							StackVar address = stack.pollLast();
 							stack.pollLast(); // remove the 'this'
-							
+
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
 							code.putInt(address.address);
-							
+
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Send_All_To_Address_In_B);
-						}
-						else if(mi.name.equals("sendMessage")) {
-							StackVar address = stack.pollLast();
-							StackVar msg = stack.pollLast();
-							stack.pollLast(); // remove the 'this'
-
+						} else if (mi.name.equals("sendMessage")) {
+							popVar(m, tmpVar1); // address
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
-							code.putInt(address.address);
+							code.putInt(tmpVar1); // address
 
-							if(msg.svalue.length() < 3*8) {
-								// if we will use A1..A4, no need to clear
-								code.put(OpCode.e_op_code_EXT_FUN);
-								code.putShort(OpCode.Clear_A);
-							}
-
-							// we need a local var
-							int localVar = lastFreeVar + m.nLocalVars;
-
-							// set A1..A4 with the contents
+							StackVar msg = stack.pollLast();
+							// Fill A1-A4 with 4*long
 							int pos = 0;
-							for(int a = 0; a < 4; a++) {
+							for (int a = 0; a < 4; a++) {
 								long value = 0;
-								if(pos >= msg.svalue.length())
+								if (pos >= msg.svalue.length())
 									break;
 								for (int i = 0; i < 8; i++, pos++) {
-									if(pos>= msg.svalue.length())
+									if (pos >= msg.svalue.length())
 										break;
 									long c = msg.svalue.charAt(pos);
-									c <<= 8*i;
+									c <<= 8 * i;
 									value += c;
 								}
 								code.put(OpCode.e_op_code_SET_VAL);
-								code.putInt(lastFreeVar + m.nLocalVars);
+								code.putInt(tmpVar1);
 								code.putLong(value);
+
 								code.put(OpCode.e_op_code_EXT_FUN_DAT);
-								code.putShort((short)(OpCode.Set_A1 + a));
-								code.putInt(localVar);
+								code.putShort((short) (OpCode.Set_A1 + a));
+								code.putInt(tmpVar1);
 							}
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Send_A_To_Address_In_B);
 
-							// we used a local var to upload the A1..4
-							m.nLocalVars++;
-						}
-						else {
+							stack.pollLast(); // remove the 'this'
+						} else {
 							// check for user defined methods
 							Method mcall = methods.get(mi.name);
-							if(mcall==null)
+							if (mcall == null)
 								System.err.println("Method problem: " + mi.name);
-							
+
 							stack.pollLast(); // remove the 'this'
-							
+
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
 							pendingCalls.add(new Call(mcall, code.position()));
 							code.putInt(0); // address, to be resolved latter
 						}
-					}
-					else if(owner.equals(Transaction.class.getName())) {
+					} else if (owner.equals(Transaction.class.getName())) {
 						// call on a transaction object
-						if(mi.name.equals("getSenderAddress")) {
-							StackVar obj = stack.pollLast(); // the TX we want the address
-							StackVar ret = newTmpVar(m);
-							stack.add(ret);
+						if (mi.name.equals("getSenderAddress")) {
+							popVar(m, tmpVar1); // the TX we want the address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(obj.address);
+							code.putInt(tmpVar1);
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.B_To_Address_Of_Tx_In_A);
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_B1);
-							code.putInt(ret.address);
-						}
-						else if(mi.name.equals("getAmount")) {
-							StackVar obj = stack.pollLast(); // the TX we want the amount
-							StackVar ret = newTmpVar(m);
-							stack.add(ret);
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getAmount")) {
+							popVar(m, tmpVar1); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(obj.address);
+							code.putInt(tmpVar1); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Amount_For_Tx_In_A);
-							code.putInt(ret.address);
-						}
-						else if(mi.name.equals("equals")) {
-							StackVar obj = stack.pollLast(); // the obj we want to check
-							StackVar thisobj = stack.pollLast(); // the obj we want to check
-							StackVar ret = newTmpVar(m);
-							stack.add(ret);
-							
-							code.put(OpCode.e_op_code_SET_DAT);
-							code.putInt(ret.address);
-							code.putInt(obj.address);
-							
+							code.putInt(tmpVar1); // the amount
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("equals")) {
+							popVar(m, tmpVar1); // the obj 1
+							popVar(m, tmpVar2); // the obj 2
+
 							code.put(OpCode.e_op_code_SUB_DAT);
-							code.putInt(ret.address);
-							code.putInt(thisobj.address);
-						}
-						else {
+							code.putInt(tmpVar1);
+							code.putInt(tmpVar2);
+
+							pushVar(m, tmpVar1);
+						} else {
 							System.err.println("Method problem");
 						}
 					}
-				}
-				else {
+				} else {
 					System.err.println("problem");
 				}
 				break;
 
 			case GETFIELD:
 			case PUTFIELD:
-				if(insn instanceof FieldInsnNode) {
+				if (insn instanceof FieldInsnNode) {
 					FieldInsnNode fi = (FieldInsnNode) insn;
 
-					System.out.println((opcode==GETFIELD ? "get " : "put ") + "field: " + fi.name);
+					System.out.println((opcode == GETFIELD ? "get " : "put ") + "field: " + fi.name);
 
-					if(opcode==GETFIELD){
+					if (opcode == GETFIELD) {
 						stack.pollLast(); // remove the 'this'
-						stack.addLast(new StackVar(STACK_VAR_ADDRESS, fields.get(fi.name).address));
-					}
-					else{
-						StackVar value = stack.pollLast();
-						stack.pollLast(); // remove the 'this'
+						pushVar(m, fields.get(fi.name).address);
+					} else {
+						popVar(m, tmpVar1);
+
 						Field field = fields.get(fi.name);
 
 						code.put(OpCode.e_op_code_SET_DAT);
 						code.putInt(field.address);
-						code.putInt(value.address);
+						code.putInt(tmpVar1);
 					}
-				}
-				else {
+				} else {
 					System.err.println("problem");
 				}
 				break;
 
-			case LDC: // push a constant #index from a constant pool (String, int, float, Class, java.lang.invoke.MethodType, or java.lang.invoke.MethodHandle) onto the stack
-				if(insn instanceof LdcInsnNode) {
+			case LDC: // push a constant #index from a constant pool (String, int, float, Class,
+						// java.lang.invoke.MethodType, or java.lang.invoke.MethodHandle) onto the stack
+				if (insn instanceof LdcInsnNode) {
 					LdcInsnNode ld = (LdcInsnNode) insn;
-					stack.add(new StackVar(STACK_CONSTANT, ld.cst));
 					System.out.println("constant: " + ld.cst);
-				}
-				else {
+
+					if (ld.cst instanceof String) {
+						stack.addLast(new StackVar(STACK_CONSTANT, ld.cst));
+					} else {
+						long value = 0;
+						if (ld.cst instanceof Long)
+							value = (Long) ld.cst;
+						else if (ld.cst instanceof Integer)
+							value = (Integer) ld.cst;
+						else {
+							addError(ld, "Invalid constant: " + ld.cst);
+						}
+						code.put(OpCode.e_op_code_SET_VAL);
+						code.putInt(tmpVar1);
+						code.putLong(value);
+						pushVar(m, tmpVar1);
+					}
+				} else {
 					System.err.println(opcode);
 				}
 				break;
 
-			case LCMP: // push 0 if the two longs are the same, 1 if value1 is greater than value2, -1 otherwise
+			case LCMP: // push 0 if the two longs are the same, 1 if value1 is greater than value2, -1
+						// otherwise
 				System.out.println("lcmp");
 				break;
 
@@ -709,39 +714,29 @@ public class Compiler {
 			case GOTO:
 			case IFNULL:
 			case IFNONNULL:
-				if(insn instanceof JumpInsnNode) {
+				if (insn instanceof JumpInsnNode) {
 					JumpInsnNode jmp = (JumpInsnNode) insn;
 
 					System.out.println("ifeq: " + jmp.label.getLabel());
-				}
-				else {
+				} else {
 					System.err.println(opcode);
 				}
 				break;
 
 			case -1:
 				/*
-				if(insn instanceof LabelNode) {
-					LabelNode ln = (LabelNode) insn;
-
-					System.out.println("label: " + ln.getLabel().toString());
-				}
-				else if(insn instanceof LineNumberNode) {
-					LineNumberNode ln = (LineNumberNode) insn;
-
-					System.out.println("line: " + ln.line);
-				}
-				else if(insn instanceof FrameNode) {
-					FrameNode fn = (FrameNode) insn;
-
-					System.out.println("frame type: " + fn.getType());
-				}
-				else {
-					System.err.println(opcode);
-				}
-				*/
+				 * if(insn instanceof LabelNode) { LabelNode ln = (LabelNode) insn;
+				 * 
+				 * System.out.println("label: " + ln.getLabel().toString()); } else if(insn
+				 * instanceof LineNumberNode) { LineNumberNode ln = (LineNumberNode) insn;
+				 * 
+				 * System.out.println("line: " + ln.line); } else if(insn instanceof FrameNode)
+				 * { FrameNode fn = (FrameNode) insn;
+				 * 
+				 * System.out.println("frame type: " + fn.getType()); } else {
+				 * System.err.println(opcode); }
+				 */
 				break;
-
 
 			default:
 				System.err.println("opcode: " + opcode + " " + insn.toString());
@@ -758,10 +753,10 @@ public class Compiler {
 	public static void main(String[] args) throws Exception {
 
 		// String name = "bt.examples.Auction";
-//		String name = "bt.examples.Hello";
+		// String name = "bt.examples.Hello";
 		String name = "bt.examples.Crowdfund";
-//		String name = "bt.examples.Refuse";
-//		String name = "bt.examples.Will";
+		// String name = "bt.examples.Refuse";
+		// String name = "bt.examples.Will";
 
 		Compiler reader = new Compiler(name);
 
@@ -769,7 +764,7 @@ public class Compiler {
 		reader.link();
 
 		System.out.println("Code size: " + reader.code.position());
-		
+
 		Printer.print(reader.code, System.out);
 
 		System.out.println("Code single line:");

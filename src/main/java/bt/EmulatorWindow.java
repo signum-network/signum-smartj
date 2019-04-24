@@ -419,7 +419,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 				JPanel center = new JPanel(new BorderLayout());
 				
 				JPanel codePanel = new JPanel(new BorderLayout());
-				codePanel.setBorder(new TitledBorder("AT CODE"));
+				codePanel.setBorder(new TitledBorder("AT BYTECODE"));
 				JTextArea codeArea = new JTextArea(code, 20, 20);
 				codeArea.setLineWrap(true);
 				JScrollPane codeScroll = new JScrollPane(codeArea);
@@ -427,7 +427,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 				center.add(codePanel, BorderLayout.LINE_START);
 				
 				JPanel codePanelForm = new JPanel(new BorderLayout());
-				codePanelForm.setBorder(new TitledBorder("AT FORMATTED CODE"));
+				codePanelForm.setBorder(new TitledBorder("AT FORMATTED BYTECODE"));
 				JTextArea codeAreaForm = new JTextArea(codeForm, 10, 30);
 				JScrollPane codeScrollForm = new JScrollPane(codeAreaForm); 
 				codePanelForm.add(codeScrollForm, BorderLayout.CENTER);
