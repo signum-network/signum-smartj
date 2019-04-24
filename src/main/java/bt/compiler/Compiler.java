@@ -286,20 +286,19 @@ public class Compiler {
 	 * @param m
 	 * @param address
 	 */
-	private void popVar(Method m, int address) {
+	private StackVar popVar(Method m, int address) {
 		StackVar var = stack.pollLast();
 
 		if (var.type == STACK_PUSH) {
 			m.code.put(OpCode.e_op_code_POP_DAT);
 			m.code.putInt(address);
-		}
-		else if(var.type == STACK_VAR_ADDRESS){
+		} else if (var.type == STACK_LOCAL) {
 			m.code.put(OpCode.e_op_code_SET_DAT);
 			m.code.putInt(address);
 			m.code.putInt(var.address);
-		}
-		else
+		} else
 			System.err.println("Unexpected variable");
+		return var;
 	}
 
 	private void parseMethod(Method m) {
@@ -322,6 +321,23 @@ public class Compiler {
 			AbstractInsnNode insn = ite.next();
 
 			int opcode = insn.getOpcode();
+
+			if (opcode == -1) {
+				// This is a label or line number information
+				/*
+				 * if(insn instanceof LabelNode) { LabelNode ln = (LabelNode) insn;
+				 * 
+				 * System.out.println("label: " + ln.getLabel().toString()); } else if(insn
+				 * instanceof LineNumberNode) { LineNumberNode ln = (LineNumberNode) insn;
+				 * 
+				 * System.out.println("line: " + ln.line); } else if(insn instanceof FrameNode)
+				 * { FrameNode fn = (FrameNode) insn;
+				 * 
+				 * System.out.println("frame type: " + fn.getType()); } else {
+				 * System.err.println(opcode); }
+				 */
+				continue;
+			}
 
 			if (stack.size() > 0) {
 				System.out.print("Stack");
@@ -468,9 +484,16 @@ public class Compiler {
 
 			case DUP: // duplicate the value on top of the stack
 			{
-				popVar(m, tmpVar1);
-				pushVar(m, tmpVar1);
-				pushVar(m, tmpVar1);
+				StackVar var = popVar(m, tmpVar1);
+				if (var.type == STACK_LOCAL) {
+					stack.addLast(var);
+					stack.addLast(var);
+				} else if (var.type == STACK_PUSH) {
+					pushVar(m, tmpVar1);
+					pushVar(m, tmpVar1);
+				} else {
+					System.err.println("DUP error");
+				}
 
 				System.out.println("dup");
 			}
@@ -612,11 +635,11 @@ public class Compiler {
 							stack.pollLast(); // remove the 'this'
 						} else {
 							// check for user defined methods
-							Method mcall = methods.get(mi.name);
-							if (mcall == null)
-								System.err.println("Method problem: " + mi.name);
-
 							stack.pollLast(); // remove the 'this'
+							Method mcall = methods.get(mi.name);
+							if (mcall == null) {
+								addError(mi, "Method not found");
+							}
 
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
@@ -659,8 +682,19 @@ public class Compiler {
 							code.putInt(tmpVar2);
 
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("isNull")) {
+							popVar(m, tmpVar1); // the obj
+
+							code.put(OpCode.e_op_code_CLR_DAT);
+							code.putInt(tmpVar2);
+							code.put(OpCode.e_op_code_BNZ_DAT);
+							code.putInt(tmpVar1);
+							code.put((byte) 0x07); // offset
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar2);
+							pushVar(m, tmpVar2);
 						} else {
-							System.err.println("Method problem");
+							System.err.println("Method problem: " + mi.name + " " + owner);
 						}
 					}
 				} else {
@@ -740,21 +774,6 @@ public class Compiler {
 				} else {
 					System.err.println(opcode);
 				}
-				break;
-
-			case -1:
-				/*
-				 * if(insn instanceof LabelNode) { LabelNode ln = (LabelNode) insn;
-				 * 
-				 * System.out.println("label: " + ln.getLabel().toString()); } else if(insn
-				 * instanceof LineNumberNode) { LineNumberNode ln = (LineNumberNode) insn;
-				 * 
-				 * System.out.println("line: " + ln.line); } else if(insn instanceof FrameNode)
-				 * { FrameNode fn = (FrameNode) insn;
-				 * 
-				 * System.out.println("frame type: " + fn.getType()); } else {
-				 * System.err.println(opcode); }
-				 */
 				break;
 
 			default:

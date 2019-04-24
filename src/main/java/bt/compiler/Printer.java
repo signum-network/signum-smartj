@@ -63,11 +63,11 @@ public class Printer {
 			switch (op) {
 			case OpCode.e_op_code_NOP:
 				p += printOp(code, p, 1, out);
-				out.println(" NOP");
+				out.println("\tNOP");
 				break;
 			case OpCode.e_op_code_SET_VAL:
 				p += printOp(code, p, 1, out);
-				out.println(" SET_VAL");
+				out.println("\tSET_VAL");
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");
@@ -78,7 +78,7 @@ public class Printer {
 
 			case OpCode.e_op_code_SET_DAT:
 				p += printOp(code, p, 1, out);
-				out.println(" SET_DAT");
+				out.println("\tSET_DAT");
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");
@@ -99,14 +99,14 @@ public class Printer {
 			case OpCode.e_op_code_PSH_DAT:
 			case OpCode.e_op_code_POP_DAT:
 				p += printOp(code, p, 1, out);
-				out.println(op == OpCode.e_op_code_PSH_DAT ? " PSH_DAT" : " POP_DAT");
+				out.println(op == OpCode.e_op_code_PSH_DAT ? "\tPSH_DAT" : "\tPOP_DAT");
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");
 				break;
 			case OpCode.e_op_code_JMP_SUB:
 				p += printOp(code, p, 1, out);
-				out.println(" JMP_SUB");
+				out.println("\tJMP_SUB");
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");
@@ -132,16 +132,16 @@ public class Printer {
 
 			case OpCode.e_op_code_RET_SUB:
 				p += printOp(code, p, 1, out);
-				out.println(" RET_SUB");
+				out.println("\tRET_SUB");
 				break;
 
 			case OpCode.e_op_code_SET_PCS:
 				p += printOp(code, p, 1, out);
-				out.println(" SET_PCS");
+				out.println("\tSET_PCS");
 				break;
 			case OpCode.e_op_code_EXT_FUN:
 				p += printOp(code, p, 1, out);
-				out.println(" EXT_FUN");
+				out.println("\tEXT_FUN");
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
@@ -149,7 +149,7 @@ public class Printer {
 			case OpCode.e_op_code_EXT_FUN_DAT:
 			case OpCode.e_op_code_EXT_FUN_RET:
 				p += printOp(code, p, 1, out);
-				out.println(" EXT_FUN_" + (op == OpCode.e_op_code_EXT_FUN_DAT ? "DAT" : "RET"));
+				out.println("\tEXT_FUN_" + (op == OpCode.e_op_code_EXT_FUN_DAT ? "DAT" : "RET"));
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
@@ -160,7 +160,7 @@ public class Printer {
 			case OpCode.e_op_code_EXT_FUN_DAT_2:
 			case OpCode.e_op_code_EXT_FUN_RET_DAT:
 				p += printOp(code, p, 1, out);
-				out.println(" EXT_FUN_RET_" + (op == OpCode.e_op_code_EXT_FUN_DAT_2 ? "DAT_2" : "RET_DAT"));
+				out.println("\tEXT_FUN_RET_" + (op == OpCode.e_op_code_EXT_FUN_DAT_2 ? "DAT_2" : "RET_DAT"));
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
@@ -174,7 +174,7 @@ public class Printer {
 
 			case OpCode.e_op_code_EXT_FUN_RET_DAT_2:
 				p += printOp(code, p, 1, out);
-				out.println(" EXT_FUN_RET_DAT_2");
+				out.println("\tEXT_FUN_RET_DAT_2");
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
@@ -192,7 +192,7 @@ public class Printer {
 			case OpCode.e_op_code_BZR_DAT:
 			case OpCode.e_op_code_BNZ_DAT:
 				p += printOp(code, p, 1, out);
-				out.println(op == OpCode.e_op_code_BZR_DAT ? " BZR" : " BNZ");
+				out.println(op == OpCode.e_op_code_BZR_DAT ? "\tBZR" : "\tBNZ");
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");
@@ -203,7 +203,7 @@ public class Printer {
 
 			case OpCode.e_op_code_FIN_IMD:
 				p += printOp(code, p, 1, out);
-				out.println(" FIN");
+				out.println("\tFIN");
 				break;
 
 			case OpCode.e_op_code_IND_DAT:
@@ -228,7 +228,7 @@ public class Printer {
 
 			default:
 				p += printOp(code, p, 1, out);
-				out.println(" UNSUPPORTED");
+				out.println("\tUNSUPPORTED");
 				break;
 			}
 		}
