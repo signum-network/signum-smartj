@@ -169,7 +169,8 @@ public class Compiler {
 			lastFreeVar += nvars;
 		}
 
-		// Temporary variables come last (used for pushing and poping values from user stack)
+		// Temporary variables come last (used for pushing and poping values from user
+		// stack)
 		tmpVar1 = lastFreeVar++;
 		tmpVar2 = lastFreeVar++;
 		tmpVar3 = lastFreeVar++;
@@ -267,6 +268,9 @@ public class Compiler {
 		}
 	}
 
+	/**
+	 * Push the variable on the given address to the stack.
+	 */
 	private StackVar pushVar(Method m, int address) {
 		StackVar v = new StackVar(STACK_PUSH, 0);
 		stack.add(v);
@@ -276,11 +280,26 @@ public class Compiler {
 		return v;
 	}
 
+	/**
+	 * Pop the lastest added variable from the stack and store on the given addres.
+	 * 
+	 * @param m
+	 * @param address
+	 */
 	private void popVar(Method m, int address) {
-		stack.pollLast();
+		StackVar var = stack.pollLast();
 
-		m.code.put(OpCode.e_op_code_POP_DAT);
-		m.code.putInt(address);
+		if (var.type == STACK_PUSH) {
+			m.code.put(OpCode.e_op_code_POP_DAT);
+			m.code.putInt(address);
+		}
+		else if(var.type == STACK_VAR_ADDRESS){
+			m.code.put(OpCode.e_op_code_SET_DAT);
+			m.code.putInt(address);
+			m.code.putInt(var.address);
+		}
+		else
+			System.err.println("Unexpected variable");
 	}
 
 	private void parseMethod(Method m) {
