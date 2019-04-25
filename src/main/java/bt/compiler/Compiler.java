@@ -673,6 +673,18 @@ public class Compiler {
 							code.putShort(OpCode.Get_Amount_For_Tx_In_A);
 							code.putInt(tmpVar1); // the amount
 							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("getTimestamp")) {
+							popVar(m, tmpVar1); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(tmpVar1); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
+							code.putInt(tmpVar1); // the timestamp
+							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("equals")) {
 							popVar(m, tmpVar1); // the obj 1
 							popVar(m, tmpVar2); // the obj 2
