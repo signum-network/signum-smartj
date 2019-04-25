@@ -15,7 +15,7 @@ public class Printer {
 
 	static int print(byte[] bytes, int start, int length, PrintStream out) {
 		for (int j = length - 1; j >= 0; j--) {
-			int v = bytes[j + start] & 0xFF;
+			int v = bytes[j + start] & 0xff;
 			print(v, out);
 		}
 		return length;
@@ -31,11 +31,13 @@ public class Printer {
 	}
 
 	static int printOp(byte[] bytes, int start, int length, PrintStream out) {
-		print(bytes, start, length, out);
-		// Print also the address of this operation, making it easier to inspect jumps
-		out.print(" @");
+		// Print the address of this operation first, making it easier to inspect jumps
+		out.print('@');
 		print(start >>> 8, out);
-		print(start & 0xFF, out);
+		print(start & 0xff, out);
+		out.print(' ');
+
+		print(bytes, start, length, out);
 		return length;
 	}
 
@@ -94,7 +96,18 @@ public class Printer {
 			case OpCode.e_op_code_DEC_DAT:
 			case OpCode.e_op_code_NOT_DAT:
 				p += printOp(code, p, 1, out);
-				out.println();
+				switch (op){
+					case OpCode.e_op_code_CLR_DAT:
+					out.println("\tCLR_DAT"); break;
+					case OpCode.e_op_code_INC_DAT:
+					out.println("\tINC_DAT"); break;
+					case OpCode.e_op_code_DEC_DAT:
+					out.println("\tDEC_DAT"); break;
+					case OpCode.e_op_code_NOT_DAT:
+					out.println("\tNOT_DAT"); break;
+					default:
+					out.println();
+				}
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");
@@ -122,7 +135,24 @@ public class Printer {
 			case OpCode.e_op_code_AND_DAT:
 			case OpCode.e_op_code_XOR_DAT:
 				p += printOp(code, p, 1, out);
-				out.println();
+				switch (op){
+					case OpCode.e_op_code_ADD_DAT:
+					out.println("\tADD_DAT"); break;
+					case OpCode.e_op_code_SUB_DAT:
+					out.println("\tSUB_DAT"); break;
+					case OpCode.e_op_code_MUL_DAT:
+					out.println("\tMUL_DAT"); break;
+					case OpCode.e_op_code_DIV_DAT:
+					out.println("\tDIV_DAT"); break;
+					case OpCode.e_op_code_BOR_DAT:
+					out.println("\tBOR_DAT"); break;
+					case OpCode.e_op_code_AND_DAT:
+					out.println("\tAND_DAT"); break;
+					case OpCode.e_op_code_XOR_DAT:
+					out.println("\tXOR_DAT"); break;
+					default:
+					out.println();
+				}
 				out.print(tab);
 				p += print(code, p, 4, out);
 				out.println(" address");

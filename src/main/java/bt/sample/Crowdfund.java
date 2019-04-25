@@ -58,7 +58,7 @@ class Crowdfund extends Contract {
 			Timestamp ts = getCreationTimestamp();
 			while(true) {
 				Transaction txi = getTxAfterTimestamp(ts);
-				if(txi.isNull())
+				if(txi == null)
 					break;
 				sendAmount(txi.getAmount(), txi.getSenderAddress());
 				ts = txi.getTimestamp();

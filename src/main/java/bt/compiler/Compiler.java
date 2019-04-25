@@ -673,8 +673,7 @@ public class Compiler {
 							code.putShort(OpCode.Get_Amount_For_Tx_In_A);
 							code.putInt(tmpVar1); // the amount
 							pushVar(m, tmpVar1);
-						}
-						else if (mi.name.equals("getTimestamp")) {
+						} else if (mi.name.equals("getTimestamp")) {
 							popVar(m, tmpVar1); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
@@ -685,29 +684,35 @@ public class Compiler {
 							code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 							code.putInt(tmpVar1); // the timestamp
 							pushVar(m, tmpVar1);
-						} else if (mi.name.equals("equals")) {
+						} else {
+							System.err.println("Method problem: " + mi.name + " " + owner);
+						}
+					}
+					else if(owner.equals(Object.class.getName())){
+						if (mi.name.equals("equals")) {
 							popVar(m, tmpVar1); // the obj 1
 							popVar(m, tmpVar2); // the obj 2
-
+					
 							code.put(OpCode.e_op_code_SUB_DAT);
 							code.putInt(tmpVar1);
 							code.putInt(tmpVar2);
-
-							pushVar(m, tmpVar1);
-						} else if (mi.name.equals("isNull")) {
-							popVar(m, tmpVar1); // the obj
-
+					
 							code.put(OpCode.e_op_code_CLR_DAT);
 							code.putInt(tmpVar2);
 							code.put(OpCode.e_op_code_BNZ_DAT);
 							code.putInt(tmpVar1);
-							code.put((byte) 0x07); // offset
+							code.put((byte) 0x0b); // offset
+					
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar2);
 							pushVar(m, tmpVar2);
-						} else {
-							System.err.println("Method problem: " + mi.name + " " + owner);
 						}
+						else {
+							System.err.println("Method not implemented: " + mi.name + " " + owner);
+						}
+					}
+					else {
+						System.err.println("Class not implemented: " + mi.owner);
 					}
 				} else {
 					System.err.println("problem");
@@ -726,6 +731,7 @@ public class Compiler {
 						pushVar(m, fields.get(fi.name).address);
 					} else {
 						popVar(m, tmpVar1);
+						stack.pollLast(); // remove the 'this'
 
 						Field field = fields.get(fi.name);
 

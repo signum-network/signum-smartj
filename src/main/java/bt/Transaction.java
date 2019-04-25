@@ -79,8 +79,4 @@ public class Transaction {
 	public Timestamp getTimestamp() {
 		return ts;
 	}
-	
-	public boolean isNull() {
-		return sender==null && receiver == null;
-	}
 }
