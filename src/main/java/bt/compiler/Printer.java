@@ -24,15 +24,18 @@ public class Printer {
 	static void print(int v, PrintStream out) {
 		if (v < 0) // handled signed value as unsigned
 			v += 256;
-
-		out.print(hexArray[v >>> 4]);
-		out.print(hexArray[v & 0x0F]);
+		int c1 = v >>> 4;
+		int c2 = v & 0x0F;
+		out.print(hexArray[c1]);
+		out.print(hexArray[c2]);
 	}
 
 	static int printOp(byte[] bytes, int start, int length, PrintStream out) {
 		print(bytes, start, length, out);
+		// Print also the address of this operation, making it easier to inspect jumps
 		out.print(" @");
-		print(start, out);
+		print(start >>> 8, out);
+		print(start & 0xFF, out);
 		return length;
 	}
 
