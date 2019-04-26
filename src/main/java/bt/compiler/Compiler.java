@@ -127,10 +127,6 @@ public class Compiler {
 		}
 
 		lastFreeVar = 0;
-		// A variable is reserved the lastTxReceived so we
-		// can easily have the 'current' tx variable available
-		lastTxTimestamp = lastFreeVar++;
-		lastTxReceived = lastFreeVar++;
 
 		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
@@ -168,6 +164,11 @@ public class Compiler {
 
 			lastFreeVar += nvars;
 		}
+
+		// Variables are reserved the lastTxReceived so we
+		// can easily have the 'current' tx variable available
+		lastTxTimestamp = lastFreeVar++;
+		lastTxReceived = lastFreeVar++;
 
 		// Temporary variables come last (used for pushing and poping values from user
 		// stack)

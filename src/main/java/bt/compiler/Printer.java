@@ -96,16 +96,20 @@ public class Printer {
 			case OpCode.e_op_code_DEC_DAT:
 			case OpCode.e_op_code_NOT_DAT:
 				p += printOp(code, p, 1, out);
-				switch (op){
-					case OpCode.e_op_code_CLR_DAT:
-					out.println("\tCLR_DAT"); break;
-					case OpCode.e_op_code_INC_DAT:
-					out.println("\tINC_DAT"); break;
-					case OpCode.e_op_code_DEC_DAT:
-					out.println("\tDEC_DAT"); break;
-					case OpCode.e_op_code_NOT_DAT:
-					out.println("\tNOT_DAT"); break;
-					default:
+				switch (op) {
+				case OpCode.e_op_code_CLR_DAT:
+					out.println("\tCLR_DAT");
+					break;
+				case OpCode.e_op_code_INC_DAT:
+					out.println("\tINC_DAT");
+					break;
+				case OpCode.e_op_code_DEC_DAT:
+					out.println("\tDEC_DAT");
+					break;
+				case OpCode.e_op_code_NOT_DAT:
+					out.println("\tNOT_DAT");
+					break;
+				default:
 					out.println();
 				}
 				out.print(tab);
@@ -135,22 +139,29 @@ public class Printer {
 			case OpCode.e_op_code_AND_DAT:
 			case OpCode.e_op_code_XOR_DAT:
 				p += printOp(code, p, 1, out);
-				switch (op){
-					case OpCode.e_op_code_ADD_DAT:
-					out.println("\tADD_DAT"); break;
-					case OpCode.e_op_code_SUB_DAT:
-					out.println("\tSUB_DAT"); break;
-					case OpCode.e_op_code_MUL_DAT:
-					out.println("\tMUL_DAT"); break;
-					case OpCode.e_op_code_DIV_DAT:
-					out.println("\tDIV_DAT"); break;
-					case OpCode.e_op_code_BOR_DAT:
-					out.println("\tBOR_DAT"); break;
-					case OpCode.e_op_code_AND_DAT:
-					out.println("\tAND_DAT"); break;
-					case OpCode.e_op_code_XOR_DAT:
-					out.println("\tXOR_DAT"); break;
-					default:
+				switch (op) {
+				case OpCode.e_op_code_ADD_DAT:
+					out.println("\tADD_DAT");
+					break;
+				case OpCode.e_op_code_SUB_DAT:
+					out.println("\tSUB_DAT");
+					break;
+				case OpCode.e_op_code_MUL_DAT:
+					out.println("\tMUL_DAT");
+					break;
+				case OpCode.e_op_code_DIV_DAT:
+					out.println("\tDIV_DAT");
+					break;
+				case OpCode.e_op_code_BOR_DAT:
+					out.println("\tBOR_DAT");
+					break;
+				case OpCode.e_op_code_AND_DAT:
+					out.println("\tAND_DAT");
+					break;
+				case OpCode.e_op_code_XOR_DAT:
+					out.println("\tXOR_DAT");
+					break;
+				default:
 					out.println();
 				}
 				out.print(tab);
@@ -234,6 +245,44 @@ public class Printer {
 				out.println(" offset");
 				break;
 
+			case OpCode.e_op_code_BGT_DAT:
+			case OpCode.e_op_code_BLT_DAT:
+			case OpCode.e_op_code_BGE_DAT:
+			case OpCode.e_op_code_BLE_DAT:
+			case OpCode.e_op_code_BEQ_DAT:
+			case OpCode.e_op_code_BNE_DAT:
+				p += printOp(code, p, 1, out);
+				switch (op) {
+				case OpCode.e_op_code_BGT_DAT:
+					out.println("\tBGT");
+					break;
+				case OpCode.e_op_code_BLT_DAT:
+					out.println("\tBLT");
+					break;
+				case OpCode.e_op_code_BGE_DAT:
+					out.println("\tBGE");
+					break;
+				case OpCode.e_op_code_BLE_DAT:
+					out.println("\tBLE");
+					break;
+				case OpCode.e_op_code_BEQ_DAT:
+					out.println("\tBEQ");
+					break;
+				case OpCode.e_op_code_BNE_DAT:
+					out.println("\tBNE");
+					break;
+				}
+				out.print(tab);
+				p += print(code, p, 4, out);
+				out.println(" address");
+				out.print(tab);
+				p += print(code, p, 4, out);
+				out.println(" address");
+				out.print(tab);
+				p += print(code, p, 1, out);
+				out.println(" offset");
+				break;
+
 			case OpCode.e_op_code_FIN_IMD:
 				p += printOp(code, p, 1, out);
 				out.println("\tFIN");
@@ -246,12 +295,6 @@ public class Printer {
 			case OpCode.e_op_code_SHR_DAT:
 			case OpCode.e_op_code_JMP_ADR:
 
-			case OpCode.e_op_code_BGT_DAT:
-			case OpCode.e_op_code_BLT_DAT:
-			case OpCode.e_op_code_BGE_DAT:
-			case OpCode.e_op_code_BLE_DAT:
-			case OpCode.e_op_code_BEQ_DAT:
-			case OpCode.e_op_code_BNE_DAT:
 			case OpCode.e_op_code_SLP_DAT:
 			case OpCode.e_op_code_FIZ_DAT:
 			case OpCode.e_op_code_STZ_DAT:

@@ -28,7 +28,7 @@ repositories {
 dependencies {
     implementation 'org.ow2.asm:asm-tree:7.1'
 
-    implementation 'com.github.burst-apps-team:burstkit4j:v0.9-beta1'
+    implementation 'com.github.burst-apps-team:burstkit4j:v0.9-beta6'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'

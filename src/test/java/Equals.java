@@ -1,4 +1,5 @@
 import bt.Contract;
+import bt.EmulatorWindow;
 
 public class Equals extends Contract {
 
@@ -7,5 +8,9 @@ public class Equals extends Contract {
 	@Override
 	public void txReceived() {
 		equalReceived = getCurrentTx().getSenderAddress().equals(getCreator());
+	}
+
+	public static void main(String[] args) {
+		new EmulatorWindow(Equals.class);
 	}
 }

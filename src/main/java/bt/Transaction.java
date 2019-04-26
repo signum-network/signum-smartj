@@ -20,7 +20,8 @@ public class Transaction {
 	long amount;
 	byte type;
 	Timestamp ts;
-	String msg;
+	String msgString;
+	Register msg;
 
 	/**
 	 * Users are not allowed to create new instances of this class,
@@ -34,6 +35,42 @@ public class Transaction {
 	 * @return
 	 */
 	Transaction(Address sender, Address receiver, long ammount, byte type, Timestamp ts, String msg) {
+		this.sender = sender;
+		this.receiver = receiver;
+		this.amount = ammount;
+		this.type = type;
+		this.ts = ts;
+		msgString = msg;
+
+		byte[] bytes = msg.getBytes();
+		this.msg = new Register();
+		int pos = 0;
+		for(int i=0; i<8 && pos < bytes.length; i++){
+			this.msg.value1 += ((long) bytes[i] & 0xffL) << (8 * i);
+		}
+		for(int i=0; i<8 && pos < bytes.length; i++){
+			this.msg.value2 += ((long) bytes[i] & 0xffL) << (8 * i);
+		}
+		for(int i=0; i<8 && pos < bytes.length; i++){
+			this.msg.value3 += ((long) bytes[i] & 0xffL) << (8 * i);
+		}
+		for(int i=0; i<8 && pos < bytes.length; i++){
+			this.msg.value4 += ((long) bytes[i] & 0xffL) << (8 * i);
+		}
+	}
+
+	/**
+	 * Users are not allowed to create new instances of this class,
+	 * this function should be called by the emulator only.
+	 * 
+	 * @param ad
+	 * @param ammount
+	 * @param type
+	 * @param ts
+	 * @param msg
+	 * @return
+	 */
+	Transaction(Address sender, Address receiver, long ammount, byte type, Timestamp ts, Register msg) {
 		this.sender = sender;
 		this.receiver = receiver;
 		this.amount = ammount;
@@ -69,7 +106,7 @@ public class Transaction {
 	 * 
 	 * @return the message in this transaction
 	 */
-	public String getMessage() {
+	public Register getMessage() {
 		return msg;
 	}
 	

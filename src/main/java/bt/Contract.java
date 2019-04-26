@@ -68,6 +68,21 @@ public abstract class Contract {
 	}
 
 	/**
+	 * Send the given message to the given address.
+	 * 
+	 * The message has the isText flag set as false, the hexadecimal
+	 * values are converted to characters when shown in BRS wallet.
+	 * Message is always unencrypted.
+	 * 
+	 * @param message the message, truncated in 4*sizeof(long)
+	 * @param receiver the address
+	 */
+	protected void sendMessage(Register message, Address receiver) {
+		// FIXME: convert register to a string here
+		Emulator.getInstance().send(address, receiver, 0, null);
+	}
+
+	/**
 	 * Get the first transaction received after the given timestamp
 	 * 
 	 * @param ts
