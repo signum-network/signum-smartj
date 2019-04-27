@@ -1,6 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
+import bt.Emulator;
 import bt.EmulatorWindow;
 import bt.Timestamp;
 import bt.Address;
@@ -21,8 +22,8 @@ import bt.Address;
 public class UniqueToken extends Contract {
 	
 	Address owner;
-	long price;
-	Timestamp timeout;
+	long salePrice;
+	Timestamp saleTimeout;
 
 	/**
 	 * Constructor, when in blockchain the constructor is called when the first TX
@@ -44,7 +45,7 @@ public class UniqueToken extends Contract {
 		if(owner.equals(this.getCurrentTx().getSenderAddress())){
 			// only owner can transfer ownership
 			owner = newOwner;
-			price = 0; // not for sale
+			salePrice = 0; // not for sale
 		}
 	}
 
@@ -55,8 +56,8 @@ public class UniqueToken extends Contract {
 	 * @param timeout how many minutes the sale will be available
 	 */
 	public void sell(long price, long timeout){
-		this.price = price;
-		this.timeout = getBlockTimestamp().addMinutes(timeout);
+		this.salePrice = price;
+		this.saleTimeout = getBlockTimestamp().addMinutes(timeout);
 	}
 
 	/**
@@ -64,11 +65,11 @@ public class UniqueToken extends Contract {
 	 * Buyer need to transfer the asked price
 	 */
 	public void buy(){
-		if(price>0 && getBlockTimestamp().le(timeout) && getCurrentTx().getAmount() >= price){
+		if(salePrice>0 && getBlockTimestamp().le(saleTimeout) && getCurrentTx().getAmount() >= salePrice){
 			// conditions match, let's execute the sale
-			sendAmount(price, owner); // pay the current owner
+			sendAmount(salePrice, owner); // pay the current owner
 			owner = getCurrentTx().getSenderAddress(); // new owner
-			price = 0; // not for sale
+			salePrice = 0; // not for sale
 		}
 		else {
 			// send back funds of an invalid order
@@ -83,7 +84,21 @@ public class UniqueToken extends Contract {
 		// do nothing
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+		Emulator emu = Emulator.getInstance();
+
+		// some initialization code to make things easier to debug
+		Address creator = Emulator.getInstance().getAddress("CREATOR");
+		emu.airDrop(creator, 1000*Contract.ONE_BURST);
+
+		Address token1 = Emulator.getInstance().getAddress("TOKEN1");
+		Address token2 = Emulator.getInstance().getAddress("TOKEN2");
+		emu.createConctract(creator, token1, UniqueToken.class.getName(), Contract.ONE_BURST);
+		emu.createConctract(creator, token2, UniqueToken.class.getName(), Contract.ONE_BURST);
+
+		emu.forgeBlock();
+
+
 		new EmulatorWindow(UniqueToken.class);
 	}
 }

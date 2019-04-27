@@ -44,4 +44,9 @@ public class Address {
 	public long getBalance() {
 		return balance;
 	}
+
+	@Override
+	public String toString() {
+		return rsAddress;
+	}
 }

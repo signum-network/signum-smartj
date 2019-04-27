@@ -9,11 +9,11 @@ package bt;
  *
  */
 public class Transaction {
-	
+
 	static final byte TYPE_PAYMENT = 0;
 	static final byte TYPE_MESSAGING = 1;
 	static final byte TYPE_AT_CREATE = 2;
-	
+
 	Block block;
 	Address sender;
 	Address receiver;
@@ -24,8 +24,8 @@ public class Transaction {
 	Register msg;
 
 	/**
-	 * Users are not allowed to create new instances of this class,
-	 * this function should be called by the emulator only.
+	 * Users are not allowed to create new instances of this class, this function
+	 * should be called by the emulator only.
 	 * 
 	 * @param ad
 	 * @param ammount
@@ -41,27 +41,30 @@ public class Transaction {
 		this.type = type;
 		this.ts = ts;
 		msgString = msg;
-
-		byte[] bytes = msg.getBytes();
 		this.msg = new Register();
+		if (msg == null) {
+			this.msgString = "";
+			return;
+		}
+		byte[] bytes = msg.getBytes();
 		int pos = 0;
-		for(int i=0; i<8 && pos < bytes.length; i++){
+		for (int i = 0; i < 8 && pos < bytes.length; i++) {
 			this.msg.value1 += ((long) bytes[i] & 0xffL) << (8 * i);
 		}
-		for(int i=0; i<8 && pos < bytes.length; i++){
+		for (int i = 0; i < 8 && pos < bytes.length; i++) {
 			this.msg.value2 += ((long) bytes[i] & 0xffL) << (8 * i);
 		}
-		for(int i=0; i<8 && pos < bytes.length; i++){
+		for (int i = 0; i < 8 && pos < bytes.length; i++) {
 			this.msg.value3 += ((long) bytes[i] & 0xffL) << (8 * i);
 		}
-		for(int i=0; i<8 && pos < bytes.length; i++){
+		for (int i = 0; i < 8 && pos < bytes.length; i++) {
 			this.msg.value4 += ((long) bytes[i] & 0xffL) << (8 * i);
 		}
 	}
 
 	/**
-	 * Users are not allowed to create new instances of this class,
-	 * this function should be called by the emulator only.
+	 * Users are not allowed to create new instances of this class, this function
+	 * should be called by the emulator only.
 	 * 
 	 * @param ad
 	 * @param ammount
@@ -90,11 +93,11 @@ public class Transaction {
 	 * @return the amount in this transaction minus the activation fee
 	 */
 	public long getAmount() {
-		if(receiver!=null && receiver.contract!=null)
-			return amount-receiver.contract.activationFee;
+		if (receiver != null && receiver.contract != null)
+			return amount - receiver.contract.activationFee;
 		return amount;
 	}
-	
+
 	byte getType() {
 		return type;
 	}
@@ -109,7 +112,7 @@ public class Transaction {
 	public Register getMessage() {
 		return msg;
 	}
-	
+
 	/**
 	 * @return the pseudo-timestamp of this transaction (block height and txid)
 	 */

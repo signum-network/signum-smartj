@@ -23,6 +23,11 @@ public class Timestamp {
 		value = block << 8;
 		value += txid;
 	}
+
+	@Override
+	public String toString() {
+		return (value >>8) + " (block height)";
+	}
 	
 	/**
 	 * Return a new timestamp by adding the given minutes

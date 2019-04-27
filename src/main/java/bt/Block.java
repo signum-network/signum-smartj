@@ -26,9 +26,12 @@ class Block {
 
 			this.height = prev.height +1;
 		}
-		// TODO: come up with some kind of hash here for the block height
-		
-		
+
+		// Just some random numbers for the block hash
+		hash.value1 = (long) (Math.random() * Long.MAX_VALUE);
+		hash.value2 = (long) (Math.random() * Long.MAX_VALUE);
+		hash.value3 = (long) (Math.random() * Long.MAX_VALUE);
+		hash.value4 = (long) (Math.random() * Long.MAX_VALUE);		
 	}
 	
 	public long getHeight() {

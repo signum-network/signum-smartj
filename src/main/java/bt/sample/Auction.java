@@ -1,6 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
+import bt.Emulator;
 import bt.EmulatorWindow;
 import bt.Address;
 import bt.Timestamp;
@@ -30,7 +31,7 @@ public class Auction extends Contract {
 	 */
 	public Auction(){
 		beneficiary = parseAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
-		timeout = getBlockTimestamp().addMinutes(60*24*15); // 15 days from now
+		timeout = getBlockTimestamp().addMinutes(40); // 40 minutes == 10 blocks from now
 		finished = false;
 		highestBid = 100*ONE_BURST; // Start value, we will not accept less than this
 		highestBidder = null;
@@ -83,7 +84,17 @@ public class Auction extends Contract {
 			sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+		// some initialization code to make things easier to debug
+		Emulator emu = Emulator.getInstance();
+
+		Address creator = Emulator.getInstance().getAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
+		emu.airDrop(creator, 1000*Contract.ONE_BURST);		
+		Address auction = Emulator.getInstance().getAddress("AUCTION");
+		emu.createConctract(creator, auction, Auction.class.getName(), Contract.ONE_BURST);
+
+		emu.forgeBlock();
+
 		new EmulatorWindow(Auction.class);
 	}
 }

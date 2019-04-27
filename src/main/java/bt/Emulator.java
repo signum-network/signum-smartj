@@ -16,6 +16,7 @@ public class Emulator {
 	static final Emulator instance = new Emulator();
 
 	Block genesis;
+	Transaction curTx;
 
 	/**
 	 * Block being forged, also representing the mempool.
@@ -130,12 +131,11 @@ public class Emulator {
 			}
 
 			if(tx.type==Transaction.TYPE_AT_CREATE) {
+				// set the current creator variables
+				curTx = tx;
 				Object ocontract = Class.forName(tx.msgString).getConstructor().newInstance();
 				if(ocontract instanceof Contract) {
 					Contract c = (Contract) ocontract;
-
-					c.setInitialVars(tx.sender,
-							new Timestamp(currentBlock.getHeight(), 0), tx.getAmount());
 
 					c.address = tx.receiver;
 					tx.receiver.contract = c;

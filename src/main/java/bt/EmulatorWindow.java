@@ -1,6 +1,7 @@
 package bt;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -23,9 +24,11 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.LookAndFeel;
+import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import bt.compiler.Compiler;
 import bt.compiler.Printer;
@@ -74,6 +77,10 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		super("BlockTalk Emulator");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+		// tooltip configuration
+		ToolTipManager.sharedInstance().setInitialDelay(0);
+		ToolTipManager.sharedInstance().setDismissDelay(15000);
+
 		try {
 			Class<?> lafc = null;
 			try {
@@ -105,7 +112,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		cmdPanel.add(airDropAddress = new HintTextField("Receiver", airDropButton));
 		airDropAddress.setToolTipText("The address receiving the air drop");
 		cmdPanel.add(airDropAmount = new HintTextField("Amount", airDropButton));
-		airDropAmount.setToolTipText("The amount to air drop");
+		airDropAmount.setToolTipText("The amount to air drop in BURST = 10\u2078 NQT");
 		cmdPanel.add(new JLabel());
 		cmdPanel.add(new JLabel());
 
@@ -116,7 +123,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		cmdPanel.add(sendTo = new HintTextField("To", sendButton));
 		sendTo.setToolTipText("Receiver address");
 		cmdPanel.add(sendAmount = new HintTextField("Amount", sendButton));
-		sendAmount.setToolTipText("The amount to send");
+		sendAmount.setToolTipText("The amount to send in BURST = 10\u2078 NQT");
 		cmdPanel.add(sendMessage = new HintTextField("Message", sendButton));
 		sendMessage.setToolTipText("The message to send");
 
@@ -127,7 +134,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		cmdPanel.add(atAddressField = new HintTextField("Contract address", createATButton));
 		atAddressField.setToolTipText("Address to be assigned to this contract");
 		cmdPanel.add(atActivation = new HintTextField("Activation fee", createATButton));
-		atActivation.setToolTipText("Contract activation fee");
+		atActivation.setToolTipText("Contract activation fee in BURST = 10\u2078 NQT");
 		cmdPanel.add(atClassField = new HintTextField("Java class path", createATButton));
 		atClassField.setToolTipText("Full path for the contract java class");
 		if (c != null)
@@ -144,6 +151,23 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		accountsPanel.setBorder(new TitledBorder("ACCOUNTS"));
 		topPanel.add(accountsPanel, BorderLayout.CENTER);
 
+		class CellRenderer extends DefaultTableCellRenderer {
+			public Component getTableCellRendererComponent(
+								JTable table, Object value,
+								boolean isSelected, boolean hasFocus,
+								int row, int column) {
+				JLabel c = (JLabel)super.getTableCellRendererComponent(
+					table, value, isSelected, hasFocus, row, column);
+				c.setToolTipText(null);
+				if(value instanceof Address){
+					Address add = (Address)value;
+					if(add.contract!=null)
+						c.setToolTipText(add.contract.getFieldValues());
+				}
+				return c;
+			}
+		}
+
 		addrsTableModel = new AbstractTableModel() {
 			@Override
 			public String getColumnName(int column) {
@@ -153,7 +177,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 			@Override
 			public Object getValueAt(int r, int c) {
 				Address a = Emulator.getInstance().addresses.get(r);
-				return c == 0 ? a.rsAddress : ((double) a.balance) / Contract.ONE_BURST;
+				return c == 0 ? a : ((double) a.balance) / Contract.ONE_BURST;
 			}
 
 			@Override
@@ -173,6 +197,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		};
 
 		addressesTable = new JTable(addrsTableModel);
+		addressesTable.getColumnModel().getColumn(0).setCellRenderer(new CellRenderer());
 		JScrollPane sp = new JScrollPane(addressesTable);
 		sp.setPreferredSize(new Dimension(300, 40));
 		sp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -230,7 +255,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 				case RECEIVER_COL:
 					return tx.receiver == null ? null : tx.receiver.rsAddress;
 				case MSG_COL:
-					return tx.msg;
+					return tx.msgString!=null ? tx.msgString : tx.msg;
 				case AMOUNT_COL:
 					return ((double) tx.amount) / Contract.ONE_BURST;
 				default:
