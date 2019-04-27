@@ -55,14 +55,16 @@ public class UniqueToken extends Contract {
 	 * @param price the price (buyer need to transfer at least this amount)
 	 * @param timeout how many minutes the sale will be available
 	 */
-	public void sell(long price, long timeout){
+	public void putOnSale(long price, long timeout){
 		this.salePrice = price;
 		this.saleTimeout = getBlockTimestamp().addMinutes(timeout);
 	}
 
 	/**
 	 * Buy an on sale token.
-	 * Buyer need to transfer the asked price
+	 * 
+	 * Buyer needs to transfer the asked price along with the transaction.
+	 * Recalling that the amount sent should also cover for the activation fee.
 	 */
 	public void buy(){
 		if(salePrice>0 && getBlockTimestamp().le(saleTimeout) && getCurrentTx().getAmount() >= salePrice){
@@ -78,12 +80,19 @@ public class UniqueToken extends Contract {
 	}
 
 	/**
-	 * Any new transaction received will be handled by this function.
+	 * This contract only accepts the public method calls above.
+	 * 
+	 * We will do nothing here.
 	 */
 	public void txReceived(){
 		// do nothing
 	}
 	
+	/**
+	 * A main function for debugging purposes only.
+	 * 
+	 * This function is not compiled into bytecode and do not go to the blockchain.
+	 */
 	public static void main(String[] args) throws Exception {
 		Emulator emu = Emulator.getInstance();
 
