@@ -1,5 +1,5 @@
 import bt.Contract;
-import bt.EmulatorWindow;
+import bt.ui.EmulatorWindow;
 
 public class Equals extends Contract {
 

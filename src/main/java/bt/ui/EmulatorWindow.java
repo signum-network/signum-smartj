@@ -1,4 +1,4 @@
-package bt;
+package bt.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -30,6 +31,11 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
+import bt.Address;
+import bt.Contract;
+import bt.Emulator;
+import bt.Register;
+import bt.Transaction;
 import bt.compiler.Compiler;
 import bt.compiler.Printer;
 import burst.kit.burst.BurstCrypto;
@@ -39,6 +45,8 @@ import burst.kit.entity.response.BroadcastTransactionResponse;
 import burst.kit.entity.response.GenerateTransactionResponse;
 import burst.kit.service.BurstNodeService;
 import io.reactivex.Single;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 
 /**
  * Graphical user interface for the blockchain emulator.
@@ -59,11 +67,11 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 	private JButton createATButton;
 	private JTextField airDropAddress;
 	private JTextField airDropAmount;
-	private JTextField sendFrom;
-	private JTextField sendTo;
+	private JComboBox<Address> sendFrom;
+	private JComboBox<Address> sendTo;
 	private JTextField sendAmount;
 	private HintTextField sendMessage;
-	private JTextField atCreator;
+	private JComboBox<Address> atCreator;
 	private JTextField atClassField;
 	private JTextField atActivation;
 	private JTable addressesTable;
@@ -72,6 +80,8 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 	private AbstractTableModel txsTableModel;
 	private JTextField atAddressField;
 	private JButton compileATButton;
+	private JButton callButton;
+	private JLabel blockLabel;
 
 	public EmulatorWindow(Class<?> c) {
 		super("BlockTalk Emulator");
@@ -80,6 +90,8 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		// tooltip configuration
 		ToolTipManager.sharedInstance().setInitialDelay(0);
 		ToolTipManager.sharedInstance().setDismissDelay(15000);
+
+		IconFontSwing.register(FontAwesome.getIconFont());
 
 		try {
 			Class<?> lafc = null;
@@ -102,7 +114,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 		cmdPanel.add(forgeButton = new JButton("Forge block"));
 		forgeButton.addActionListener(this);
-		cmdPanel.add(new JLabel());
+		cmdPanel.add(blockLabel = new JLabel());
 		cmdPanel.add(new JLabel());
 		cmdPanel.add(new JLabel());
 		cmdPanel.add(new JLabel());
@@ -118,18 +130,27 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 		cmdPanel.add(sendButton = new JButton("Send"));
 		sendButton.addActionListener(this);
-		cmdPanel.add(sendFrom = new HintTextField("From", sendButton));
+		cmdPanel.add(sendFrom = new JComboBox<Address>());
 		sendFrom.setToolTipText("Sender address");
-		cmdPanel.add(sendTo = new HintTextField("To", sendButton));
+		cmdPanel.add(sendTo = new JComboBox<Address>());
 		sendTo.setToolTipText("Receiver address");
+		sendTo.addActionListener(this);
 		cmdPanel.add(sendAmount = new HintTextField("Amount", sendButton));
 		sendAmount.setToolTipText("The amount to send in BURST = 10\u2078 NQT");
 		cmdPanel.add(sendMessage = new HintTextField("Message", sendButton));
 		sendMessage.setToolTipText("The message to send");
 
+		callButton = new JButton();
+		callButton.addActionListener(this);
+		callButton.setToolTipText("Function call");
+		callButton.setIcon(IconFontSwing.buildIcon(FontAwesome.PENCIL_SQUARE_O, 14));
+		ComponentBorder cb = new ComponentBorder(callButton);
+		cb.setGap(0);
+		cb.install(sendMessage);
+
 		cmdPanel.add(createATButton = new JButton("Create Contract"));
 		createATButton.addActionListener(this);
-		cmdPanel.add(atCreator = new HintTextField("Creator", createATButton));
+		cmdPanel.add(atCreator = new JComboBox<Address>());
 		atCreator.setToolTipText("Contract creator address");
 		cmdPanel.add(atAddressField = new HintTextField("Contract address", createATButton));
 		atAddressField.setToolTipText("Address to be assigned to this contract");
@@ -140,29 +161,28 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		if (c != null)
 			atClassField.setText(c.getName());
 
-		cmdPanel.add(new JLabel());
-		cmdPanel.add(new JLabel());
-		cmdPanel.add(new JLabel());
-		cmdPanel.add(new JLabel());
-		cmdPanel.add(compileATButton = new JButton("Compile Contract"));
+		compileATButton = new JButton();
 		compileATButton.addActionListener(this);
+		compileATButton.setToolTipText("Compile Contract");
+		compileATButton.setIcon(IconFontSwing.buildIcon(FontAwesome.SERVER, 14));
+		cb = new ComponentBorder(compileATButton);
+		cb.setGap(0);
+		cb.install(atClassField);
 
 		JPanel accountsPanel = new JPanel(new BorderLayout());
 		accountsPanel.setBorder(new TitledBorder("ACCOUNTS"));
 		topPanel.add(accountsPanel, BorderLayout.CENTER);
 
 		class CellRenderer extends DefaultTableCellRenderer {
-			public Component getTableCellRendererComponent(
-								JTable table, Object value,
-								boolean isSelected, boolean hasFocus,
-								int row, int column) {
-				JLabel c = (JLabel)super.getTableCellRendererComponent(
-					table, value, isSelected, hasFocus, row, column);
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+					boolean hasFocus, int row, int column) {
+				JLabel c = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
+						column);
 				c.setToolTipText(null);
-				if(value instanceof Address){
-					Address add = (Address)value;
-					if(add.contract!=null)
-						c.setToolTipText(add.contract.getFieldValues());
+				if (value instanceof Address) {
+					Address add = (Address) value;
+					if (add.getContract() != null)
+						c.setToolTipText(add.getContract().getFieldValues());
 				}
 				return c;
 			}
@@ -176,8 +196,8 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 			@Override
 			public Object getValueAt(int r, int c) {
-				Address a = Emulator.getInstance().addresses.get(r);
-				return c == 0 ? a : ((double) a.balance) / Contract.ONE_BURST;
+				Address a = Emulator.getInstance().getAddresses().get(r);
+				return c == 0 ? a : ((double) a.getBalance()) / Contract.ONE_BURST;
 			}
 
 			@Override
@@ -187,7 +207,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 			@Override
 			public int getRowCount() {
-				return Emulator.getInstance().addresses.size();
+				return Emulator.getInstance().getAddresses().size();
 			}
 
 			@Override
@@ -238,26 +258,26 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 			@Override
 			public Object getValueAt(int r, int c) {
-				ArrayList<Transaction> txs = Emulator.getInstance().txs;
+				ArrayList<Transaction> txs = Emulator.getInstance().getTxs();
 				Transaction tx = txs.get(txs.size() - r - 1);
 				switch (c) {
 				case CONF_COL:
-					return Emulator.getInstance().currentBlock.height - tx.block.height - 1;
+					return Emulator.getInstance().getCurrentBlock().getHeight() - tx.getBlock().getHeight() - 1;
 				case TYPE_COL:
-					if (tx.type == 2)
+					if (tx.getType() == 2)
 						return "New contract";
-					else if (tx.type == 1)
+					else if (tx.getType() == 1)
 						return "Message";
 					else
 						return "Payment";
 				case SENDER_COL:
-					return tx.sender == null ? null : tx.sender.rsAddress;
+					return tx.getSenderAddress() == null ? null : tx.getSenderAddress().getRsAddress();
 				case RECEIVER_COL:
-					return tx.receiver == null ? null : tx.receiver.rsAddress;
+					return tx.getReceiverAddress() == null ? null : tx.getReceiverAddress().getRsAddress();
 				case MSG_COL:
-					return tx.msgString!=null ? tx.msgString : tx.msg;
+					return tx.getMessageString() != null ? tx.getMessageString() : tx.getMessage();
 				case AMOUNT_COL:
-					return ((double) tx.amount) / Contract.ONE_BURST;
+					return ((double) tx.getAmount()) / Contract.ONE_BURST;
 				default:
 					break;
 				}
@@ -271,7 +291,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 			@Override
 			public int getRowCount() {
-				return Emulator.getInstance().txs.size();
+				return Emulator.getInstance().getTxs().size();
 			}
 
 			@Override
@@ -289,6 +309,8 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		sp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		txsPanel.add(sp, BorderLayout.CENTER);
 
+		rebuildComboboxes();
+
 		pack();
 
 		setLocationRelativeTo(null);
@@ -300,9 +322,11 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		if (e.getSource() == forgeButton) {
 			try {
 				Emulator.getInstance().forgeBlock();
+				blockLabel.setText("Block height=" + (Emulator.getInstance().getCurrentBlock().getHeight() - 1));
 			} catch (Exception ex) {
 				JOptionPane.showMessageDialog(EmulatorWindow.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
+			rebuildComboboxes();
 			txsTableModel.fireTableDataChanged();
 			addrsTableModel.fireTableDataChanged();
 		} else if (e.getSource() == airDropButton) {
@@ -324,15 +348,33 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 			amount *= Contract.ONE_BURST;
 
 			Address receiver = Emulator.getInstance().getAddress(airDropAddress.getText());
-			Emulator.getInstance().airDrop(receiver, (long) amount);
+			Emulator emu = Emulator.getInstance();
+			emu.airDrop(receiver, (long) amount);
 
 			addrsTableModel.fireTableDataChanged();
-		} else if (e.getSource() == sendButton) {
-			String from = sendFrom.getText();
-			String to = sendTo.getText();
+			rebuildComboboxes();
 
-			if (from == null || from.trim().length() == 0 || to == null || to.length() == 0) {
-				JOptionPane.showMessageDialog(EmulatorWindow.this, "Invalid receiver address", "Error",
+		} else if (e.getSource() == callButton) {
+			Address to = (Address) sendTo.getSelectedItem();
+
+			if (to == null || to.getContract() == null) {
+				JOptionPane.showMessageDialog(EmulatorWindow.this, "Invalid contract address", "Error",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			MethodCallDialog dlg = new MethodCallDialog(this, to.getContract());
+
+			if (dlg.execute() == JOptionPane.OK_OPTION) {
+				sendMessage.setObject(dlg.getMessage());
+			} else
+				sendMessage.setObject(null);
+		} else if (e.getSource() == sendButton) {
+			Address from = (Address) sendFrom.getSelectedItem();
+			Address to = (Address) sendTo.getSelectedItem();
+
+			if (from == null || to == null) {
+				JOptionPane.showMessageDialog(EmulatorWindow.this, "Invalid address", "Error",
 						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
@@ -349,21 +391,24 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 			Emulator emu = Emulator.getInstance();
 
-			String msg = sendMessage.isShowingHint() ? null : sendMessage.getText();
-
-			emu.send(emu.getAddress(from), emu.getAddress(to), (long) amount, msg);
+			Register msgReg = (Register) sendMessage.getObject();
+			if (msgReg != null) {
+				emu.send(from, to, (long) amount, msgReg);
+			} else {
+				String msg = sendMessage.isShowingHint() ? null : sendMessage.getText();
+				emu.send(from, to, (long) amount, msg);
+			}
 			txsTableModel.fireTableDataChanged();
 			addrsTableModel.fireTableDataChanged();
 		} else if (e.getSource() == createATButton) {
 			Emulator emu = Emulator.getInstance();
 
-			String creatorRS = atCreator.getText();
-			if (creatorRS == null || creatorRS.trim().length() == 0) {
+			Address creator = (Address) atCreator.getSelectedItem();
+			if (creator == null) {
 				JOptionPane.showMessageDialog(EmulatorWindow.this, "Creator address is empty", "Error",
 						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			Address creatorAddr = emu.getAddress(creatorRS);
 
 			String atAddrRS = atAddressField.getText();
 			if (atAddrRS == null || atAddrRS.trim().length() == 0) {
@@ -398,10 +443,12 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 				return;
 			}
 
-			emu.createConctract(creatorAddr, atAddress, atClass, (long) actAmount);
+			emu.createConctract(creator, atAddress, atClass, (long) actAmount);
 
 			addrsTableModel.fireTableDataChanged();
 			txsTableModel.fireTableDataChanged();
+		} else if (e.getSource() == sendTo){
+			sendMessage.setObject(null);
 		} else if (e.getSource() == compileATButton) {
 			String atClass = atClassField.getText();
 			try {
@@ -495,6 +542,22 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
+		}
+	}
+
+	private void rebuildComboboxes() {
+		// rebuild the from and to combo boxes
+		sendFrom.removeAllItems();
+		sendTo.removeAllItems();
+		atCreator.removeAllItems();
+		ArrayList<Address> addrs = Emulator.getInstance().getAddresses();
+		for (int i = 0; i < addrs.size(); i++) {
+			sendFrom.addItem(addrs.get(i));
+			atCreator.addItem(addrs.get(i));
+			sendTo.addItem(addrs.get(i));
+
+			if (i == addrs.size() - 1)
+				sendTo.setSelectedIndex(i);
 		}
 	}
 

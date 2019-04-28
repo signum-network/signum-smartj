@@ -2,7 +2,7 @@ package bt.sample;
 
 import bt.Contract;
 import bt.Emulator;
-import bt.EmulatorWindow;
+import bt.ui.EmulatorWindow;
 import bt.Timestamp;
 import bt.Address;
 
@@ -82,7 +82,7 @@ public class UniqueToken extends Contract {
 	/**
 	 * This contract only accepts the public method calls above.
 	 * 
-	 * We will do nothing here.
+	 * We will do nothing if an unrecognized transaction comes.
 	 */
 	public void txReceived(){
 		// do nothing
@@ -106,7 +106,6 @@ public class UniqueToken extends Contract {
 		emu.createConctract(creator, token2, UniqueToken.class.getName(), Contract.ONE_BURST);
 
 		emu.forgeBlock();
-
 
 		new EmulatorWindow(UniqueToken.class);
 	}

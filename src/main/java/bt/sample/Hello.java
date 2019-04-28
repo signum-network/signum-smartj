@@ -1,7 +1,7 @@
 package bt.sample;
 
 import bt.Contract;
-import bt.EmulatorWindow;
+import bt.ui.EmulatorWindow;
 
 /**
  * A contract that simply send a "Hello!" message back.

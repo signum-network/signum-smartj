@@ -2,7 +2,7 @@ package bt.sample;
 
 import bt.Contract;
 import bt.Emulator;
-import bt.EmulatorWindow;
+import bt.ui.EmulatorWindow;
 import bt.Address;
 import bt.Timestamp;
 

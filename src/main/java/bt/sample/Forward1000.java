@@ -2,7 +2,7 @@ package bt.sample;
 
 import bt.Address;
 import bt.Contract;
-import bt.EmulatorWindow;
+import bt.ui.EmulatorWindow;
 
 /**
  * A smart contract that forwards all funds received to another account

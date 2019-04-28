@@ -3,6 +3,7 @@ package bt.compiler;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class Compiler {
 
 	public static final String INIT_METHOD = "<init>";
 	public static final String MAIN_METHOD = "main";
+	public static final String TX_RECEIVED_METHOD = "txReceived";
 	public static final int MAX_SIZE = 10 * 256;
 
 	ClassNode cn;
@@ -826,5 +828,28 @@ public class Compiler {
 
 		System.out.println("Code single line:");
 		Printer.printCode(reader.code, System.out);
+	}
+
+	public static String getSignature(java.lang.reflect.Method m){
+		String sig;
+		try {
+			java.lang.reflect.Field gSig = java.lang.reflect.Method.class.getDeclaredField("signature");
+			gSig.setAccessible(true);
+			sig = (String) gSig.get(m);
+			if(sig!=null) return m.getName()+sig;
+		} catch (IllegalAccessException | NoSuchFieldException e) { 
+			e.printStackTrace();
+		}
+	
+		StringBuilder sb = new StringBuilder(m.getName() + "(");
+		for(Class<?> c : m.getParameterTypes()) 
+			sb.append((sig=Array.newInstance(c, 0).toString())
+				.substring(1, sig.indexOf('@')));
+		return sb.append(')')
+			.append(
+				m.getReturnType()==void.class?"V":
+				(sig=Array.newInstance(m.getReturnType(), 0).toString()).substring(1, sig.indexOf('@'))
+			)
+			.toString();
 	}
 }

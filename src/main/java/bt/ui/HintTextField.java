@@ -1,4 +1,4 @@
-package bt;
+package bt.ui;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -21,16 +21,39 @@ class HintTextField extends JTextField implements FocusListener, ActionListener 
 	private JButton button;
 	private boolean showingHint;
 	private Color fgColor;
+	private Object obj;
 	
 	public HintTextField(String hint, JButton b) {
 		super(hint);
-		this.hint = hint;
 		this.button = b;
-		this.showingHint = true;
 		this.fgColor = getForeground();
-		this.setForeground(getDisabledTextColor());
+		setHint(hint);
 		super.addFocusListener(this);
 		super.addActionListener(this);
+	}
+
+	public void setHint(String hint){
+		this.hint = hint;
+		this.showingHint = true;
+		this.setForeground(getDisabledTextColor());
+	}
+
+	public void setObject(Object obj){
+		this.obj = obj;
+		super.setText("");
+		setEnabled(true);
+		focusLost(null);
+		if(obj!=null){
+			setText(obj.toString());
+			showingHint = false;
+			this.setForeground(fgColor);
+			setEnabled(false);
+			super.setText(obj.toString());
+		}
+	}
+
+	public Object getObject(){
+		return obj;
 	}
 
 	@Override

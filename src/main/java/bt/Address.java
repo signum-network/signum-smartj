@@ -34,18 +34,37 @@ public class Address {
 	/**
 	 * @return the reed solomon address
 	 */
+	@EmulatorWarning
 	public String getRsAddress() {
 		return rsAddress;
 	}
 
 	/**
+	 * @return the reed solomon address
+	 */
+	@EmulatorWarning
+	public long getId() {
+		return id;
+	}
+
+	/**
 	 * @return the current balance available
 	 */
+	@EmulatorWarning
 	public long getBalance() {
 		return balance;
 	}
 
+	/**
+	 * @return the underlying contract or null
+	 */
+	@EmulatorWarning
+	public Contract getContract() {
+		return contract;
+	}
+
 	@Override
+	@EmulatorWarning
 	public String toString() {
 		return rsAddress;
 	}

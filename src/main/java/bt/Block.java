@@ -5,12 +5,12 @@ import java.util.ArrayList;
 /**
  * Class representing a block in the block-chain.
  * 
- * This class should not be directly used, is to be part of the
+ * This class should not be directly used in contracts, is to be part of the
  * emulated block-chain only.
  * 
  * @author jjos
  */
-class Block {
+public class Block {
 
 	long height;
 	
@@ -28,10 +28,9 @@ class Block {
 		}
 
 		// Just some random numbers for the block hash
-		hash.value1 = (long) (Math.random() * Long.MAX_VALUE);
-		hash.value2 = (long) (Math.random() * Long.MAX_VALUE);
-		hash.value3 = (long) (Math.random() * Long.MAX_VALUE);
-		hash.value4 = (long) (Math.random() * Long.MAX_VALUE);		
+		for (int i = 0; i < hash.value.length; i++) {
+			hash.value[i] = (long) (Math.random() * Long.MAX_VALUE);
+		}
 	}
 	
 	public long getHeight() {

@@ -13,6 +13,7 @@ public class Transaction {
 	static final byte TYPE_PAYMENT = 0;
 	static final byte TYPE_MESSAGING = 1;
 	static final byte TYPE_AT_CREATE = 2;
+	static final byte TYPE_METHOD_CALL = 3;
 
 	Block block;
 	Address sender;
@@ -48,17 +49,10 @@ public class Transaction {
 		}
 		byte[] bytes = msg.getBytes();
 		int pos = 0;
-		for (int i = 0; i < 8 && pos < bytes.length; i++) {
-			this.msg.value1 += ((long) bytes[i] & 0xffL) << (8 * i);
-		}
-		for (int i = 0; i < 8 && pos < bytes.length; i++) {
-			this.msg.value2 += ((long) bytes[i] & 0xffL) << (8 * i);
-		}
-		for (int i = 0; i < 8 && pos < bytes.length; i++) {
-			this.msg.value3 += ((long) bytes[i] & 0xffL) << (8 * i);
-		}
-		for (int i = 0; i < 8 && pos < bytes.length; i++) {
-			this.msg.value4 += ((long) bytes[i] & 0xffL) << (8 * i);
+		for (int j = 0; j < this.msg.value.length; j++) {
+			for (int i = 0; i < 8 && pos < bytes.length; i++) {
+				this.msg.value[j] += ((long) bytes[i] & 0xffL) << (8 * i);
+			}
 		}
 	}
 
@@ -90,16 +84,20 @@ public class Transaction {
 	}
 
 	/**
+	 * @return the reciever address for this transaction
+	 */
+	@EmulatorWarning
+	public Address getReceiverAddress() {
+		return receiver;
+	}
+
+	/**
 	 * @return the amount in this transaction minus the activation fee
 	 */
 	public long getAmount() {
 		if (receiver != null && receiver.contract != null)
 			return amount - receiver.contract.activationFee;
 		return amount;
-	}
-
-	byte getType() {
-		return type;
 	}
 
 	/**
@@ -114,9 +112,25 @@ public class Transaction {
 	}
 
 	/**
+	 * @return the message in this transaction
+	 */
+	@EmulatorWarning
+	public String getMessageString() {
+		return msgString;
+	}
+
+	/**
 	 * @return the pseudo-timestamp of this transaction (block height and txid)
 	 */
 	public Timestamp getTimestamp() {
 		return ts;
+	}
+
+	public byte getType() {
+		return type;
+	}
+
+	public Block getBlock() {
+		return block;
 	}
 }

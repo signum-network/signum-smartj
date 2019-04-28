@@ -63,7 +63,7 @@ public class Emulator {
 		e.createConctract(add1, c1, "test.Auction", Contract.ONE_BURST);
 		e.forgeBlock();
 
-		e.send(add1, c1, 1000 * Contract.ONE_BURST, null);
+		e.send(add1, c1, 1000 * Contract.ONE_BURST);
 		e.forgeBlock();
 	}
 
@@ -82,26 +82,39 @@ public class Emulator {
 
 		BurstCrypto bc = BurstCrypto.getInstance();
 		long id = 0L;
-		try{
+		try {
 			// Decode without the BURST- prefix
 			BurstID ad = bc.rsDecode(rs.substring(6));
 			id = ad.getSignedLongId();
-		}
-		catch(IllegalArgumentException e){
+		} catch (IllegalArgumentException e) {
 			// not a valid address, do nothing on the emulator
 		}
 		ret = new Address(id, 0, rs);
 		addresses.add(ret);
-		
+
 		return ret;
 	}
-	
+
 	public static Emulator getInstance() {
 		return instance;
 	}
 
+	public void send(Address from, Address to, long amount) {
+		send(from, to, amount, (String) null);
+	}
+
 	public void send(Address from, Address to, long amount, String message) {
-		Transaction t = new Transaction(from, to, amount, Transaction.TYPE_PAYMENT, new Timestamp(currentBlock.height, currentBlock.txs.size()), message);
+		Transaction t = new Transaction(from, to, amount, Transaction.TYPE_PAYMENT,
+				new Timestamp(currentBlock.height, currentBlock.txs.size()), message);
+		currentBlock.txs.add(t);
+		t.block = currentBlock;
+		txs.add(t);
+	}
+
+	public void send(Address from, Address to, long amount, Register message) {
+		Transaction t = new Transaction(from, to, amount,
+				message.method != null ? Transaction.TYPE_METHOD_CALL : Transaction.TYPE_PAYMENT,
+				new Timestamp(currentBlock.height, currentBlock.txs.size()), message);
 		currentBlock.txs.add(t);
 		t.block = currentBlock;
 		txs.add(t);
@@ -114,27 +127,27 @@ public class Emulator {
 		t.block = currentBlock;
 		txs.add(t);
 	}
-	
+
 	public void airDrop(Address to, long amount) {
 		to.balance += amount;
 	}
-	
+
 	public void forgeBlock() throws Exception {
 
 		// process all pending transactions
 		for (Transaction tx : currentBlock.txs) {
-			if(tx.amount > 0 && tx.type==Transaction.TYPE_PAYMENT) {
+			if (tx.amount > 0) {
 				long ammount = Math.min(tx.sender.balance, tx.amount);
-				
+
 				tx.sender.balance -= ammount;
 				tx.receiver.balance += ammount;
 			}
 
-			if(tx.type==Transaction.TYPE_AT_CREATE) {
+			if (tx.type == Transaction.TYPE_AT_CREATE) {
 				// set the current creator variables
 				curTx = tx;
 				Object ocontract = Class.forName(tx.msgString).getConstructor().newInstance();
-				if(ocontract instanceof Contract) {
+				if (ocontract instanceof Contract) {
 					Contract c = (Contract) ocontract;
 
 					c.address = tx.receiver;
@@ -149,34 +162,52 @@ public class Emulator {
 
 		// run all contracts, operations will be pending to be forged in the next block
 		for (Transaction tx : prevBlock.txs) {
-			
-			if(tx.receiver==null)
+
+			if (tx.receiver == null)
 				continue;
-			
+
 			// Check for contract
 			Contract c = tx.receiver.contract;
-			if(c!=null && tx.type!=Transaction.TYPE_AT_CREATE && tx.amount >= c.activationFee) {
+			if (c != null && tx.type != Transaction.TYPE_AT_CREATE && tx.amount >= c.activationFee) {
 				// a contract received a message
 				c.setCurrentTx(tx);
-				
+
 				// check the message arguments to call a specific function
-				c.txReceived();
+				boolean invoked = false;
+				try {
+					if (tx.type == Transaction.TYPE_METHOD_CALL) {
+						invoked = true;
+						if (tx.msg.args[0] == null)
+							tx.msg.method.invoke(c);
+						else if (tx.msg.args[1] == null)
+							tx.msg.method.invoke(c, tx.msg.args[0]);
+						else if (tx.msg.args[1] == null)
+							tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1]);
+						else if (tx.msg.args[1] == null)
+							tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1], tx.msg.args[2]);
+					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					invoked = false;
+				}
+				if(!invoked) // invoke the default method "txReceived"
+					c.txReceived();
 			}
 		}
 	}
 
 	public Transaction getTxAfter(Address receiver, Timestamp ts) {
-		int height = (int)ts.value >> 8;
-		int txid = (int)(ts.value & 0xffffffff);
-		
+		int height = (int) ts.value >> 8;
+		int txid = (int) (ts.value & 0xffffffff);
+
 		Block b = blocks.get(height);
-		while(b!=null){
+		while (b != null) {
 			for (int i = txid; i < b.txs.size(); i++) {
 				Transaction txi = b.txs.get(i);
-				if(txi.receiver.equals(receiver))
+				if (txi.receiver.equals(receiver))
 					return txi;
 			}
-			
+
 			b = b.next;
 			txid = 0;
 		}
@@ -186,10 +217,9 @@ public class Emulator {
 	public Block getPrevBlock() {
 		return prevBlock;
 	}
-	
+
 	public Block getCurrentBlock() {
 		return currentBlock;
 	}
-	
-	
+
 }

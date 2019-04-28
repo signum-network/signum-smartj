@@ -62,7 +62,7 @@ public abstract class Contract {
 	 * @param receiver
 	 */
 	protected void sendAmount(long amount, Address receiver) {
-		Emulator.getInstance().send(address, receiver, amount, null);
+		Emulator.getInstance().send(address, receiver, amount);
 	}
 
 	/**
@@ -86,12 +86,11 @@ public abstract class Contract {
 	 * converted to characters when shown in BRS wallet. Message is always
 	 * unencrypted.
 	 * 
-	 * @param message  the message, truncated in 4*sizeof(long)
+	 * @param message  the message in form of a 4 longs register
 	 * @param receiver the address
 	 */
 	protected void sendMessage(Register message, Address receiver) {
-		// FIXME: convert register to a string here
-		Emulator.getInstance().send(address, receiver, 0, null);
+		Emulator.getInstance().send(address, receiver, 0, message);
 	}
 
 	/**
@@ -175,7 +174,8 @@ public abstract class Contract {
 		this.currentTx = current;
 	}
 
-	String getFieldValues() {
+	@EmulatorWarning
+	public String getFieldValues() {
 		String ret = "<html>";
 		Field[] fields = this.getClass().getDeclaredFields();
 		for (Field f : fields) {
