@@ -10,7 +10,7 @@ import javax.swing.JButton;
 import javax.swing.JTextField;
 
 /**
- * A textfield with a hint value.
+ * A textfield with a hint value and an optional underlying object.
  * 
  * @author jjos
  */
@@ -24,7 +24,7 @@ class HintTextField extends JTextField implements FocusListener, ActionListener 
 	private Object obj;
 	
 	public HintTextField(String hint, JButton b) {
-		super(hint);
+		super(hint, 8);
 		this.button = b;
 		this.fgColor = getForeground();
 		setHint(hint);

@@ -101,9 +101,8 @@ public class UniqueToken extends Contract {
 	 * This function is not compiled into bytecode and do not go to the blockchain.
 	 */
 	public static void main(String[] args) throws Exception {
-		Emulator emu = Emulator.getInstance();
-
 		// some initialization code to make things easier to debug
+		Emulator emu = Emulator.getInstance();
 		Address creator = Emulator.getInstance().getAddress("CREATOR");
 		emu.airDrop(creator, 1000*Contract.ONE_BURST);
 

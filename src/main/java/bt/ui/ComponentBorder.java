@@ -15,6 +15,8 @@ import javax.swing.border.*;
  *  component a Border is added to the parent componet such that the insets of
  *  the Border will reserve space for the child component to be painted without
  *  affecting the parent component.
+ * 
+ *  Original version from http://www.camick.com/java/source/ComponentBorder.java
  */
 public class ComponentBorder implements Border
 {

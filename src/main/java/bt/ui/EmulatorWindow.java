@@ -137,15 +137,16 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		sendTo.addActionListener(this);
 		cmdPanel.add(sendAmount = new HintTextField("Amount", sendButton));
 		sendAmount.setToolTipText("The amount to send in BURST = 10\u2078 NQT");
-		cmdPanel.add(sendMessage = new HintTextField("Message", sendButton));
-		sendMessage.setToolTipText("The message to send");
+		cmdPanel.add(sendMessage = new HintTextField("Message/Function", sendButton));
+		sendMessage.setToolTipText("The message to send or contract function to call");
 
 		callButton = new JButton();
 		callButton.addActionListener(this);
 		callButton.setToolTipText("Function call");
 		callButton.setIcon(IconFontSwing.buildIcon(FontAwesome.PENCIL_SQUARE_O, 14));
 		ComponentBorder cb = new ComponentBorder(callButton);
-		cb.setGap(0);
+		cb.setAdjustInsets(true);
+		cb.setGap(2);
 		cb.install(sendMessage);
 
 		cmdPanel.add(createATButton = new JButton("Create Contract"));
