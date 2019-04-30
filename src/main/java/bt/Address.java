@@ -25,6 +25,7 @@ public class Address {
 	 * @param balance
 	 * @param rs
 	 */
+	@EmulatorWarning
 	Address(long id, long balance, String rs) {
 		this.id = id;
 		this.balance = balance;

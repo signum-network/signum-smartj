@@ -73,10 +73,11 @@ public abstract class Contract {
 	 * unencrypted.
 	 * 
 	 * @param message  the message, truncated in 4*sizeof(long)
+	 * @param amount the amount or 0 to send the message only
 	 * @param receiver the address
 	 */
-	protected void sendMessage(String message, Address receiver) {
-		Emulator.getInstance().send(address, receiver, 0, message);
+	protected void sendMessage(String message, long amount, Address receiver) {
+		Emulator.getInstance().send(address, receiver, amount, message);
 	}
 
 	/**
