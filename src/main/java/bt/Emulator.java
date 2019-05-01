@@ -86,7 +86,7 @@ public class Emulator {
 			// Decode without the BURST- prefix
 			BurstID ad = bc.rsDecode(rs.substring(6));
 			id = ad.getSignedLongId();
-		} catch (IllegalArgumentException e) {
+		} catch (Exception e) {
 			// not a valid address, do nothing on the emulator
 		}
 		ret = new Address(id, 0, rs);
@@ -181,9 +181,9 @@ public class Emulator {
 							tx.msg.method.invoke(c);
 						else if (tx.msg.args[1] == null)
 							tx.msg.method.invoke(c, tx.msg.args[0]);
-						else if (tx.msg.args[1] == null)
+						else if (tx.msg.args[2] == null)
 							tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1]);
-						else if (tx.msg.args[1] == null)
+						else
 							tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1], tx.msg.args[2]);
 					}
 				} catch (Exception ex) {
