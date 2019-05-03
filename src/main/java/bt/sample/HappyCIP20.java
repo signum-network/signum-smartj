@@ -44,8 +44,10 @@ public class HappyCIP20 extends Contract {
 			tx = getTxAfterTimestamp(tx.getTimestamp());
 		}
 
-		if(!alreadyGotSome)
-			sendMessage("Happy CIP20!", AMOUNT, receiver);
+		if(!alreadyGotSome){
+			sendMessage("Happy CIP20!", receiver);
+			sendAmount(AMOUNT, receiver);
+		}
 	}
 
 	public static void main(String[] args) {
