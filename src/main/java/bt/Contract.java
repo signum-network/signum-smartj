@@ -154,6 +154,14 @@ public abstract class Contract {
 	}
 
 	/**
+	 * @param tx
+	 * @return the message for the given transaction
+	 */
+	protected Register getMessage(Transaction tx){
+		return tx.getMessage();
+	}
+
+	/**
 	 * A new transaction was received.
 	 * 
 	 * Overload this function to implement your contract.
