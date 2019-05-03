@@ -17,6 +17,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -61,7 +62,6 @@ public class Compiler {
 
 	ArrayList<Call> pendingCalls = new ArrayList<Call>();
 
-	boolean hasPulicMethods = false;
 	String className;
 
 	int lastFreeVar;
@@ -115,6 +115,18 @@ public class Compiler {
 			default:
 				return "cst: " + (svalue != null ? svalue : lvalue != null ? lvalue : address);
 			}
+		}
+	}
+
+	class Offset {
+		int start;
+		int position;
+		LabelNode label;
+
+		Offset(int s, int p, LabelNode l) {
+			start = s;
+			position = p;
+			label = l;
 		}
 	}
 
@@ -186,8 +198,12 @@ public class Compiler {
 
 	private void initialCode() {
 		// First add the jump for the constructor
-		code.put(OpCode.e_op_code_JMP_SUB);
-		code.putInt(methods.get(INIT_METHOD).address);
+		Method initMethod = methods.get(INIT_METHOD);
+		if (initMethod.code.position() > 1) {
+			// only if we actually have a construction (it is not just the RET command)
+			code.put(OpCode.e_op_code_JMP_SUB);
+			code.putInt(methods.get(INIT_METHOD).address);
+		}
 
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
@@ -203,10 +219,12 @@ public class Compiler {
 		code.putInt(lastTxReceived);
 
 		// if zero we will FINISH, otherwise continue
-		code.put(OpCode.e_op_code_BNZ_DAT);
-		code.putInt(lastTxReceived);
-		code.put((byte) 7);
-		code.put(OpCode.e_op_code_FIN_IMD);
+		// FIXME: check if this is really necessary, since there should always be a
+		// transaction
+		// code.put(OpCode.e_op_code_BNZ_DAT);
+		// code.putInt(lastTxReceived);
+		// code.put((byte) 7);
+		// code.put(OpCode.e_op_code_FIN_IMD);
 
 		// Store the timestamp of the last transaction
 		code.put(OpCode.e_op_code_EXT_FUN_RET);
@@ -231,6 +249,8 @@ public class Compiler {
 		// determine the address of each method
 		int address = startMethodsPosition; // position of the first method
 		for (Method m : methods.values()) {
+			if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
+				continue; // empty constructor
 			m.address = address;
 			address += m.code.position();
 		}
@@ -243,6 +263,8 @@ public class Compiler {
 
 		// add methods
 		for (Method m : methods.values()) {
+			if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
+				continue; // empty constructor
 			code.put(m.code.array(), 0, m.code.position());
 		}
 	}
@@ -310,6 +332,8 @@ public class Compiler {
 		ByteBuffer code = ByteBuffer.allocate(Compiler.MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
+		ArrayList<Offset> offsets = new ArrayList<Offset>();
+
 		m.code = code;
 
 		if (m.node.name.equals(INIT_METHOD)) {
@@ -327,11 +351,27 @@ public class Compiler {
 
 			if (opcode == -1) {
 				// This is a label or line number information
+				if (insn instanceof LabelNode) {
+					LabelNode ln = (LabelNode) insn;
+
+					// check if we need to resolve an offset for this label
+					for (Offset o : offsets) {
+						if (o.label == ln) {
+							int offset = code.position() - o.start;
+							if (offset > 0xff) {
+								addError(ln, "Conditional offset too large");
+							}
+							code.array()[o.position] = (byte) offset;
+							offsets.remove(o);
+							break;
+						}
+					}
+
+					System.out.println("label: " + ln.getLabel().toString());
+				}
 				/*
-				 * if(insn instanceof LabelNode) { LabelNode ln = (LabelNode) insn;
-				 * 
-				 * System.out.println("label: " + ln.getLabel().toString()); } else if(insn
-				 * instanceof LineNumberNode) { LineNumberNode ln = (LineNumberNode) insn;
+				 * else if(insn instanceof LineNumberNode) { LineNumberNode ln =
+				 * (LineNumberNode) insn;
 				 * 
 				 * System.out.println("line: " + ln.line); } else if(insn instanceof FrameNode)
 				 * { FrameNode fn = (FrameNode) insn;
@@ -546,6 +586,12 @@ public class Compiler {
 						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
 							pushVar(m, lastTxReceived);
+						} else if (mi.name.equals("getCurrentBalance")) {
+							stack.pollLast(); // remove the "this" from stack
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_Current_Balance);
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("parseAddress")) {
 							StackVar address = stack.pollLast();
 							stack.pollLast(); // remove the "this" from stack
@@ -614,8 +660,6 @@ public class Compiler {
 							int pos = 0;
 							for (int a = 0; a < 4; a++) {
 								long value = 0;
-								if (pos >= msg.svalue.length())
-									break;
 								for (int i = 0; i < 8; i++, pos++) {
 									if (pos >= msg.svalue.length())
 										break;
@@ -690,31 +734,28 @@ public class Compiler {
 						} else {
 							System.err.println("Method problem: " + mi.name + " " + owner);
 						}
-					}
-					else if(owner.equals(Object.class.getName())){
+					} else if (owner.equals(Object.class.getName())) {
 						if (mi.name.equals("equals")) {
 							popVar(m, tmpVar1); // the obj 1
 							popVar(m, tmpVar2); // the obj 2
-					
+
 							code.put(OpCode.e_op_code_SUB_DAT);
 							code.putInt(tmpVar1);
 							code.putInt(tmpVar2);
-					
+
 							code.put(OpCode.e_op_code_CLR_DAT);
 							code.putInt(tmpVar2);
 							code.put(OpCode.e_op_code_BNZ_DAT);
 							code.putInt(tmpVar1);
 							code.put((byte) 0x0b); // offset
-					
+
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar2);
 							pushVar(m, tmpVar2);
-						}
-						else {
+						} else {
 							System.err.println("Method not implemented: " + mi.name + " " + owner);
 						}
-					}
-					else {
+					} else {
 						System.err.println("Class not implemented: " + mi.owner);
 					}
 				} else {
@@ -776,20 +817,71 @@ public class Compiler {
 
 			case LCMP: // push 0 if the two longs are the same, 1 if value1 is greater than value2, -1
 						// otherwise
+				popVar(m, tmpVar1);
+				popVar(m, tmpVar2);
+				code.put(OpCode.e_op_code_SUB_DAT);
+				code.putInt(tmpVar1);
+				code.putInt(tmpVar2);
+				pushVar(m, tmpVar1);
+
 				System.out.println("lcmp");
 				break;
 
 			case IFEQ:
 			case IFNE:
-			case IFLT:
 			case IFGE:
 			case IFGT:
 			case IFLE:
-			case GOTO:
+			case IFLT:
 			case IFNULL:
 			case IFNONNULL:
+			case GOTO:
 				if (insn instanceof JumpInsnNode) {
 					JumpInsnNode jmp = (JumpInsnNode) insn;
+
+					if (opcode != GOTO) {
+						popVar(m, tmpVar1);
+					}
+					
+					code.put(OpCode.e_op_code_CLR_DAT);
+					code.putInt(tmpVar2);
+
+					int offsetStart = code.position();
+
+					switch (opcode) {
+					case IFEQ:
+					case IFNULL:
+						code.put(OpCode.e_op_code_BZR_DAT);
+						code.putInt(tmpVar1);
+						break;
+
+					case IFNE:
+					case IFNONNULL:
+						code.put(OpCode.e_op_code_BZR_DAT);
+						code.putInt(tmpVar1);
+						break;
+
+					case IFGE:
+					case IFGT:
+						code.put(opcode == IFGE ? OpCode.e_op_code_BGE_DAT : OpCode.e_op_code_BGT_DAT);
+						code.putInt(tmpVar1);
+						code.putInt(tmpVar2);
+						break;
+					case IFLE:
+					case IFLT:
+						code.put(opcode == IFLE ? OpCode.e_op_code_BLE_DAT : OpCode.e_op_code_BLT_DAT);
+						code.putInt(tmpVar1);
+						code.putInt(tmpVar2);
+						break;
+					case GOTO:
+						// the JMP_ADR command requires an absolute address, lets use a BZR
+						code.put(OpCode.e_op_code_BZR_DAT);
+						code.putInt(tmpVar2); // tmpVar2 is always zero here, so we have our GOTO 
+						break;
+					}
+
+					offsets.add(new Offset(offsetStart, code.position(), jmp.label));
+					code.put((byte) 0); // offset position to be resolved later
 
 					System.out.println("ifeq: " + jmp.label.getLabel());
 				} else {
@@ -830,26 +922,24 @@ public class Compiler {
 		Printer.printCode(reader.code, System.out);
 	}
 
-	public static String getSignature(java.lang.reflect.Method m){
+	public static String getSignature(java.lang.reflect.Method m) {
 		String sig;
 		try {
 			java.lang.reflect.Field gSig = java.lang.reflect.Method.class.getDeclaredField("signature");
 			gSig.setAccessible(true);
 			sig = (String) gSig.get(m);
-			if(sig!=null) return m.getName()+sig;
-		} catch (IllegalAccessException | NoSuchFieldException e) { 
+			if (sig != null)
+				return m.getName() + sig;
+		} catch (IllegalAccessException | NoSuchFieldException e) {
 			e.printStackTrace();
 		}
-	
+
 		StringBuilder sb = new StringBuilder(m.getName() + "(");
-		for(Class<?> c : m.getParameterTypes()) 
-			sb.append((sig=Array.newInstance(c, 0).toString())
-				.substring(1, sig.indexOf('@')));
+		for (Class<?> c : m.getParameterTypes())
+			sb.append((sig = Array.newInstance(c, 0).toString()).substring(1, sig.indexOf('@')));
 		return sb.append(')')
-			.append(
-				m.getReturnType()==void.class?"V":
-				(sig=Array.newInstance(m.getReturnType(), 0).toString()).substring(1, sig.indexOf('@'))
-			)
-			.toString();
+				.append(m.getReturnType() == void.class ? "V"
+						: (sig = Array.newInstance(m.getReturnType(), 0).toString()).substring(1, sig.indexOf('@')))
+				.toString();
 	}
 }

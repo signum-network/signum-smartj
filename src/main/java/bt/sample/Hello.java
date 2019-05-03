@@ -13,7 +13,7 @@ public class Hello extends Contract {
 
 	@Override
 	public void txReceived() {
-		sendMessage("Hello!", 0, getCurrentTx().getSenderAddress());
+		sendMessage("Hello, World", getCurrentTx().getSenderAddress());
 	}
 
 	public static void main(String[] args) {
