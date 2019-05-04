@@ -219,7 +219,7 @@ public class Compiler {
 		code.putInt(lastTxReceived);
 
 		// if zero we will FINISH, otherwise continue
-		// FIXME: check if this is really necessary, since there should always be a
+		// TODO: check if this is really necessary, since there should always be a
 		// transaction
 		// code.put(OpCode.e_op_code_BNZ_DAT);
 		// code.putInt(lastTxReceived);

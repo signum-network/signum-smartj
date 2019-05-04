@@ -11,6 +11,7 @@ import bt.ui.EmulatorWindow;
  */
 public class Forward extends Contract {
 	
+	public static final String ADDRESS = "BURST-TSLQ-QLR9-6HRD-HCY22";
 	Address bmf;
 
 	/**
@@ -18,7 +19,7 @@ public class Forward extends Contract {
 	 * reaches the contract.
 	 */
 	public Forward(){
-		bmf = parseAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
+		bmf = parseAddress(ADDRESS);
 	}
 	
 	/**
