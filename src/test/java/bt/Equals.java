@@ -1,3 +1,5 @@
+package bt;
+
 import bt.Contract;
 import bt.ui.EmulatorWindow;
 
