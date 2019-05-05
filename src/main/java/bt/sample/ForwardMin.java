@@ -10,30 +10,30 @@ import bt.ui.EmulatorWindow;
  * 
  * @author jjos
  */
-public class Forward1000 extends Contract {
+public class ForwardMin extends Contract {
 	
 	Address bmf;
-	long minAmount;
+	public static final long MIN_AMOUNT = 1000*Contract.ONE_BURST;
+	public static final String ADDRESS = "BURST-TSLQ-QLR9-6HRD-HCY22";
 
 	/**
 	 * Constructor, when in blockchain the constructor is called when the first TX
 	 * reaches the contract.
 	 */
-	public Forward1000(){
-		bmf = parseAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
-		minAmount = 1000*Contract.ONE_BURST;
+	public ForwardMin(){
+		bmf = parseAddress(ADDRESS);
 	}
 	
 	/**
 	 * Any new transaction received will be handled by this function.
 	 */
 	public void txReceived(){
-		if(getCurrentBalance() > minAmount)
-			sendBalance(bmf);
+		if(getCurrentBalance() > MIN_AMOUNT)
+			sendAmount(MIN_AMOUNT, bmf);
 	}
 
 	public static void main(String[] args) {
-		new EmulatorWindow(Forward1000.class);
+		new EmulatorWindow(TipThanks.class);
 	}
 }
 

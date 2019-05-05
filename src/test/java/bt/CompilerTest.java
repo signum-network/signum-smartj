@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.sample.Forward;
+import bt.sample.TipThanks;
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
@@ -18,31 +19,31 @@ import io.reactivex.Single;
 
 import static org.junit.Assert.*;
 
-import java.io.IOException;
-
 import org.junit.BeforeClass;
 
 /**
- * We assume a localhost testnet with 0 seconds mock mining is available
- * for the tests to work.
+ * We assume a localhost testnet with 0 seconds mock mining is available for the
+ * tests to work.
  * 
  * @author jjos
  */
 public class CompilerTest {
 
-    static final String PASSPHRASE = "block talk, easy to use smart contracts for burst";
+    static final String PASSPHRASE  = "block talk, easy to use smart contracts for burst";
+    static final String PASSPHRASE2 = "block talk: easy to use smart contracts for burst";
+    static final String PASSPHRASE3 = "block talk! easy to use smart contracts for burst";
     static final String NODE = "http://localhost:6876";
 
     static BurstNodeService bns;
     static BurstCrypto bc;
     static BurstAddress myAddress;
-    static byte[] myPubKey;
 
     public static void main(String[] args) throws Exception {
         CompilerTest t = new CompilerTest();
         t.setup();
-        
-        t.testForward();
+
+        // t.testForward();
+        t.testForwardMin();
     }
 
     @BeforeClass
@@ -51,54 +52,96 @@ public class CompilerTest {
         bc = BurstCrypto.getInstance();
 
         myAddress = bc.getBurstAddressFromPassphrase(PASSPHRASE);
-        myPubKey = bc.getPublicKey(PASSPHRASE);
 
         // forge a fitst block to get some balance
         forgeBlock();
     }
 
     @Test
-    public void testForward() throws IOException {
+    public void testForward() throws Exception {
         BurstAddress address = BurstAddress.fromEither(Forward.ADDRESS);
 
         // send some burst to make sure the account exist
-        sendAmount(address, BurstValue.fromBurst(1));
+        sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1));
         forgeBlock();
 
         AccountResponse bmfAccount = bns.getAccount(address).blockingGet();
-        BurstValue balance = bmfAccount.getBalanceNQT();
+        BurstValue balance = bmfAccount.getUnconfirmedBalanceNQT();
         BurstValue actvFee = BurstValue.fromBurst(1);
         BurstValue amount = BurstValue.fromBurst(10);
 
         ATResponse at = registerAT(Forward.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
-        sendAmount(at.getAt(), amount);
+        sendAmount(PASSPHRASE, at.getAt(), amount);
         forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
-        BurstValue newBalance = bmfAccount.getBalanceNQT();
+        BurstValue newBalance = bmfAccount.getUnconfirmedBalanceNQT();
         double result = newBalance.doubleValue() - balance.doubleValue() - actvFee.doubleValue();
 
         assertEquals("Value not forwarded", result, 0, 1e-3);
     }
-    
-    private BroadcastTransactionResponse sendAmount(BurstAddress receiver, BurstValue value){
-        return bns.generateTransaction(receiver, myPubKey,
-                value, BurstValue.fromBurst(0.1), 1440).flatMap(response -> {
-                    byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
-                    byte[] signedTransactionBytes = bc.signTransaction(PASSPHRASE, unsignedTransactionBytes);
-                    return bns.broadcastTransaction(signedTransactionBytes);
-                }).blockingGet();
+
+    @Test
+    public void testForwardMin() throws Exception {
+        BurstAddress address = BurstAddress.fromEither(TipThanks.ADDRESS);
+
+        // send some burst to make sure the account exist
+        sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1));
+        forgeBlock();
+
+        AccountResponse bmfAccount = bns.getAccount(address).blockingGet();
+        BurstValue balance = bmfAccount.getUnconfirmedBalanceNQT();
+        BurstValue actvFee = BurstValue.fromBurst(1);
+        double amount = TipThanks.MIN_AMOUNT * 0.8;
+
+        ATResponse at = registerAT(TipThanks.class, actvFee);
+        assertNotNull("AT could not be registered", at);
+
+        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        forgeBlock();
+
+        bmfAccount = bns.getAccount(address).blockingGet();
+        BurstValue newBalance = bmfAccount.getUnconfirmedBalanceNQT();
+        double result = newBalance.doubleValue() - balance.doubleValue();
+        assertTrue("Value forwarded while it should not", result < amount);
+
+        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        forgeBlock();
+
+        bmfAccount = bns.getAccount(address).blockingGet();
+        newBalance = bmfAccount.getUnconfirmedBalanceNQT();
+        result = newBalance.doubleValue() - balance.doubleValue();
+        assertTrue("Value not forwarded as it should", result*Contract.ONE_BURST > amount);
     }
 
-    private void forgeBlock() {
-        Single<SubmitNonceResponse> submit = bns.submitNonce(PASSPHRASE, "0", null);
+    private BroadcastTransactionResponse sendAmount(String passFrom, BurstAddress receiver, BurstValue value) {
+        byte[] pubKeyFrom = bc.getPublicKey(passFrom);
+
+        return bns.generateTransaction(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440).flatMap(response -> {
+            byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
+            byte[] signedTransactionBytes = bc.signTransaction(PASSPHRASE, unsignedTransactionBytes);
+            return bns.broadcastTransaction(signedTransactionBytes);
+        }).blockingGet();
+    }
+
+    private void forgeBlock(){
+        forgeBlock(PASSPHRASE);
+    }
+
+    private void forgeBlock(String pass) {
+        Single<SubmitNonceResponse> submit = bns.submitNonce(pass, "0", null);
         SubmitNonceResponse r = submit.blockingGet();
         assertTrue(r.getResult(), r.getResult().equals("success"));
+        try {
+             Thread.sleep(200);
+        } catch (InterruptedException e) {
+             e.printStackTrace();
+        }
     }
 
-    private ATResponse registerAT(Class<?> c, BurstValue activationFee) throws IOException {
+    private ATResponse registerAT(Class<?> c, BurstValue activationFee) throws Exception {
         Compiler comp = new Compiler(c.getName());
         String name = c.getSimpleName() + System.currentTimeMillis();
         comp.compile();
@@ -117,12 +160,15 @@ public class CompilerTest {
         }).blockingGet();
 
         forgeBlock();
+        Thread.sleep(400);
 
         AccountATsResponse ats = bns.getAccountATs(myAddress).blockingGet();
         for(ATResponse ati : ats.getATs()){
             if(ati.getName().equals(name))
                 return ati;
+            System.out.println(ati.getName());
         }
+        System.out.println("AT not found: " + name);
         return null;
     }
 }

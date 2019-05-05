@@ -68,6 +68,7 @@ public class Compiler {
 	int lastTxReceived;
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3;
+	int maxLocals;
 
 	public Compiler(String className) throws IOException {
 		this.className = className;
@@ -80,10 +81,11 @@ public class Compiler {
 		this.cn = classNode;
 	}
 
-	static final int STACK_LOCAL = 0;
-	static final int STACK_VAR_ADDRESS = 1;
-	static final int STACK_CONSTANT = 2;
-	static final int STACK_PUSH = 3;
+	static final int STACK_THIS = 0;
+	static final int STACK_LOCAL = 1;
+	static final int STACK_VAR_ADDRESS = 2;
+	static final int STACK_CONSTANT = 3;
+	static final int STACK_PUSH = 4;
 
 	class StackVar {
 		public StackVar(int type, Object value) {
@@ -105,6 +107,8 @@ public class Compiler {
 		@Override
 		public String toString() {
 			switch (type) {
+			case STACK_THIS:
+				return "this";
 			case STACK_LOCAL:
 				return "local: " + address;
 			case STACK_VAR_ADDRESS:
@@ -119,11 +123,13 @@ public class Compiler {
 	}
 
 	class Offset {
+		AbstractInsnNode insn;
 		int start;
 		int position;
 		LabelNode label;
 
-		Offset(int s, int p, LabelNode l) {
+		Offset(AbstractInsnNode i, int s, int p, LabelNode l) {
+			insn = i;
 			start = s;
 			position = p;
 			label = l;
@@ -140,7 +146,7 @@ public class Compiler {
 			addError(null, "A contract should derive from " + Contract.class.getName());
 		}
 
-		lastFreeVar = 0;
+		lastFreeVar = maxLocals = 0;
 
 		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
@@ -332,6 +338,8 @@ public class Compiler {
 		ByteBuffer code = ByteBuffer.allocate(Compiler.MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
+		HashMap<LabelNode,Integer> labels = new HashMap<>();
+
 		ArrayList<Offset> offsets = new ArrayList<Offset>();
 
 		m.code = code;
@@ -353,20 +361,7 @@ public class Compiler {
 				// This is a label or line number information
 				if (insn instanceof LabelNode) {
 					LabelNode ln = (LabelNode) insn;
-
-					// check if we need to resolve an offset for this label
-					for (Offset o : offsets) {
-						if (o.label == ln) {
-							int offset = code.position() - o.start;
-							if (offset > 0xff) {
-								addError(ln, "Conditional offset too large");
-							}
-							code.array()[o.position] = (byte) offset;
-							offsets.remove(o);
-							break;
-						}
-					}
-
+					labels.put(ln, code.position());
 					System.out.println("label: " + ln.getLabel().toString());
 				}
 				/*
@@ -393,13 +388,16 @@ public class Compiler {
 			switch (opcode) {
 			case ILOAD:
 			case LLOAD:
-				System.err.println("problem");
-				break;
 			case ALOAD:
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
-					stack.add(new StackVar(STACK_LOCAL, vi.var));
-
+					if (vi.var > 0) {
+						pushVar(m, lastFreeVar + vi.var);
+						maxLocals = Math.max(maxLocals, vi.var);
+					} else {
+						// local 0 is 'this'
+						stack.add(new StackVar(STACK_THIS, 0));
+					}
 					System.out.println((opcode < ISTORE ? "load" : "store") + " local: " + vi.var);
 				} else {
 					System.err.println("problem");
@@ -411,7 +409,10 @@ public class Compiler {
 			case ASTORE:
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
-
+					if(vi.var==0)
+						System.err.println("problem");
+					// local 0 is 'this', others are stored after the last variable
+					popVar(m, lastFreeVar + vi.var);
 					System.out.println("store local: " + vi.var);
 				} else {
 					System.err.println("problem");
@@ -516,10 +517,12 @@ public class Compiler {
 				pushVar(m, tmpVar1);
 				break;
 
-			case RETURN:
 			case IRETURN:
 			case LRETURN:
 			case ARETURN:
+				// remove the return value from the stack
+				stack.pollLast();
+			case RETURN:
 				// Recalling that every method call will use JMP_SUB
 				System.out.println("return");
 				code.put(OpCode.e_op_code_RET_SUB);
@@ -528,7 +531,7 @@ public class Compiler {
 			case DUP: // duplicate the value on top of the stack
 			{
 				StackVar var = popVar(m, tmpVar1);
-				if (var.type == STACK_LOCAL) {
+				if (var.type == STACK_THIS) {
 					stack.addLast(var);
 					stack.addLast(var);
 				} else if (var.type == STACK_PUSH) {
@@ -692,6 +695,11 @@ public class Compiler {
 							code.put(OpCode.e_op_code_JMP_SUB);
 							pendingCalls.add(new Call(mcall, code.position()));
 							code.putInt(0); // address, to be resolved latter
+
+							// check if the method has a return value
+							if (!mcall.node.desc.endsWith("V")) {
+								stack.add(new StackVar(STACK_PUSH, 0));
+							}
 						}
 					} else if (owner.equals(Transaction.class.getName())) {
 						// call on a transaction object
@@ -817,8 +825,8 @@ public class Compiler {
 
 			case LCMP: // push 0 if the two longs are the same, 1 if value1 is greater than value2, -1
 						// otherwise
-				popVar(m, tmpVar1);
 				popVar(m, tmpVar2);
+				popVar(m, tmpVar1);
 				code.put(OpCode.e_op_code_SUB_DAT);
 				code.putInt(tmpVar1);
 				code.putInt(tmpVar2);
@@ -842,7 +850,7 @@ public class Compiler {
 					if (opcode != GOTO) {
 						popVar(m, tmpVar1);
 					}
-					
+
 					code.put(OpCode.e_op_code_CLR_DAT);
 					code.putInt(tmpVar2);
 
@@ -876,11 +884,11 @@ public class Compiler {
 					case GOTO:
 						// the JMP_ADR command requires an absolute address, lets use a BZR
 						code.put(OpCode.e_op_code_BZR_DAT);
-						code.putInt(tmpVar2); // tmpVar2 is always zero here, so we have our GOTO 
+						code.putInt(tmpVar2); // tmpVar2 is always zero here, so we have our GOTO
 						break;
 					}
 
-					offsets.add(new Offset(offsetStart, code.position(), jmp.label));
+					offsets.add(new Offset(insn, offsetStart, code.position(), jmp.label));
 					code.put((byte) 0); // offset position to be resolved later
 
 					System.out.println("ifeq: " + jmp.label.getLabel());
@@ -893,6 +901,20 @@ public class Compiler {
 				System.err.println("opcode: " + opcode + " " + insn.toString());
 				break;
 			}
+		}
+
+		// resolve all offsets
+		for (Offset o : offsets) {
+			Integer position = labels.get(o.label);
+			if(position==null){
+				System.err.println("Label not found: " + o.label);
+				continue;
+			}
+			int offset = position - o.start;
+			if (offset > 0xff) {
+					addError(o.insn, "Conditional offset too large");
+			}
+			code.array()[o.position] = (byte) offset;
 		}
 
 		m.parsing = false;
