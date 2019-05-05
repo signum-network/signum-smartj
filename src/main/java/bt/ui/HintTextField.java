@@ -35,6 +35,7 @@ class HintTextField extends JTextField implements FocusListener, ActionListener 
 	public void setHint(String hint){
 		this.hint = hint;
 		this.showingHint = true;
+		this.setToolTipText(hint);
 		this.setForeground(getDisabledTextColor());
 	}
 

@@ -2,27 +2,20 @@ package bt.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.LookAndFeel;
 import javax.swing.ToolTipManager;
@@ -36,15 +29,6 @@ import bt.Contract;
 import bt.Emulator;
 import bt.Register;
 import bt.Transaction;
-import bt.compiler.Compiler;
-import bt.compiler.Printer;
-import burst.kit.burst.BurstCrypto;
-import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.BRSError;
-import burst.kit.entity.response.BroadcastTransactionResponse;
-import burst.kit.entity.response.GenerateTransactionResponse;
-import burst.kit.service.BurstNodeService;
-import io.reactivex.Single;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 
@@ -164,7 +148,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 		compileATButton = new JButton();
 		compileATButton.addActionListener(this);
-		compileATButton.setToolTipText("Compile Contract");
+		compileATButton.setToolTipText("Compile/Publish contract");
 		compileATButton.setIcon(IconFontSwing.buildIcon(FontAwesome.SERVER, 14));
 		cb = new ComponentBorder(compileATButton);
 		cb.setGap(0);
@@ -452,97 +436,8 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 			sendMessage.setObject(null);
 		} else if (e.getSource() == compileATButton) {
 			String atClass = atClassField.getText();
-			try {
-				Class.forName(atClass);
-
-				Compiler comp = new Compiler(atClass);
-
-				comp.compile();
-				comp.link();
-
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				PrintStream out = new PrintStream(baos, true, "UTF-8");
-				Printer.printCode(comp.getCode(), out);
-				String code = new String(baos.toByteArray(), StandardCharsets.UTF_8);
-
-				baos.reset();
-				Printer.print(comp.getCode(), out);
-				String codeForm = new String(baos.toByteArray(), StandardCharsets.UTF_8);
-
-				final JDialog dlg = new JDialog(this, "Compiled Contract", ModalityType.APPLICATION_MODAL);
-				dlg.setLayout(new BorderLayout());
-
-				byte[] bcode = new byte[comp.getCode().position()];
-				System.arraycopy(comp.getCode().array(), 0, bcode, 0, bcode.length);
-
-				if (false) {
-					String passphrase = "raised optimal wired corner future designs easier middle hoped missouri sessions clinton";
-					String name = atClass;
-					String description = atClass;
-
-					BurstCrypto bc = BurstCrypto.getInstance();
-					BurstNodeService bns = BurstNodeService.getInstance("http://at-testnet.burst-alliance.org:6876/");
-
-					int deadline = 1440; // 4 days (in blocks of 4 minutes)
-					byte[] pubkey = bc.getPublicKey(passphrase);
-					Single<GenerateTransactionResponse> createAT = bns.generateCreateATTransaction(pubkey,
-							BurstValue.fromBurst(1), deadline, name, description, new byte[0], bcode, new byte[0], 1, 1,
-							1, BurstValue.fromBurst(1));
-
-					createAT.flatMap(response -> {
-						// Now we need to locally sign the transaction.
-						// Get the unsigned transaction bytes from the node's response
-						byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
-						// Locally sign the transaction using our passphrase
-						byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
-						// Broadcast the transaction through the node, still not sending it any
-						// sensitive information. Use this as the result of the flatMap so we do not
-						// have to call subscribe() twice
-						return bns.broadcastTransaction(signedTransactionBytes);
-					}).subscribe(this::onTransactionSent, this::handleError);
-
-				}
-
-				JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-				dlg.add(buttons, BorderLayout.SOUTH);
-
-				JButton okButton = new JButton("OK");
-				okButton.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						dlg.setVisible(false);
-					}
-				});
-				buttons.add(okButton);
-
-				JPanel center = new JPanel(new BorderLayout());
-
-				JPanel codePanel = new JPanel(new BorderLayout());
-				codePanel.setBorder(new TitledBorder("AT BYTECODE"));
-				JTextArea codeArea = new JTextArea(code, 20, 20);
-				codeArea.setLineWrap(true);
-				JScrollPane codeScroll = new JScrollPane(codeArea);
-				codePanel.add(codeScroll, BorderLayout.CENTER);
-				center.add(codePanel, BorderLayout.LINE_START);
-
-				JPanel codePanelForm = new JPanel(new BorderLayout());
-				codePanelForm.setBorder(new TitledBorder("AT FORMATTED BYTECODE"));
-				JTextArea codeAreaForm = new JTextArea(codeForm, 10, 30);
-				JScrollPane codeScrollForm = new JScrollPane(codeAreaForm);
-				codePanelForm.add(codeScrollForm, BorderLayout.CENTER);
-				center.add(codePanelForm, BorderLayout.CENTER);
-
-				dlg.add(center, BorderLayout.CENTER);
-
-				dlg.pack();
-				dlg.setLocationRelativeTo(this);
-				dlg.setVisible(true);
-			} catch (Exception ex) {
-				ex.printStackTrace();
-				JOptionPane.showMessageDialog(EmulatorWindow.this, "AT compile problem: " + ex.getMessage(), "Error",
-						JOptionPane.ERROR_MESSAGE);
-				return;
-			}
+			CompileDialog dlg = new CompileDialog(this, atClass);
+			dlg.execute();
 		}
 	}
 
@@ -559,19 +454,6 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 
 			if (i == addrs.size() - 1)
 				sendTo.setSelectedIndex(i);
-		}
-	}
-
-	private void onTransactionSent(BroadcastTransactionResponse response) {
-		// Get the transaction ID of the newly sent transaction!
-		System.out.println("Transaction sent! Transaction ID: " + response.getTransactionID().getID());
-	}
-
-	private void handleError(Throwable t) {
-		if (t instanceof BRSError) {
-			System.out.println("Caught BRS Error: " + ((BRSError) t).getDescription());
-		} else {
-			t.printStackTrace();
 		}
 	}
 }
