@@ -7,10 +7,11 @@ import bt.ui.EmulatorWindow;
 /**
  * A smart contract for accepting tips and return a tank you message.
  * 
- * For every transaction received (with more than the activation fee),
+ * For every transaction received (amount higher than the activation fee),
  * a "Thank you!" message is returned. Messages from smart contracts
  * currently come only as hexadecimal numbers. To actually read the
- * message contents convert from hexadecimal to string.
+ * message contents convert from hexadecimal to string using, for instance,
+ * https://codebeautify.org/hex-string-converter.
  * 
  * When the balance reaches a specified mininum amount, the balance
  * is transfered to the beneficiary.

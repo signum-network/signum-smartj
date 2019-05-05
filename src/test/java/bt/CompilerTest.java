@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.sample.Forward;
+import bt.sample.ForwardMin;
 import bt.sample.TipThanks;
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstAddress;
@@ -43,7 +44,8 @@ public class CompilerTest {
         t.setup();
 
         // t.testForward();
-        t.testForwardMin();
+        //t.testForwardMin();
+        t.testTipThanks();
     }
 
     @BeforeClass
@@ -85,7 +87,7 @@ public class CompilerTest {
 
     @Test
     public void testForwardMin() throws Exception {
-        BurstAddress address = BurstAddress.fromEither(TipThanks.ADDRESS);
+        BurstAddress address = BurstAddress.fromEither(ForwardMin.ADDRESS);
 
         // send some burst to make sure the account exist
         sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1));
@@ -94,9 +96,9 @@ public class CompilerTest {
         AccountResponse bmfAccount = bns.getAccount(address).blockingGet();
         BurstValue balance = bmfAccount.getUnconfirmedBalanceNQT();
         BurstValue actvFee = BurstValue.fromBurst(1);
-        double amount = TipThanks.MIN_AMOUNT * 0.8;
+        double amount = ForwardMin.MIN_AMOUNT * 0.8;
 
-        ATResponse at = registerAT(TipThanks.class, actvFee);
+        ATResponse at = registerAT(ForwardMin.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
         sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
@@ -112,6 +114,41 @@ public class CompilerTest {
 
         bmfAccount = bns.getAccount(address).blockingGet();
         newBalance = bmfAccount.getUnconfirmedBalanceNQT();
+        result = newBalance.doubleValue() - balance.doubleValue();
+        assertTrue("Value not forwarded as it should", result*Contract.ONE_BURST > amount);
+    }
+
+
+    @Test
+    public void testTipThanks() throws Exception {
+        BurstAddress address = BurstAddress.fromEither(TipThanks.ADDRESS);
+
+        // send some burst to make sure the account exist
+        sendAmount(PASSPHRASE, address, BurstValue.fromBurst(100));
+        forgeBlock();
+
+        AccountResponse benefAccout = bns.getAccount(address).blockingGet();
+        BurstValue balance = benefAccout.getUnconfirmedBalanceNQT();
+        BurstValue actvFee = BurstValue.fromBurst(1);
+        double amount = TipThanks.MIN_AMOUNT * 0.8;
+
+        ATResponse at = registerAT(TipThanks.class, actvFee);
+        assertNotNull("AT could not be registered", at);
+
+        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        forgeBlock();
+
+        benefAccout = bns.getAccount(address).blockingGet();
+        BurstValue newBalance = benefAccout.getUnconfirmedBalanceNQT();
+        double result = newBalance.doubleValue() - balance.doubleValue();
+        assertTrue("Value forwarded while it should not", result < amount);
+
+        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        forgeBlock();
+        forgeBlock();
+
+        benefAccout = bns.getAccount(address).blockingGet();
+        newBalance = benefAccout.getUnconfirmedBalanceNQT();
         result = newBalance.doubleValue() - balance.doubleValue();
         assertTrue("Value not forwarded as it should", result*Contract.ONE_BURST > amount);
     }
