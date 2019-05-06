@@ -7,6 +7,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -70,6 +71,9 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 	public EmulatorWindow(Class<?> c) {
 		super("BlockTalk Emulator");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		// Set english locale to avoid problems with double values conversion
+		setLocale(Locale.ENGLISH);
 
 		// tooltip configuration
 		ToolTipManager.sharedInstance().setInitialDelay(0);

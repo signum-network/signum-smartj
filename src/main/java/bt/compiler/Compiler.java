@@ -47,12 +47,14 @@ public class Compiler {
 	ByteBuffer code;
 
 	class Call {
-		public Call(Method m, int pos) {
-			this.m = m;
+		public Call(Method caller, Method called, int pos) {
+			this.caller = caller;
+			this.called = called;
 			this.pos = pos;
 		}
 
-		Method m;
+		Method caller;
+		Method called;
 		int pos;
 	}
 
@@ -237,7 +239,7 @@ public class Compiler {
 		code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 		code.putInt(lastTxTimestamp);
 
-		// TODO: handle external method calls here
+		// TODO: handle external method calls here (our ABI must be defined first)
 
 		// call the txReceived method
 		code.put(OpCode.e_op_code_JMP_SUB);
@@ -261,7 +263,18 @@ public class Compiler {
 			address += m.code.position();
 		}
 
-		// TODO: resolve function call positions here
+		// Resolve function call positions here
+		for (Call c : pendingCalls){
+			byte []code = c.caller.code.array();
+			ByteBuffer posBuffer = ByteBuffer.allocate(4);
+			posBuffer.order(ByteOrder.LITTLE_ENDIAN);
+			posBuffer.putInt(c.called.address);
+			posBuffer.clear();
+			byte []posBytes = posBuffer.array();
+			for(int i=0; i<posBytes.length; i++){
+				code[c.pos+i] = posBytes[i];
+			}
+		}
 
 		// now with the correct positions
 		code.rewind();
@@ -693,7 +706,7 @@ public class Compiler {
 
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
-							pendingCalls.add(new Call(mcall, code.position()));
+							pendingCalls.add(new Call(m, mcall, code.position()));
 							code.putInt(0); // address, to be resolved latter
 
 							// check if the method has a return value

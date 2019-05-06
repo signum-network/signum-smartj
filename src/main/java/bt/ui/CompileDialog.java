@@ -42,7 +42,8 @@ class CompileDialog extends JDialog implements ActionListener {
     HintTextField nameField, descField;
     HintTextField nodeField;
     JPasswordField passField;
-    HintTextField feeField;
+    HintTextField feeField, actFeeField;
+    HintTextField deadlineField;
     HintTextField pagesField, csField, usField;
 
     private Compiler comp;
@@ -60,13 +61,6 @@ class CompileDialog extends JDialog implements ActionListener {
         setLayout(new BorderLayout());
 
         this.atClass = atClass;
-
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        add(buttons, BorderLayout.SOUTH);
-
-        closeButton = new JButton("Close");
-        closeButton.addActionListener(this);
-        buttons.add(closeButton);
 
         JPanel center = new JPanel(new BorderLayout());
         JPanel left = new JPanel(new BorderLayout());
@@ -88,9 +82,18 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(descField = new HintTextField("Contract description", null));
         config.add(nodeField = new HintTextField("Network node", null));
         config.add(passField = new JPasswordField());
-        passField.setToolTipText("Passphrase, never leaves the application, messages signed locally");
-
+        passField.setToolTipText("Passphrase, never sent over the internet");
+        config.add(deadlineField = new HintTextField("Deadline in minutes", null));
+        deadlineField.setText("1440"); // 4 days
+        config.add(feeField = new HintTextField("Fee in BURST", null));
+        feeField.setText("0.1");
+        config.add(actFeeField = new HintTextField("Activation fee in BURST", null));
+        actFeeField.setText("1");
+        
         left.add(config, BorderLayout.CENTER);
+
+        config.add(publishButton = new JButton("Publish"));
+        publishButton.addActionListener(this);
 
         JPanel codePanelForm = new JPanel(new BorderLayout());
         codePanelForm.setBorder(new TitledBorder("AT FORMATTED BYTECODE"));
@@ -98,6 +101,13 @@ class CompileDialog extends JDialog implements ActionListener {
         JScrollPane codeScrollForm = new JScrollPane(codeAreaForm);
         codePanelForm.add(codeScrollForm, BorderLayout.CENTER);
         center.add(codePanelForm, BorderLayout.CENTER);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        add(buttons, BorderLayout.SOUTH);
+
+        closeButton = new JButton("Close");
+        closeButton.addActionListener(this);
+        buttons.add(closeButton);
 
         add(center, BorderLayout.CENTER);
         pack();
@@ -140,20 +150,21 @@ class CompileDialog extends JDialog implements ActionListener {
     }
 
     private void publishAT() {
-
         byte[] bcode = new byte[comp.getCode().position()];
         System.arraycopy(comp.getCode().array(), 0, bcode, 0, bcode.length);
 
-        String passphrase = passField.getText();
+        String passphrase = String.valueOf(passField.getPassword());
         String name = nameField.getText();
         String description = descField.getText();
 
         BurstCrypto bc = BurstCrypto.getInstance();
         BurstNodeService bns = BurstNodeService.getInstance(nodeField.getText());
 
-        int deadline = 1440; // 4 days (in blocks of 4 minutes)
+        int deadline = Integer.parseInt(deadlineField.getText());
+        BurstValue fee = BurstValue.fromBurst(Double.parseDouble(feeField.getText()));
+
         byte[] pubkey = bc.getPublicKey(passphrase);
-        Single<GenerateTransactionResponse> createAT = bns.generateCreateATTransaction(pubkey, BurstValue.fromBurst(1),
+        Single<GenerateTransactionResponse> createAT = bns.generateCreateATTransaction(pubkey, fee,
                 deadline, name, description, new byte[0], bcode, new byte[0], 1, 1, 1, BurstValue.fromBurst(1));
 
         createAT.flatMap(response -> {
