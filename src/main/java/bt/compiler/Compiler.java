@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -18,6 +19,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -57,6 +59,20 @@ public class Compiler {
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3;
 	int maxLocals;
+
+	public class Error{
+		AbstractInsnNode node;
+		String message;
+		Error(AbstractInsnNode node, String message){
+			this.node = node;
+			this.message = message;
+		}
+		public String getMessage(){
+			return message;
+		}
+	}
+
+	ArrayList<Error> errors = new ArrayList<>();
 
 	public Compiler(String className) throws IOException {
 		this.className = className;
@@ -120,6 +136,7 @@ public class Compiler {
 			addError(null, "A contract should derive from " + Contract.class.getName());
 		}
 
+		errors.clear();
 		lastFreeVar = maxLocals = 0;
 
 		for (FieldNode f : cn.fields) {
@@ -248,7 +265,7 @@ public class Compiler {
 				else{
 					Integer position = labels.get(j.label);
 					if (position == null) {
-						System.err.println("Label not found: " + j.label);
+						System.err.println("Label not found: " + j.label.getLabel());
 						continue;
 					}
 					jaddress = position + m.address;
@@ -289,13 +306,8 @@ public class Compiler {
 
 		// Then parse
 		for (Method m : methods.values()) {
-			if (m.code == null) {
-				parseMethod(m);
-
-				System.out.println("METHOD: " + m.node.name);
-				Printer.print(m.code, System.out);
-				Printer.printCode(m.code, System.out);
-			}
+			System.out.println("** METHOD: " + m.node.name);
+			parseMethod(m);
 		}
 	}
 
@@ -327,13 +339,15 @@ public class Compiler {
 			m.code.put(OpCode.e_op_code_SET_DAT);
 			m.code.putInt(address);
 			m.code.putInt(var.address);
+		}
+		else if (var.type == STACK_THIS){
+			// do nothing
 		} else
 			System.err.println("Unexpected variable");
 		return var;
 	}
 
 	private void parseMethod(Method m) {
-		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		ByteBuffer code = ByteBuffer.allocate(Compiler.MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -347,6 +361,7 @@ public class Compiler {
 				addError(m.node.instructions.get(0), "Contract constructor cannot have arguments");
 		}
 
+		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		while (ite.hasNext()) {
 			AbstractInsnNode insn = ite.next();
 
@@ -357,7 +372,7 @@ public class Compiler {
 				if (insn instanceof LabelNode) {
 					LabelNode ln = (LabelNode) insn;
 					labels.put(ln, code.position());
-					System.out.println("label: " + ln.getLabel().toString());
+					System.out.println("label: " + ln.getLabel());
 				}
 				/*
 				 * else if(insn instanceof LineNumberNode) { LineNumberNode ln =
@@ -577,8 +592,19 @@ public class Compiler {
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar3);
 							pushVar(m, tmpVar3);
+						} else if (mi.name.equals("addMinutes")) {
+							// we should have two arguments
+							popVar(m, tmpVar1); // the timestamp
+							popVar(m, tmpVar2); // minutes
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET_DAT_2);
+							code.putShort(OpCode.Add_Minutes_To_Timestamp);
+							code.putInt(tmpVar3);
+							code.putInt(tmpVar1);
+							code.putInt(tmpVar2);
+							pushVar(m, tmpVar3);
 						} else
-							System.err.println("Problem");
+							System.err.println("Problem " + owner);
 					} else if (owner.equals(className)) {
 						// call on the contract itself
 						if (mi.name.equals("getCurrentTx")) {
@@ -628,6 +654,13 @@ public class Compiler {
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_B1);
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getCreationTimestamp")) {
+							stack.pollLast(); // remove the "this" from stack
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_Creation_Timestamp);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getBlockTimestamp")) {
@@ -695,7 +728,7 @@ public class Compiler {
 							stack.pollLast(); // remove the 'this'
 							Method mcall = methods.get(mi.name);
 							if (mcall == null) {
-								addError(mi, "Method not found");
+								addError(mi, "Method not found: " + mi.name);
 								return;
 							}
 
@@ -943,7 +976,24 @@ public class Compiler {
 		}
 	}
 
-	void addError(AbstractInsnNode abstractInsnNode, String string) {
+	public ArrayList<Error> getErrors() {
+		return errors;
+	}
+
+	void addError(AbstractInsnNode node, String error) {
+		// try to find a line number to report
+		int line = -1;
+		AbstractInsnNode prev = node.getPrevious();
+		while(prev!=null){
+			if(prev instanceof LineNumberNode){
+				line = ((LineNumberNode)prev).line;
+				break;
+			}
+			prev = node.getPrevious();
+		}
+		String message = "line " +  line + ": " + error;
+
+		errors.add(new Error(node, message));
 	}
 
 	public static void main(String[] args) throws Exception {

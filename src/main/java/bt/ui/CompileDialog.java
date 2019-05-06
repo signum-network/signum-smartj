@@ -120,7 +120,15 @@ class CompileDialog extends JDialog implements ActionListener {
             comp = new Compiler(atClass);
 
             comp.compile();
-            comp.link();
+            if(comp.getErrors().size()==0){
+                comp.link();
+            }
+
+            if(comp.getErrors().size()>0){
+                JOptionPane.showMessageDialog(getParent(), "AT compile problem: " + comp.getErrors().get(0).getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintStream out = new PrintStream(baos, true, "UTF-8");
