@@ -31,13 +31,13 @@ public class HappyCIP20 extends Contract {
 		boolean alreadyGotSome = false;
 
 		Transaction curTX = getCurrentTx();
-		Address receiver = curTX.getReceiverAddress();
+		Address sender = curTX.getSenderAddress();
 
 		// we will iterate all the transactions, from the first one
 		// to the last one
 		Transaction tx = this.getTxAfterTimestamp(null);
 		while(tx!=null && tx != curTX){
-			if(tx.getSenderAddress() == receiver){
+			if(tx.getSenderAddress() == sender){
 				alreadyGotSome = true;
 				break;
 			}
@@ -45,12 +45,12 @@ public class HappyCIP20 extends Contract {
 		}
 
 		if(!alreadyGotSome){
-			sendMessage("Happy CIP20!", receiver);
-			sendAmount(AMOUNT, receiver);
+			sendMessage("Happy CIP20!", sender);
+			sendAmount(AMOUNT, sender);
 		}
 	}
 
 	public static void main(String[] args) {
-		new EmulatorWindow(Refund.class);
+		new EmulatorWindow(HappyCIP20.class);
 	}
 }

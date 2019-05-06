@@ -69,6 +69,7 @@ class CompileDialog extends JDialog implements ActionListener {
         JPanel codePanel = new JPanel(new BorderLayout());
         codePanel.setBorder(new TitledBorder("AT BYTECODE"));
         codeArea = new JTextArea(10, 20);
+        codeArea.setEditable(false);
         codeArea.setLineWrap(true);
         JScrollPane codeScroll = new JScrollPane(codeArea);
         codePanel.add(codeScroll, BorderLayout.CENTER);
@@ -98,6 +99,7 @@ class CompileDialog extends JDialog implements ActionListener {
         JPanel codePanelForm = new JPanel(new BorderLayout());
         codePanelForm.setBorder(new TitledBorder("AT FORMATTED BYTECODE"));
         codeAreaForm = new JTextArea(10, 30);
+        codeAreaForm.setEditable(false);
         JScrollPane codeScrollForm = new JScrollPane(codeAreaForm);
         codePanelForm.add(codeScrollForm, BorderLayout.CENTER);
         center.add(codePanelForm, BorderLayout.CENTER);

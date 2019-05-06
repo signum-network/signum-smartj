@@ -33,7 +33,7 @@ public class ForwardMin extends Contract {
 	}
 
 	public static void main(String[] args) {
-		new EmulatorWindow(TipThanks.class);
+		new EmulatorWindow(ForwardMin.class);
 	}
 }
 

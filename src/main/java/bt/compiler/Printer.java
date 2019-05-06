@@ -131,6 +131,13 @@ public class Printer {
 				p += print(code, p, 4, out);
 				out.println(" address");
 				break;
+			case OpCode.e_op_code_JMP_ADR:
+				p += printOp(code, p, 1, out);
+				out.println("\tJMP_ADR");
+				out.print(tab);
+				p += print(code, p, 4, out);
+				out.println(" address");
+				break;
 			case OpCode.e_op_code_ADD_DAT:
 			case OpCode.e_op_code_SUB_DAT:
 			case OpCode.e_op_code_MUL_DAT:
@@ -293,7 +300,6 @@ public class Printer {
 			case OpCode.e_op_code_MOD_DAT:
 			case OpCode.e_op_code_SHL_DAT:
 			case OpCode.e_op_code_SHR_DAT:
-			case OpCode.e_op_code_JMP_ADR:
 
 			case OpCode.e_op_code_SLP_DAT:
 			case OpCode.e_op_code_FIZ_DAT:

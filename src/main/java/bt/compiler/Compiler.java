@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -46,23 +45,10 @@ public class Compiler {
 	ClassNode cn;
 	ByteBuffer code;
 
-	class Call {
-		public Call(Method caller, Method called, int pos) {
-			this.caller = caller;
-			this.called = called;
-			this.pos = pos;
-		}
-
-		Method caller;
-		Method called;
-		int pos;
-	}
-
-	LinkedList<StackVar> stack = new LinkedList<StackVar>();
-	HashMap<String, Method> methods = new HashMap<String, Method>();
-	HashMap<String, Field> fields = new HashMap<String, Field>();
-
-	ArrayList<Call> pendingCalls = new ArrayList<Call>();
+	LinkedList<StackVar> stack = new LinkedList<>();
+	HashMap<String, Method> methods = new HashMap<>();
+	HashMap<String, Field> fields = new HashMap<>();
+	HashMap<LabelNode, Integer> labels = new HashMap<>();
 
 	String className;
 
@@ -121,20 +107,6 @@ public class Compiler {
 			default:
 				return "cst: " + (svalue != null ? svalue : lvalue != null ? lvalue : address);
 			}
-		}
-	}
-
-	class Offset {
-		AbstractInsnNode insn;
-		int start;
-		int position;
-		LabelNode label;
-
-		Offset(AbstractInsnNode i, int s, int p, LabelNode l) {
-			insn = i;
-			start = s;
-			position = p;
-			label = l;
 		}
 	}
 
@@ -263,16 +235,31 @@ public class Compiler {
 			address += m.code.position();
 		}
 
-		// Resolve function call positions here
-		for (Call c : pendingCalls){
-			byte []code = c.caller.code.array();
-			ByteBuffer posBuffer = ByteBuffer.allocate(4);
-			posBuffer.order(ByteOrder.LITTLE_ENDIAN);
-			posBuffer.putInt(c.called.address);
-			posBuffer.clear();
-			byte []posBytes = posBuffer.array();
-			for(int i=0; i<posBytes.length; i++){
-				code[c.pos+i] = posBytes[i];
+		ByteBuffer posBuffer = ByteBuffer.allocate(4);
+		posBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+		// resolve all jumps
+		for (Method m : methods.values()) {
+			// resolve all offsets
+			for (Method.Jump j : m.jumps) {
+				int jaddress = 0;
+				if(j.method!=null)
+					jaddress = j.method.address;
+				else{
+					Integer position = labels.get(j.label);
+					if (position == null) {
+						System.err.println("Label not found: " + j.label);
+						continue;
+					}
+					jaddress = position + m.address;
+				}
+				byte[] code = m.code.array();
+				posBuffer.putInt(jaddress);
+				posBuffer.clear();
+				byte[] posBytes = posBuffer.array();
+				for (int i = 0; i < posBytes.length; i++) {
+					code[j.position + i] = posBytes[i];
+				}
 			}
 		}
 
@@ -300,7 +287,7 @@ public class Compiler {
 			methods.put(mnode.name, m);
 		}
 
-		// Then parse then
+		// Then parse
 		for (Method m : methods.values()) {
 			if (m.code == null) {
 				parseMethod(m);
@@ -315,7 +302,7 @@ public class Compiler {
 	/**
 	 * Push the variable on the given address to the stack.
 	 */
-	private StackVar pushVar(Method m, int address) {
+	StackVar pushVar(Method m, int address) {
 		StackVar v = new StackVar(STACK_PUSH, 0);
 		stack.add(v);
 
@@ -330,7 +317,7 @@ public class Compiler {
 	 * @param m
 	 * @param address
 	 */
-	private StackVar popVar(Method m, int address) {
+	StackVar popVar(Method m, int address) {
 		StackVar var = stack.pollLast();
 
 		if (var.type == STACK_PUSH) {
@@ -346,14 +333,9 @@ public class Compiler {
 	}
 
 	private void parseMethod(Method m) {
-		m.parsing = true;
 		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		ByteBuffer code = ByteBuffer.allocate(Compiler.MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
-
-		HashMap<LabelNode,Integer> labels = new HashMap<>();
-
-		ArrayList<Offset> offsets = new ArrayList<Offset>();
 
 		m.code = code;
 
@@ -422,7 +404,7 @@ public class Compiler {
 			case ASTORE:
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
-					if(vi.var==0)
+					if (vi.var == 0)
 						System.err.println("problem");
 					// local 0 is 'this', others are stored after the last variable
 					popVar(m, lastFreeVar + vi.var);
@@ -608,6 +590,18 @@ public class Compiler {
 							code.putShort(OpCode.Get_Current_Balance);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getTxAfterTimestamp")) {
+							popVar(m, tmpVar1); // timestamp
+							stack.pollLast(); // remove the "this" from stack
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.A_To_Tx_After_Timestamp);
+							code.putInt(tmpVar1);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_A1);
+							code.putInt(tmpVar2);
+							pushVar(m, tmpVar2);
 						} else if (mi.name.equals("parseAddress")) {
 							StackVar address = stack.pollLast();
 							stack.pollLast(); // remove the "this" from stack
@@ -702,11 +696,12 @@ public class Compiler {
 							Method mcall = methods.get(mi.name);
 							if (mcall == null) {
 								addError(mi, "Method not found");
+								return;
 							}
 
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
-							pendingCalls.add(new Call(m, mcall, code.position()));
+							m.jumps.add(new Method.Jump(code.position(), mcall));
 							code.putInt(0); // address, to be resolved latter
 
 							// check if the method has a return value
@@ -864,45 +859,76 @@ public class Compiler {
 						popVar(m, tmpVar1);
 					}
 
-					code.put(OpCode.e_op_code_CLR_DAT);
-					code.putInt(tmpVar2);
-
-					int offsetStart = code.position();
-
+					// The idea is to branch on the negative of the command to skip
+					// the JMP_ADR command, BZR and similar commands cannot be used
+					// since the offset has only one byte (limite to -127 to 127).
 					switch (opcode) {
 					case IFEQ:
 					case IFNULL:
-						code.put(OpCode.e_op_code_BZR_DAT);
+						code.put(OpCode.e_op_code_BNZ_DAT);
 						code.putInt(tmpVar1);
+						code.put((byte) 11);
 						break;
 
 					case IFNE:
 					case IFNONNULL:
 						code.put(OpCode.e_op_code_BZR_DAT);
 						code.putInt(tmpVar1);
+						code.put((byte) 11);
 						break;
 
 					case IFGE:
 					case IFGT:
-						code.put(opcode == IFGE ? OpCode.e_op_code_BGE_DAT : OpCode.e_op_code_BGT_DAT);
+						code.put(OpCode.e_op_code_CLR_DAT);
+						code.putInt(tmpVar2);
+						code.put(opcode == IFGE ? OpCode.e_op_code_BLT_DAT : OpCode.e_op_code_BLE_DAT);
 						code.putInt(tmpVar1);
 						code.putInt(tmpVar2);
+						code.put((byte) 15);
 						break;
 					case IFLE:
 					case IFLT:
-						code.put(opcode == IFLE ? OpCode.e_op_code_BLE_DAT : OpCode.e_op_code_BLT_DAT);
+						code.put(OpCode.e_op_code_CLR_DAT);
+						code.putInt(tmpVar2);
+						code.put(opcode == IFLE ? OpCode.e_op_code_BGT_DAT : OpCode.e_op_code_BGE_DAT);
 						code.putInt(tmpVar1);
 						code.putInt(tmpVar2);
+						code.put((byte) 15);
 						break;
 					case GOTO:
-						// the JMP_ADR command requires an absolute address, lets use a BZR
-						code.put(OpCode.e_op_code_BZR_DAT);
-						code.putInt(tmpVar2); // tmpVar2 is always zero here, so we have our GOTO
+						// do nothing, simply jump to the address
 						break;
 					}
 
-					offsets.add(new Offset(insn, offsetStart, code.position(), jmp.label));
-					code.put((byte) 0); // offset position to be resolved later
+					code.put(OpCode.e_op_code_JMP_ADR);
+					m.jumps.add(new Method.Jump(code.position(), jmp.label));
+					code.putInt(0); // address, to be resolved later
+
+					System.out.println("ifeq: " + jmp.label.getLabel());
+				} else {
+					System.err.println(opcode);
+				}
+				break;
+
+			case IF_ACMPEQ:
+			case IF_ACMPNE:
+				if (insn instanceof JumpInsnNode) {
+					JumpInsnNode jmp = (JumpInsnNode) insn;
+
+					popVar(m, tmpVar1);
+					popVar(m, tmpVar2);
+
+					code.put(OpCode.e_op_code_SUB_DAT);
+					code.putInt(tmpVar1);
+					code.putInt(tmpVar2);
+
+					code.put(opcode == IF_ACMPEQ ? OpCode.e_op_code_BNZ_DAT : OpCode.e_op_code_BZR_DAT);
+					code.putInt(tmpVar1);
+					code.put((byte) 11); // offset
+
+					code.put(OpCode.e_op_code_JMP_ADR);
+					m.jumps.add(new Method.Jump(code.position(), jmp.label));
+					code.putInt(0); // to be resolved later
 
 					System.out.println("ifeq: " + jmp.label.getLabel());
 				} else {
@@ -915,25 +941,9 @@ public class Compiler {
 				break;
 			}
 		}
-
-		// resolve all offsets
-		for (Offset o : offsets) {
-			Integer position = labels.get(o.label);
-			if(position==null){
-				System.err.println("Label not found: " + o.label);
-				continue;
-			}
-			int offset = position - o.start;
-			if (offset > 0xff) {
-					addError(o.insn, "Conditional offset too large");
-			}
-			code.array()[o.position] = (byte) offset;
-		}
-
-		m.parsing = false;
 	}
 
-	private void addError(AbstractInsnNode abstractInsnNode, String string) {
+	void addError(AbstractInsnNode abstractInsnNode, String string) {
 	}
 
 	public static void main(String[] args) throws Exception {
