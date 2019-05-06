@@ -197,8 +197,13 @@ public class Emulator {
 	}
 
 	public Transaction getTxAfter(Address receiver, Timestamp ts) {
-		int height = (int) ts.value >> 8;
-		int txid = (int) (ts.value & 0xffffffff);
+		int height = 0;
+		int txid = 0;
+
+		if(ts!=null){
+			height = (int) ts.value >> 8;
+			txid = (int) (ts.value & 0xffffffff);
+		}
 
 		Block b = blocks.get(height);
 		while (b != null) {
