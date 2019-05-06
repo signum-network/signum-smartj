@@ -83,7 +83,7 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(descField = new HintTextField("Contract description", null));
         config.add(nodeField = new HintTextField("Network node", null));
         config.add(passField = new JPasswordField());
-        passField.setToolTipText("Passphrase, never sent over the internet");
+        passField.setToolTipText("Passphrase, never sent over the wire");
         config.add(deadlineField = new HintTextField("Deadline in minutes", null));
         deadlineField.setText("1440"); // 4 days
         config.add(feeField = new HintTextField("Fee in BURST", null));
@@ -125,7 +125,7 @@ class CompileDialog extends JDialog implements ActionListener {
             }
 
             if(comp.getErrors().size()>0){
-                JOptionPane.showMessageDialog(getParent(), "AT compile problem: " + comp.getErrors().get(0).getMessage(), "Error",
+                JOptionPane.showMessageDialog(getParent(), "<html>AT compile problem:<br><b>" + comp.getErrors().get(0).getMessage(), "Error",
                     JOptionPane.ERROR_MESSAGE);
                 return;
             }

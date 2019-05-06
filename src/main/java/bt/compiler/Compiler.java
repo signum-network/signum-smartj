@@ -232,7 +232,7 @@ public class Compiler {
 
 		// call the txReceived method
 		code.put(OpCode.e_op_code_JMP_SUB);
-		code.putInt(methods.get("txReceived").address);
+		code.putInt(methods.get(TX_RECEIVED_METHOD).address);
 		code.put(OpCode.e_op_code_FIN_IMD);
 	}
 

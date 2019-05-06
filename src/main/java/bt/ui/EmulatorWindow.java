@@ -313,6 +313,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 				Emulator.getInstance().forgeBlock();
 				blockLabel.setText("Block height=" + (Emulator.getInstance().getCurrentBlock().getHeight() - 1));
 			} catch (Exception ex) {
+				ex.printStackTrace();
 				JOptionPane.showMessageDialog(EmulatorWindow.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
 			rebuildComboboxes();

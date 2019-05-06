@@ -6,7 +6,7 @@ import bt.Address;
 import bt.Timestamp;
 
 /**
- * A "will" contract that transfers its balance to another account 
+ * A "will" contract that transfers its balance to beneficiary account 
  * if a given timeout is reached.
  *
  * Inspired by http://ciyam.org/at/at_dormant.html
@@ -14,7 +14,7 @@ import bt.Timestamp;
  * @author jjos
  */
 class Will extends Contract {
-	Address payoutAddress;
+	Address beneficiary;
 	Timestamp timeout;
 	boolean finished;
 
@@ -23,7 +23,7 @@ class Will extends Contract {
 	 * reaches the contract.
 	 */
 	public Will(){
-		payoutAddress = parseAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
+		beneficiary = parseAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
 		timeout = getBlockTimestamp().addMinutes(30000);
 		finished = false;
 	}
@@ -57,7 +57,7 @@ class Will extends Contract {
 	 * Private function that pays this contract.
 	 */
 	private void pay(){
-		sendBalance(payoutAddress);
+		sendBalance(beneficiary);
 		finished = true;
 	}
 
@@ -75,7 +75,7 @@ class Will extends Contract {
 			txReceived();
 			return;
 		}
-		payoutAddress = newPayout;
+		beneficiary = newPayout;
 	}
 
 
