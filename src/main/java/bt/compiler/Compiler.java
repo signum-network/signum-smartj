@@ -4,6 +4,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -143,6 +144,9 @@ public class Compiler {
 			// System.out.println("field name:" + f.name);
 			int nvars = 0;
 
+			if(Modifier.isFinal(f.access) && Modifier.isStatic(f.access))
+				continue; // we simply skip this
+
 			if (f.desc.charAt(0) == 'L') {
 				// this is a class reference
 				f.desc = f.desc.substring(1, f.desc.length() - 1);
@@ -165,7 +169,7 @@ public class Compiler {
 				nvars = 1; // long
 
 			if (nvars == 0) {
-				addError(null, "Invalid field type: " + f.desc);
+				addError(null, f.name + ", invalid field type: " + f.desc);
 				continue;
 			}
 
@@ -354,7 +358,7 @@ public class Compiler {
 		m.code = code;
 
 		if (m.node.name.equals(INIT_METHOD)) {
-			if (m.node.access != 1)
+			if (!Modifier.isPublic(m.node.access))
 				addError(m.node.instructions.get(0), "Contract constructor must be public");
 
 			if (!m.node.desc.equals("()V"))
@@ -684,6 +688,14 @@ public class Compiler {
 							code.putInt(tmpVar1);
 
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getPrevBlockTimestamp")) {
+							stack.pollLast(); // remove the "this" from stack
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_Last_Block_Timestamp);
+							code.putInt(tmpVar1);
+
+							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("sendAmount")) {
 							popVar(m, tmpVar1); // address
 							popVar(m, tmpVar2); // amount
@@ -997,7 +1009,7 @@ public class Compiler {
 	void addError(AbstractInsnNode node, String error) {
 		// try to find a line number to report
 		int line = -1;
-		AbstractInsnNode prev = node.getPrevious();
+		AbstractInsnNode prev = node;
 		while(prev!=null){
 			if(prev instanceof LineNumberNode){
 				line = ((LineNumberNode)prev).line;

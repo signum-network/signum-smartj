@@ -8,7 +8,18 @@ import bt.Transaction;
 import bt.ui.EmulatorWindow;
 
 /**
- * A contract that pays double or nothing on a 50% chance.
+ * An 'odds and evens game' contract that pays double or nothing on a 50% chance.
+ * 
+ * From the amount sent to the contract the activation fee is subtracted and this
+ * resulting amount is doubled if the sender wins.
+ * 
+ * Every transaction sent to this contract has an even or odd value attributed
+ * according to the transaction timestamp. Two blocks in future the winning
+ * value (even or odd) is chosen based on the block hash (random source).
+ * 
+ * A value in the future is used as source for randomness to difficult tampering
+ * from malicious miners. For the same reason, a high activation fee is also advisable
+ * and a MAX_PAYMENT is set.
  * 
  * @author jjos
  */
@@ -17,6 +28,10 @@ public class OddsGame extends Contract {
 	Timestamp lastTimestamp;
 	Timestamp next;
 	Transaction nextTX;
+	Address developer;
+
+	static final long MAX_PAYMENT = 2000*ONE_BURST;
+	static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
 
 	/**
 	 * This method is executed every time a transaction is received by the contract.
@@ -34,21 +49,26 @@ public class OddsGame extends Contract {
 		while (nextTX != null) {
 			next = nextTX.getTimestamp();
 			if (next.ge(timeLimit))
-				break; // only bets two blocks on past can run
+				break; // only bets before previous block can run now
 
 			lastTimestamp = next;
 
 			long pay = (lastTimestamp.getValue() % 2) - blockOdd;
 
 			if (pay == 0) {
-				// pay double, minus 5% fees
+				// pay double (amount already has the activation fee subtracted)
 				long amount = nextTX.getAmount();
 				amount = amount * 2;
+				if(amount > MAX_PAYMENT)
+					amount = MAX_PAYMENT;
 				sendAmount(amount, nextTX.getSenderAddress());
 			}
 
 			nextTX = getTxAfterTimestamp(lastTimestamp);
 		}
+
+		if(getCurrentBalance() > MAX_PAYMENT*3)
+			sendAmount(MAX_PAYMENT, parseAddress(DEV_ADDRESS));
 	}
 
 	public static void main(String[] args) throws Exception {
