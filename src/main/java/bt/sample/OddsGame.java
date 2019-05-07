@@ -57,8 +57,7 @@ public class OddsGame extends Contract {
 
 			if (pay == 0) {
 				// pay double (amount already has the activation fee subtracted)
-				long amount = nextTX.getAmount();
-				amount = amount * 2;
+				long amount = nextTX.getAmount() * 2;
 				if(amount > MAX_PAYMENT)
 					amount = MAX_PAYMENT;
 				sendAmount(amount, nextTX.getSenderAddress());
@@ -71,6 +70,9 @@ public class OddsGame extends Contract {
 			sendAmount(MAX_PAYMENT, parseAddress(DEV_ADDRESS));
 	}
 
+	/**
+	 * Main function for debbuging purposes only, not exported to bytecode.
+	 */
 	public static void main(String[] args) throws Exception {
 		// some initialization code to make things easier to debug
 		Emulator emu = Emulator.getInstance();
