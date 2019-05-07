@@ -603,6 +603,9 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							code.putInt(tmpVar2);
 							pushVar(m, tmpVar3);
+						} else if (mi.name.equals("getValue")) {
+							// it is the timestamp object itself (already on stack)
+							// so do nothing
 						} else
 							System.err.println("Problem " + owner);
 					} else if (owner.equals(className)) {
@@ -669,6 +672,17 @@ public class Compiler {
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Block_Timestamp);
 							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getPrevBlockHash")) {
+							stack.pollLast(); // remove the "this" from stack
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Put_Last_Block_Hash_In_A);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_A1);
+							code.putInt(tmpVar1);
+
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("sendAmount")) {
 							popVar(m, tmpVar1); // address

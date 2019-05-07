@@ -197,24 +197,15 @@ public class Emulator {
 	}
 
 	public Transaction getTxAfter(Address receiver, Timestamp ts) {
-		int height = 0;
-		int txid = 0;
-
-		if(ts!=null){
-			height = (int) ts.value >> 8;
-			txid = (int) (ts.value & 0xffffffff);
-		}
-
-		Block b = blocks.get(height);
+		Block b = blocks.get(0);
 		while (b != null) {
-			for (int i = txid; i < b.txs.size(); i++) {
+			for (int i = 0; i < b.txs.size(); i++) {
 				Transaction txi = b.txs.get(i);
-				if (txi.receiver.equals(receiver))
+				if (txi.type!=Transaction.TYPE_AT_CREATE && txi.receiver.equals(receiver) &&
+					!txi.getTimestamp().le(ts))
 					return txi;
 			}
-
 			b = b.next;
-			txid = 0;
 		}
 		return null;
 	}

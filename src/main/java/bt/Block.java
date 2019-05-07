@@ -29,7 +29,7 @@ public class Block {
 
 		// Just some random numbers for the block hash
 		for (int i = 0; i < hash.value.length; i++) {
-			hash.value[i] = (long) (Math.random() * Long.MAX_VALUE);
+			hash.value[i] = (long) ((Math.random()-0.5) * 1e8);
 		}
 	}
 	

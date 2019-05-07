@@ -28,7 +28,8 @@ public class Transaction {
 	 * Users are not allowed to create new instances of this class, this function
 	 * should be called by the emulator only.
 	 * 
-	 * @param ad
+	 * @param sender
+	 * @param receiver
 	 * @param ammount
 	 * @param type
 	 * @param ts

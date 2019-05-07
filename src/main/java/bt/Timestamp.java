@@ -20,13 +20,13 @@ public class Timestamp {
 	 * Users are not allowed to instantiate this class, called by the emulator only.
 	 */
 	Timestamp(long block, long txid) {
-		value = block << 8;
+		value = block << 32;
 		value += txid;
 	}
 
 	@Override
 	public String toString() {
-		return (value >>8) + " (block height)";
+		return (value >>32) + " (block height)";
 	}
 	
 	/**
@@ -35,22 +35,29 @@ public class Timestamp {
 	 * @return
 	 */
 	public Timestamp addMinutes(long minutes) {
-		value += (minutes/4)<<8;
+		value += (minutes/4)<<32;
 		return this;
+	}
+
+	/**
+	 * @return the underlying value of this timestamp
+	 */
+	public long getValue(){
+		return value;
 	}
 	
 	/**
 	 * @return true if this timestamp is greater or equal than the given one
 	 */
 	public boolean ge(Timestamp ts) {
-		return this.value >= ts.value;
+		return ts==null ? true : this.value >= ts.value;
 	}
 	
 	/**
 	 * @return true if this timestamp is lower or equal than the given one
 	 */
 	public boolean le(Timestamp ts) {
-		return this.value < ts.value;
+		return ts==null ? false : this.value <= ts.value;
 	}
 
 }
