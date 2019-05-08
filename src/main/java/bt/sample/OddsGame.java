@@ -10,12 +10,14 @@ import bt.ui.EmulatorWindow;
 /**
  * An 'odds and evens game' contract that pays double or nothing on a 50% chance.
  * 
- * From the amount sent to the contract the activation fee is subtracted and this
- * resulting amount is doubled if the sender wins.
+ * From the amount sent to the contract the activation fee is subtracted and this resulting
+ * amount is doubled if the sender wins. Let's say the activation fee is set as 10 BURST,
+ * a winning bet of 100 BURST will receive back (100-10)*2 == 180 BURST. A winning bet
+ * of 1000 BURST will receive back (1000-10)*2 = 1980 BURST.
  * 
  * Every transaction sent to this contract has an even or odd value attributed
- * according to the transaction timestamp. Two blocks in future the winning
- * value (even or odd) is chosen based on the block hash (random source).
+ * according to the transaction number. A block in future is used to decide the winning
+ * value (even or odd), chosen based on the block hash (random source).
  * 
  * A value in the future is used as source for randomness to difficult tampering
  * from malicious miners. For the same reason, a high activation fee is also advisable
@@ -26,7 +28,7 @@ import bt.ui.EmulatorWindow;
 public class OddsGame extends Contract {
 
 	Timestamp lastTimestamp;
-	Timestamp next;
+	Timestamp nextBetTimestamp;
 	Transaction nextTX;
 	Address developer;
 
@@ -40,18 +42,18 @@ public class OddsGame extends Contract {
 	public void txReceived() {
 		// Previous block hash is the random value we use
 		long blockOdd = getPrevBlockHash();
-		Timestamp timeLimit = getPrevBlockTimestamp();
+		Timestamp prevTimestamp = getPrevBlockTimestamp();
 		blockOdd &= 0xffL; // bitwise AND to avoid negative values
 		blockOdd %= 2; // MOD 2 to get just 1 or 0
 
 		nextTX = getTxAfterTimestamp(lastTimestamp);
 
 		while (nextTX != null) {
-			next = nextTX.getTimestamp();
-			if (next.ge(timeLimit))
+			nextBetTimestamp = nextTX.getTimestamp();
+			if (nextBetTimestamp.ge(prevTimestamp))
 				break; // only bets before previous block can run now
 
-			lastTimestamp = next;
+			lastTimestamp = nextBetTimestamp;
 
 			long pay = (lastTimestamp.getValue() % 2) - blockOdd;
 
@@ -66,8 +68,11 @@ public class OddsGame extends Contract {
 			nextTX = getTxAfterTimestamp(lastTimestamp);
 		}
 
-		if(getCurrentBalance() > MAX_PAYMENT*3)
+		if(getCurrentBalance() > MAX_PAYMENT*3){
+			// In the unlikely event we accumulate balance on the contract,
+			// tip the developer.
 			sendAmount(MAX_PAYMENT, parseAddress(DEV_ADDRESS));
+		}
 	}
 
 	/**
