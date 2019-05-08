@@ -11,13 +11,16 @@ import bt.ui.EmulatorWindow;
  * An 'odds and evens game' contract that pays double or nothing on a 50% chance.
  * 
  * From the amount sent to the contract the activation fee is subtracted and this resulting
- * amount is doubled if the sender wins. Let's say the activation fee is set as 10 BURST,
+ * amount is doubled if the sender wins. Let's say the activation fee was set as 10 BURST,
  * a winning bet of 100 BURST will receive back (100-10)*2 == 180 BURST. A winning bet
  * of 1000 BURST will receive back (1000-10)*2 = 1980 BURST.
  * 
  * Every transaction sent to this contract has an even or odd value attributed
  * according to the transaction number. A block in future is used to decide the winning
  * value (even or odd), chosen based on the block hash (random source).
+ * 
+ * Winners of previous bets are computed as new bets come in, so people need to keep
+ * betting to keep the system working.
  * 
  * A value in the future is used as source for randomness to difficult tampering
  * from malicious miners. For the same reason, a high activation fee is also advisable
@@ -43,9 +46,10 @@ public class OddsGame extends Contract {
 		// Previous block hash is the random value we use
 		long blockOdd = getPrevBlockHash();
 		Timestamp prevTimestamp = getPrevBlockTimestamp();
-		blockOdd &= 0xffL; // bitwise AND to avoid negative values
+		blockOdd &= 0xffL; // bitwise AND to get the last part of the number and avoid negative values
 		blockOdd %= 2; // MOD 2 to get just 1 or 0
 
+		// We start with the transaction after the last one (from the previous round)
 		nextTX = getTxAfterTimestamp(lastTimestamp);
 
 		while (nextTX != null) {
@@ -118,10 +122,15 @@ public class OddsGame extends Contract {
 
 		emu.forgeBlock();
 		emu.forgeBlock();
-		emu.forgeBlock();
 
 		// another transaction to trigger the sorting mechanism
-		emu.send(creator, odds, 10*ONE_BURST);
+		emu.send(bet1, odds, 10*ONE_BURST);
+		emu.forgeBlock();
+		emu.send(bet1, odds, 20*ONE_BURST);
+		emu.forgeBlock();
+		emu.forgeBlock();
+		emu.send(bet1, odds, 30*ONE_BURST);
+		emu.forgeBlock();
 		emu.forgeBlock();
 
 		new EmulatorWindow(OddsGame.class);
