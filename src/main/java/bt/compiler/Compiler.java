@@ -728,6 +728,12 @@ public class Compiler {
 							code.putInt(tmpVar1);
 
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("sleep")) {
+							arg1 = popVar(m, tmpVar1, false);
+							stack.pollLast(); // remove the "this" from stack
+
+							code.put(OpCode.e_op_code_SLP_DAT);
+							code.putInt(tmpVar1);
 						} else if (mi.name.equals("sendAmount")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							arg2 = popVar(m, tmpVar2, false); // amount

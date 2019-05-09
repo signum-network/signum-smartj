@@ -1,6 +1,7 @@
 package bt;
 
 import java.lang.reflect.Field;
+import java.util.concurrent.Semaphore;
 
 /**
  * The BlockTalk smart contract abstract class.
@@ -30,10 +31,15 @@ public abstract class Contract {
 	Transaction currentTx;
 	long activationFee;
 
-	protected Contract(){
+	// Thread stuff to emulate sleep functions
+	Semaphore semaphore = new Semaphore(1);
+	boolean running;
+	Timestamp sleepUntil;
+
+	protected Contract() {
 		Emulator emu = Emulator.getInstance();
-		setInitialVars(emu.curTx.getSenderAddress(),
-			new Timestamp(emu.getCurrentBlock().getHeight(), 0), emu.curTx.getAmount());
+		setInitialVars(emu.curTx.getSenderAddress(), new Timestamp(emu.getCurrentBlock().getHeight(), 0),
+				emu.curTx.getAmount());
 	}
 
 	/**
@@ -73,7 +79,7 @@ public abstract class Contract {
 	 * unencrypted.
 	 * 
 	 * @param message  the message, truncated in 4*sizeof(long)
-	 * @param amount the amount or 0 to send the message only
+	 * @param amount   the amount or 0 to send the message only
 	 * @param receiver the address
 	 */
 	protected void sendMessage(String message, Address receiver) {
@@ -158,8 +164,28 @@ public abstract class Contract {
 	 * @param tx
 	 * @return the message for the given transaction
 	 */
-	protected Register getMessage(Transaction tx){
+	protected Register getMessage(Transaction tx) {
 		return tx.getMessage();
+	}
+
+	/**
+	 * Sleep until the given timestamp.
+	 * 
+	 * If the timestamp is actually in the past or null, it will sleep until the
+	 * next block.
+	 * 
+	 * @param ts
+	 */
+	protected void sleep(Timestamp ts) {
+		sleepUntil = ts;
+		if(sleepUntil==null)
+			sleepUntil = new Timestamp(0, 0);
+		try {
+			semaphore.acquire();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		sleepUntil = null;
 	}
 
 	/**

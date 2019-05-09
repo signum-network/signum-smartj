@@ -134,8 +134,36 @@ public class Emulator {
 
 	public void forgeBlock() throws Exception {
 
+		// Transactions to postpone due to sleeping contracts
+		ArrayList<Transaction> pendTxs = new ArrayList<>();
+		Timestamp curBlockTs = new Timestamp(currentBlock.height, 0);
+
+		// check for sleeping contracts
+		for(Block b : blocks){
+			for(Transaction tx : b.txs){
+				Contract c = tx.receiver.contract;
+				// sleeping contract
+				if(c.sleepUntil!=null && c.sleepUntil.le(curBlockTs)) {
+					// release to finish execution
+					c.semaphore.release();
+					// FIXME: consecutive sleep commands in contracts will not work, fix or not fix?
+					while(c.running && c.sleepUntil!=null){
+						Thread.sleep(10);
+					}
+				}
+			}
+		}
+
 		// process all pending transactions
 		for (Transaction tx : currentBlock.txs) {
+
+			// checking for sleeping contracts
+			if (tx.receiver.contract != null && tx.receiver.contract.sleepUntil != null) {
+				// let it sleep, postpone this transaction
+				pendTxs.add(tx);
+				continue;
+			}
+
 			if (tx.amount > 0) {
 				long ammount = Math.min(tx.sender.balance, tx.amount);
 
@@ -159,6 +187,7 @@ public class Emulator {
 		blocks.add(currentBlock);
 		prevBlock = currentBlock;
 		currentBlock = new Block(prevBlock);
+		currentBlock.txs.addAll(pendTxs);
 
 		// run all contracts, operations will be pending to be forged in the next block
 		for (Transaction tx : prevBlock.txs) {
@@ -172,26 +201,43 @@ public class Emulator {
 				// a contract received a message
 				c.setCurrentTx(tx);
 
-				// check the message arguments to call a specific function
-				boolean invoked = false;
-				try {
-					if (tx.type == Transaction.TYPE_METHOD_CALL) {
-						invoked = true;
-						if (tx.msg.args[0] == null)
-							tx.msg.method.invoke(c);
-						else if (tx.msg.args[1] == null)
-							tx.msg.method.invoke(c, tx.msg.args[0]);
-						else if (tx.msg.args[2] == null)
-							tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1]);
-						else
-							tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1], tx.msg.args[2]);
+				Thread ct = new Thread() {
+					public void run() {
+						// check the message arguments to call a specific function
+						boolean invoked = false;
+						try {
+							if (tx.type == Transaction.TYPE_METHOD_CALL) {
+								invoked = true;
+								if (tx.msg.args[0] == null)
+									tx.msg.method.invoke(c);
+								else if (tx.msg.args[1] == null)
+									tx.msg.method.invoke(c, tx.msg.args[0]);
+								else if (tx.msg.args[2] == null)
+									tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1]);
+								else
+									tx.msg.method.invoke(c, tx.msg.args[0], tx.msg.args[1], tx.msg.args[2]);
+							}
+						} catch (Exception ex) {
+							ex.printStackTrace();
+							invoked = false;
+						}
+						if (!invoked) // invoke the default method "txReceived"
+							c.txReceived();
+						c.running = false;
 					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					invoked = false;
+				};
+
+				// Run the contract on a different thread so that we can emulate the sleep function.
+				// However, we always wait for it to finish one by one since there should be no
+				// parallel execution.
+				c.semaphore.acquire();
+				c.running = true;
+				ct.start();
+				while(c.running && c.sleepUntil!=null){
+					Thread.sleep(10);
 				}
-				if(!invoked) // invoke the default method "txReceived"
-					c.txReceived();
+				if(c.sleepUntil==null)
+					c.semaphore.release();
 			}
 		}
 	}
@@ -201,8 +247,8 @@ public class Emulator {
 		while (b != null) {
 			for (int i = 0; i < b.txs.size(); i++) {
 				Transaction txi = b.txs.get(i);
-				if (txi.type!=Transaction.TYPE_AT_CREATE && txi.receiver.equals(receiver) &&
-					!txi.getTimestamp().le(ts))
+				if (txi.type != Transaction.TYPE_AT_CREATE && txi.receiver.equals(receiver)
+						&& !txi.getTimestamp().le(ts))
 					return txi;
 			}
 			b = b.next;

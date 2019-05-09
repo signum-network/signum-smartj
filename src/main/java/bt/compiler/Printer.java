@@ -294,6 +294,14 @@ public class Printer {
 				out.println(" offset");
 				break;
 
+			case OpCode.e_op_code_SLP_DAT:
+				p += printOp(code, p, 1, out);
+				out.println("\tSLP_DAT");
+				out.print(tab);
+				p += print(code, p, 4, out);
+				out.println(" address");
+				break;
+
 			case OpCode.e_op_code_FIN_IMD:
 				p += printOp(code, p, 1, out);
 				out.println("\tFIN");
@@ -304,7 +312,6 @@ public class Printer {
 			case OpCode.e_op_code_SHL_DAT:
 			case OpCode.e_op_code_SHR_DAT:
 
-			case OpCode.e_op_code_SLP_DAT:
 			case OpCode.e_op_code_FIZ_DAT:
 			case OpCode.e_op_code_STZ_DAT:
 			case OpCode.e_op_code_STP_IMD:
