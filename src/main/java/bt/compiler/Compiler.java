@@ -329,8 +329,8 @@ public class Compiler {
 		StackVar v = new StackVar(address >= tmpVar1 ? STACK_PUSH : STACK_FIELD, address);
 		stack.add(v);
 
-		if (address >= tmpVar1) {
-			// is a tmp var, push to stack
+		if (v.type == STACK_PUSH) {
+			// is a tmp var, not a field, push to AT stack
 			m.code.put(OpCode.e_op_code_PSH_DAT);
 			m.code.putInt(address);
 		}
