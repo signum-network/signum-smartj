@@ -35,6 +35,9 @@ public class OddsGame extends Contract {
 	Transaction nextTX;
 	Address developer;
 
+	long blockOdd, pay, amount;
+	Timestamp prevTimestamp;
+
 	static final long MAX_PAYMENT = 2000*ONE_BURST;
 	static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
 
@@ -44,8 +47,8 @@ public class OddsGame extends Contract {
 	@Override
 	public void txReceived() {
 		// Previous block hash is the random value we use
-		long blockOdd = getPrevBlockHash();
-		Timestamp prevTimestamp = getPrevBlockTimestamp();
+		blockOdd = getPrevBlockHash();
+		prevTimestamp = getPrevBlockTimestamp();
 		blockOdd &= 0xffL; // bitwise AND to get the last part of the number and avoid negative values
 		blockOdd %= 2; // MOD 2 to get just 1 or 0
 
@@ -59,11 +62,11 @@ public class OddsGame extends Contract {
 
 			lastTimestamp = nextBetTimestamp;
 
-			long pay = (lastTimestamp.getValue() % 2) - blockOdd;
+			pay = (lastTimestamp.getValue() % 2) - blockOdd;
 
 			if (pay == 0) {
 				// pay double (amount already has the activation fee subtracted)
-				long amount = nextTX.getAmount() * 2;
+				amount = nextTX.getAmount() * 2;
 				if(amount > MAX_PAYMENT)
 					amount = MAX_PAYMENT;
 				sendAmount(amount, nextTX.getSenderAddress());

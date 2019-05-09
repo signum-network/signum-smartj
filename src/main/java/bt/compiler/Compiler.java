@@ -56,19 +56,22 @@ public class Compiler {
 	String className;
 
 	int lastFreeVar;
+	boolean useLastTx;
 	int lastTxReceived;
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3;
 	int maxLocals;
 
-	public class Error{
+	public class Error {
 		AbstractInsnNode node;
 		String message;
-		Error(AbstractInsnNode node, String message){
+
+		Error(AbstractInsnNode node, String message) {
 			this.node = node;
 			this.message = message;
 		}
-		public String getMessage(){
+
+		public String getMessage() {
 			return message;
 		}
 	}
@@ -87,7 +90,7 @@ public class Compiler {
 	}
 
 	static final int STACK_THIS = 0;
-	static final int STACK_LOCAL = 1;
+	static final int STACK_FIELD = 1;
 	static final int STACK_VAR_ADDRESS = 2;
 	static final int STACK_CONSTANT = 3;
 	static final int STACK_PUSH = 4;
@@ -114,8 +117,8 @@ public class Compiler {
 			switch (type) {
 			case STACK_THIS:
 				return "this";
-			case STACK_LOCAL:
-				return "local: " + address;
+			case STACK_FIELD:
+				return "field: " + address;
 			case STACK_VAR_ADDRESS:
 				return "var addr: " + address;
 			case STACK_PUSH:
@@ -144,7 +147,7 @@ public class Compiler {
 			// System.out.println("field name:" + f.name);
 			int nvars = 0;
 
-			if(Modifier.isFinal(f.access) && Modifier.isStatic(f.access))
+			if (Modifier.isFinal(f.access) && Modifier.isStatic(f.access))
 				continue; // we simply skip this
 
 			if (f.desc.charAt(0) == 'L') {
@@ -209,28 +212,30 @@ public class Compiler {
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
 
-		// put the last transaction received in A (after the last timestamp)
-		code.put(OpCode.e_op_code_EXT_FUN_DAT);
-		code.putShort(OpCode.A_To_Tx_After_Timestamp);
-		code.putInt(lastTxTimestamp);
+		if (useLastTx) {
+			// put the last transaction received in A (after the last timestamp)
+			code.put(OpCode.e_op_code_EXT_FUN_DAT);
+			code.putShort(OpCode.A_To_Tx_After_Timestamp);
+			code.putInt(lastTxTimestamp);
 
-		// get the value from A1
-		code.put(OpCode.e_op_code_EXT_FUN_RET);
-		code.putShort(OpCode.Get_A1);
-		code.putInt(lastTxReceived);
+			// get the value from A1
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_A1);
+			code.putInt(lastTxReceived);
 
-		// if zero we will FINISH, otherwise continue
-		// TODO: check if this is really necessary, since there should always be a
-		// transaction
-		// code.put(OpCode.e_op_code_BNZ_DAT);
-		// code.putInt(lastTxReceived);
-		// code.put((byte) 7);
-		// code.put(OpCode.e_op_code_FIN_IMD);
+			// if zero we will FINISH, otherwise continue
+			// TODO: check if this is really necessary, since there should always be a
+			// transaction
+			// code.put(OpCode.e_op_code_BNZ_DAT);
+			// code.putInt(lastTxReceived);
+			// code.put((byte) 7);
+			// code.put(OpCode.e_op_code_FIN_IMD);
 
-		// Store the timestamp of the last transaction
-		code.put(OpCode.e_op_code_EXT_FUN_RET);
-		code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
-		code.putInt(lastTxTimestamp);
+			// Store the timestamp of the last transaction
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
+			code.putInt(lastTxTimestamp);
+		}
 
 		// TODO: handle external method calls here (our ABI must be defined first)
 
@@ -264,9 +269,9 @@ public class Compiler {
 			// resolve all offsets
 			for (Method.Jump j : m.jumps) {
 				int jaddress = 0;
-				if(j.method!=null)
+				if (j.method != null)
 					jaddress = j.method.address;
-				else{
+				else {
 					Integer position = labels.get(j.label);
 					if (position == null) {
 						System.err.println("Label not found: " + j.label.getLabel());
@@ -297,6 +302,8 @@ public class Compiler {
 	}
 
 	private void readMethods() {
+		useLastTx = false;
+
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
 			if (mnode.name.equals(MAIN_METHOD))
@@ -319,32 +326,34 @@ public class Compiler {
 	 * Push the variable on the given address to the stack.
 	 */
 	StackVar pushVar(Method m, int address) {
-		StackVar v = new StackVar(STACK_PUSH, 0);
+		StackVar v = new StackVar(address >= tmpVar1 ? STACK_PUSH : STACK_FIELD, address);
 		stack.add(v);
 
-		m.code.put(OpCode.e_op_code_PSH_DAT);
-		m.code.putInt(address);
+		if (address >= tmpVar1) {
+			// is a tmp var, push to stack
+			m.code.put(OpCode.e_op_code_PSH_DAT);
+			m.code.putInt(address);
+		}
 		return v;
 	}
 
 	/**
-	 * Pop the lastest added variable from the stack and store on the given addres.
+	 * Pop the lastest added variable from the stack and store on the given address.
 	 * 
 	 * @param m
-	 * @param address
+	 * @param destAddress
 	 */
-	StackVar popVar(Method m, int address) {
+	StackVar popVar(Method m, int destAddress, boolean forceCopy) {
 		StackVar var = stack.pollLast();
 
-		if (var.type == STACK_PUSH) {
+		if (var.type == STACK_PUSH || forceCopy) {
+			// is a tmp var, pop needed
 			m.code.put(OpCode.e_op_code_POP_DAT);
-			m.code.putInt(address);
-		} else if (var.type == STACK_LOCAL) {
-			m.code.put(OpCode.e_op_code_SET_DAT);
-			m.code.putInt(address);
-			m.code.putInt(var.address);
-		}
-		else if (var.type == STACK_THIS){
+			m.code.putInt(destAddress);
+			var.address = destAddress;
+		} else if (var.type == STACK_FIELD) {
+			// do nothing
+		} else if (var.type == STACK_THIS) {
 			// do nothing
 		} else
 			System.err.println("Unexpected variable");
@@ -364,6 +373,8 @@ public class Compiler {
 			if (!m.node.desc.equals("()V"))
 				addError(m.node.instructions.get(0), "Contract constructor cannot have arguments");
 		}
+
+		StackVar arg1, arg2;
 
 		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		while (ite.hasNext()) {
@@ -408,9 +419,10 @@ public class Compiler {
 					if (vi.var > 0) {
 						pushVar(m, lastFreeVar + vi.var);
 						maxLocals = Math.max(maxLocals, vi.var);
+						addError(vi, "local variables are not supported");
 					} else {
 						// local 0 is 'this'
-						stack.add(new StackVar(STACK_THIS, 0));
+						stack.add(new StackVar(STACK_THIS, null));
 					}
 					System.out.println((opcode < ISTORE ? "load" : "store") + " local: " + vi.var);
 				} else {
@@ -426,8 +438,12 @@ public class Compiler {
 					if (vi.var == 0)
 						System.err.println("problem");
 					// local 0 is 'this', others are stored after the last variable
-					popVar(m, lastFreeVar + vi.var);
+
+					arg1 = popVar(m, lastFreeVar + vi.var, false);
 					System.out.println("store local: " + vi.var);
+
+					// we are not allowing local variables for now
+					addError(vi, "local variables are not supported");
 				} else {
 					System.err.println("problem");
 				}
@@ -479,11 +495,15 @@ public class Compiler {
 			case LSUB:
 			case IDIV:
 			case LDIV:
+			case IMUL:
+			case LMUL:
 			case IREM:
 			case LREM:
+			case IAND:
+			case LAND:
 				// we should have two arguments on the stack
-				popVar(m, tmpVar1);
-				popVar(m, tmpVar2);
+				arg1 = popVar(m, tmpVar1, true);
+				arg2 = popVar(m, tmpVar2, false);
 
 				switch (opcode) {
 				case ISUB:
@@ -506,13 +526,18 @@ public class Compiler {
 					System.out.println("mod");
 					code.put(OpCode.e_op_code_MOD_DAT);
 					break;
+				case IAND:
+				case LAND:
+					System.out.println("AND");
+					code.put(OpCode.e_op_code_AND_DAT);
+					break;
 				default:
 					System.out.println("add");
 					code.put(OpCode.e_op_code_ADD_DAT);
 					break;
 				}
-				code.putInt(tmpVar1);
-				code.putInt(tmpVar2);
+				code.putInt(arg1.address);
+				code.putInt(arg2.address);
 
 				pushVar(m, tmpVar1);
 				break;
@@ -520,13 +545,13 @@ public class Compiler {
 			case LNEG:
 				System.out.println("neg");
 
-				popVar(m, tmpVar2);
+				arg1 = popVar(m, tmpVar2, false);
 
 				code.put(OpCode.e_op_code_CLR_DAT);
 				code.putInt(tmpVar1);
 				code.put(OpCode.e_op_code_SUB_DAT);
 				code.putInt(tmpVar1);
-				code.putInt(tmpVar2);
+				code.putInt(arg1.address);
 
 				pushVar(m, tmpVar1);
 				break;
@@ -544,13 +569,13 @@ public class Compiler {
 
 			case DUP: // duplicate the value on top of the stack
 			{
-				StackVar var = popVar(m, tmpVar1);
+				StackVar var = popVar(m, tmpVar1, false);
 				if (var.type == STACK_THIS) {
 					stack.addLast(var);
 					stack.addLast(var);
 				} else if (var.type == STACK_PUSH) {
-					pushVar(m, tmpVar1);
-					pushVar(m, tmpVar1);
+					pushVar(m, var.address);
+					pushVar(m, var.address);
 				} else {
 					System.err.println("DUP error");
 				}
@@ -581,8 +606,8 @@ public class Compiler {
 						// a call on the timestamp object
 						if (mi.name.equals("ge") || mi.name.equals("le")) {
 							// we should have two arguments
-							popVar(m, tmpVar1);
-							popVar(m, tmpVar2);
+							arg1 = popVar(m, tmpVar1, false);
+							arg2 = popVar(m, tmpVar2, false);
 
 							code.put(OpCode.e_op_code_CLR_DAT);
 							code.putInt(tmpVar3);
@@ -590,22 +615,22 @@ public class Compiler {
 								code.put(OpCode.e_op_code_BLT_DAT);
 							else
 								code.put(OpCode.e_op_code_BGT_DAT);
-							code.putInt(tmpVar1);
-							code.putInt(tmpVar2);
+							code.putInt(arg1.address);
+							code.putInt(arg2.address);
 							code.put((byte) 0x0e); // offset
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar3);
 							pushVar(m, tmpVar3);
 						} else if (mi.name.equals("addMinutes")) {
 							// we should have two arguments
-							popVar(m, tmpVar1); // the timestamp
-							popVar(m, tmpVar2); // minutes
+							arg1 = popVar(m, tmpVar1, false); // the timestamp
+							arg2 = popVar(m, tmpVar2, false); // minutes
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET_DAT_2);
 							code.putShort(OpCode.Add_Minutes_To_Timestamp);
 							code.putInt(tmpVar3);
-							code.putInt(tmpVar1);
-							code.putInt(tmpVar2);
+							code.putInt(arg1.address);
+							code.putInt(arg2.address);
 							pushVar(m, tmpVar3);
 						} else if (mi.name.equals("getValue")) {
 							// it is the timestamp object itself (already on stack)
@@ -617,6 +642,7 @@ public class Compiler {
 						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
 							pushVar(m, lastTxReceived);
+							useLastTx = true;
 						} else if (mi.name.equals("getCurrentBalance")) {
 							stack.pollLast(); // remove the "this" from stack
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
@@ -624,12 +650,12 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getTxAfterTimestamp")) {
-							popVar(m, tmpVar1); // timestamp
+							arg1 = popVar(m, tmpVar1, false); // timestamp
 							stack.pollLast(); // remove the "this" from stack
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.A_To_Tx_After_Timestamp);
-							code.putInt(tmpVar1);
+							code.putInt(arg1.address);
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_A1);
@@ -697,17 +723,17 @@ public class Compiler {
 
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("sendAmount")) {
-							popVar(m, tmpVar1); // address
-							popVar(m, tmpVar2); // amount
+							arg1 = popVar(m, tmpVar1, false); // address
+							arg2 = popVar(m, tmpVar2, false); // amount
 							stack.pollLast(); // remove the 'this'
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
-							code.putInt(tmpVar1); // address
+							code.putInt(arg1.address); // address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Send_To_Address_In_B);
-							code.putInt(tmpVar2); // amount
+							code.putInt(arg2.address); // amount
 						} else if (mi.name.equals("sendBalance")) {
 							StackVar address = stack.pollLast();
 							stack.pollLast(); // remove the 'this'
@@ -719,10 +745,10 @@ public class Compiler {
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Send_All_To_Address_In_B);
 						} else if (mi.name.equals("sendMessage")) {
-							popVar(m, tmpVar1); // address
+							arg1 = popVar(m, tmpVar1, false); // address
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
-							code.putInt(tmpVar1); // address
+							code.putInt(arg1.address); // address
 
 							StackVar msg = stack.pollLast();
 							// Fill A1-A4 with 4*long
@@ -771,11 +797,11 @@ public class Compiler {
 					} else if (owner.equals(Transaction.class.getName())) {
 						// call on a transaction object
 						if (mi.name.equals("getSenderAddress")) {
-							popVar(m, tmpVar1); // the TX we want the address
+							arg1 = popVar(m, tmpVar1, false); // the TX we want the address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(tmpVar1);
+							code.putInt(arg1.address);
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.B_To_Address_Of_Tx_In_A);
@@ -785,22 +811,22 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getAmount")) {
-							popVar(m, tmpVar1); // the TX address
+							arg1 = popVar(m, tmpVar1, false); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(tmpVar1); // the TX address
+							code.putInt(arg1.address); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Amount_For_Tx_In_A);
 							code.putInt(tmpVar1); // the amount
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getTimestamp")) {
-							popVar(m, tmpVar1); // the TX address
+							arg1 = popVar(m, tmpVar1, false); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(tmpVar1); // the TX address
+							code.putInt(arg1.address); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
@@ -811,12 +837,12 @@ public class Compiler {
 						}
 					} else if (owner.equals(Object.class.getName())) {
 						if (mi.name.equals("equals")) {
-							popVar(m, tmpVar1); // the obj 1
-							popVar(m, tmpVar2); // the obj 2
+							arg1 = popVar(m, tmpVar1, true); // the obj 1
+							arg2 = popVar(m, tmpVar2, false); // the obj 2
 
 							code.put(OpCode.e_op_code_SUB_DAT);
-							code.putInt(tmpVar1);
-							code.putInt(tmpVar2);
+							code.putInt(arg1.address);
+							code.putInt(arg2.address);
 
 							code.put(OpCode.e_op_code_CLR_DAT);
 							code.putInt(tmpVar2);
@@ -849,14 +875,10 @@ public class Compiler {
 						stack.pollLast(); // remove the 'this'
 						pushVar(m, fields.get(fi.name).address);
 					} else {
-						popVar(m, tmpVar1);
-						stack.pollLast(); // remove the 'this'
-
+						// PUTFIELD
 						Field field = fields.get(fi.name);
-
-						code.put(OpCode.e_op_code_SET_DAT);
-						code.putInt(field.address);
-						code.putInt(tmpVar1);
+						popVar(m, field.address, false);
+						stack.pollLast(); // remove the 'this'
 					}
 				} else {
 					System.err.println("problem");
@@ -892,8 +914,8 @@ public class Compiler {
 
 			case LCMP: // push 0 if the two longs are the same, 1 if value1 is greater than value2, -1
 						// otherwise
-				popVar(m, tmpVar2);
-				popVar(m, tmpVar1);
+				arg2 = popVar(m, tmpVar2, false);
+				arg1 = popVar(m, tmpVar1, true);
 				code.put(OpCode.e_op_code_SUB_DAT);
 				code.putInt(tmpVar1);
 				code.putInt(tmpVar2);
@@ -914,8 +936,9 @@ public class Compiler {
 				if (insn instanceof JumpInsnNode) {
 					JumpInsnNode jmp = (JumpInsnNode) insn;
 
+					arg1 = null;
 					if (opcode != GOTO) {
-						popVar(m, tmpVar1);
+						arg1 = popVar(m, tmpVar1, false);
 					}
 
 					// The idea is to branch on the negative of the command to skip
@@ -925,14 +948,14 @@ public class Compiler {
 					case IFEQ:
 					case IFNULL:
 						code.put(OpCode.e_op_code_BNZ_DAT);
-						code.putInt(tmpVar1);
+						code.putInt(arg1.address);
 						code.put((byte) 11);
 						break;
 
 					case IFNE:
 					case IFNONNULL:
 						code.put(OpCode.e_op_code_BZR_DAT);
-						code.putInt(tmpVar1);
+						code.putInt(arg1.address);
 						code.put((byte) 11);
 						break;
 
@@ -941,7 +964,7 @@ public class Compiler {
 						code.put(OpCode.e_op_code_CLR_DAT);
 						code.putInt(tmpVar2);
 						code.put(opcode == IFGE ? OpCode.e_op_code_BLT_DAT : OpCode.e_op_code_BLE_DAT);
-						code.putInt(tmpVar1);
+						code.putInt(arg1.address);
 						code.putInt(tmpVar2);
 						code.put((byte) 15);
 						break;
@@ -950,7 +973,7 @@ public class Compiler {
 						code.put(OpCode.e_op_code_CLR_DAT);
 						code.putInt(tmpVar2);
 						code.put(opcode == IFLE ? OpCode.e_op_code_BGT_DAT : OpCode.e_op_code_BGE_DAT);
-						code.putInt(tmpVar1);
+						code.putInt(arg1.address);
 						code.putInt(tmpVar2);
 						code.put((byte) 15);
 						break;
@@ -974,8 +997,8 @@ public class Compiler {
 				if (insn instanceof JumpInsnNode) {
 					JumpInsnNode jmp = (JumpInsnNode) insn;
 
-					popVar(m, tmpVar1);
-					popVar(m, tmpVar2);
+					arg1 = popVar(m, tmpVar1, true);
+					arg2 = popVar(m, tmpVar2, false);
 
 					code.put(OpCode.e_op_code_SUB_DAT);
 					code.putInt(tmpVar1);
@@ -996,7 +1019,7 @@ public class Compiler {
 				break;
 
 			default:
-				System.err.println("opcode: " + opcode + " " + insn.toString());
+				addError(insn, "Unsuported opcode: " + opcode);
 				break;
 			}
 		}
@@ -1010,14 +1033,14 @@ public class Compiler {
 		// try to find a line number to report
 		int line = -1;
 		AbstractInsnNode prev = node;
-		while(prev!=null){
-			if(prev instanceof LineNumberNode){
-				line = ((LineNumberNode)prev).line;
+		while (prev != null) {
+			if (prev instanceof LineNumberNode) {
+				line = ((LineNumberNode) prev).line;
 				break;
 			}
-			prev = node.getPrevious();
+			prev = prev.getPrevious();
 		}
-		String message = "line " +  line + ": " + error;
+		String message = "line " + line + ": " + error;
 
 		errors.add(new Error(node, message));
 	}
