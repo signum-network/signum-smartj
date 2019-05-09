@@ -346,13 +346,19 @@ public class Compiler {
 	StackVar popVar(Method m, int destAddress, boolean forceCopy) {
 		StackVar var = stack.pollLast();
 
-		if (var.type == STACK_PUSH || forceCopy) {
+		if (var.type == STACK_PUSH) {
 			// is a tmp var, pop needed
 			m.code.put(OpCode.e_op_code_POP_DAT);
 			m.code.putInt(destAddress);
 			var.address = destAddress;
 		} else if (var.type == STACK_FIELD) {
-			// do nothing
+			if(forceCopy){
+				m.code.put(OpCode.e_op_code_SET_DAT);
+				m.code.putInt(destAddress);
+				m.code.putInt(var.address);
+				var.address = destAddress;	
+			}
+			// otherwise, do nothing
 		} else if (var.type == STACK_THIS) {
 			// do nothing
 		} else

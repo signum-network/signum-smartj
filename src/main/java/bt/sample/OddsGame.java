@@ -31,12 +31,11 @@ import bt.ui.EmulatorWindow;
 public class OddsGame extends Contract {
 
 	Timestamp lastTimestamp;
+	Timestamp prevBlockTimestamp;
 	Timestamp nextBetTimestamp;
 	Transaction nextTX;
-	Address developer;
-
 	long blockOdd, pay, amount;
-	Timestamp prevTimestamp;
+	Address developer;
 
 	static final long MAX_PAYMENT = 2000*ONE_BURST;
 	static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
@@ -48,8 +47,8 @@ public class OddsGame extends Contract {
 	public void txReceived() {
 		// Previous block hash is the random value we use
 		blockOdd = getPrevBlockHash();
-		prevTimestamp = getPrevBlockTimestamp();
-		blockOdd &= 0xffL; // bitwise AND to get the last part of the number and avoid negative values
+		prevBlockTimestamp = getPrevBlockTimestamp();
+		blockOdd &= 0xffL; // bitwise AND to get the last part of the number (and avoid negative values)
 		blockOdd %= 2; // MOD 2 to get just 1 or 0
 
 		// We start with the transaction after the last one (from the previous round)
@@ -57,33 +56,35 @@ public class OddsGame extends Contract {
 
 		while (nextTX != null) {
 			nextBetTimestamp = nextTX.getTimestamp();
-			if (nextBetTimestamp.ge(prevTimestamp))
-				break; // only bets before previous block can run now
+			if (nextBetTimestamp.ge(prevBlockTimestamp))
+				break; // only bets before previous block can run in this round
 
 			lastTimestamp = nextBetTimestamp;
 
+			// Check if this transaction won (if is equals to the block number)
 			pay = (lastTimestamp.getValue() % 2) - blockOdd;
 
 			if (pay == 0) {
-				// pay double (amount already has the activation fee subtracted)
+				// pay double (amount always has the activation fee subtracted)
 				amount = nextTX.getAmount() * 2;
 				if(amount > MAX_PAYMENT)
 					amount = MAX_PAYMENT;
 				sendAmount(amount, nextTX.getSenderAddress());
 			}
 
+			// Check the next transaction
 			nextTX = getTxAfterTimestamp(lastTimestamp);
 		}
 
 		if(getCurrentBalance() > MAX_PAYMENT*3){
-			// In the unlikely event we accumulate balance on the contract,
+			// In the unlikely event we accumulate balance on this contract,
 			// tip the developer.
 			sendAmount(MAX_PAYMENT, parseAddress(DEV_ADDRESS));
 		}
 	}
 
 	/**
-	 * Main function for debbuging purposes only, not exported to bytecode.
+	 * Main function, for debbuging purposes only, not exported to bytecode.
 	 */
 	public static void main(String[] args) throws Exception {
 		// some initialization code to make things easier to debug
