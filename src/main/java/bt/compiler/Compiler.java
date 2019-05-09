@@ -502,8 +502,8 @@ public class Compiler {
 			case IAND:
 			case LAND:
 				// we should have two arguments on the stack
-				arg1 = popVar(m, tmpVar1, true);
 				arg2 = popVar(m, tmpVar2, false);
+				arg1 = popVar(m, tmpVar1, true);
 
 				switch (opcode) {
 				case ISUB:
