@@ -117,12 +117,8 @@ public class Printer {
 			case OpCode.e_op_code_SET_DAT:
 				p += printOp(code, p, 1, out);
 				out.println("\tSET_DAT");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_CLR_DAT:
 			case OpCode.e_op_code_INC_DAT:
@@ -145,31 +141,23 @@ public class Printer {
 				default:
 					out.println();
 				}
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_PSH_DAT:
 			case OpCode.e_op_code_POP_DAT:
 				p += printOp(code, p, 1, out);
 				out.println(op == OpCode.e_op_code_PSH_DAT ? "\tPSH_DAT" : "\tPOP_DAT");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_JMP_SUB:
 				p += printOp(code, p, 1, out);
 				out.println("\tJMP_SUB");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_JMP_ADR:
 				p += printOp(code, p, 1, out);
 				out.println("\tJMP_ADR");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_ADD_DAT:
 			case OpCode.e_op_code_SUB_DAT:
@@ -208,12 +196,8 @@ public class Printer {
 				default:
 					out.println();
 				}
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_SET_IND:
 			case OpCode.e_op_code_SET_IDX:
@@ -241,9 +225,7 @@ public class Printer {
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_EXT_FUN_DAT_2:
 			case OpCode.e_op_code_EXT_FUN_RET_DAT:
@@ -252,12 +234,8 @@ public class Printer {
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
 				break;
 
 			case OpCode.e_op_code_EXT_FUN_RET_DAT_2:
@@ -266,24 +244,16 @@ public class Printer {
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
 				break;
 
 			case OpCode.e_op_code_BZR_DAT:
 			case OpCode.e_op_code_BNZ_DAT:
 				p += printOp(code, p, 1, out);
 				out.println(op == OpCode.e_op_code_BZR_DAT ? "\tBZR" : "\tBNZ");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				out.print(tab);
 				p += print(code, p, 1, out);
 				out.println(" offset");
@@ -316,12 +286,8 @@ public class Printer {
 					out.println("\tBNE");
 					break;
 				}
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
 				out.print(tab);
 				p += print(code, p, 1, out);
 				out.println(" offset");

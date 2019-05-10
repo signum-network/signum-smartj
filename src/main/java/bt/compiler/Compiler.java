@@ -178,6 +178,7 @@ public class Compiler {
 
 			Field fld = new Field();
 			fld.address = lastFreeVar;
+			fld.node = f;
 			fields.put(f.name, fld);
 
 			lastFreeVar += nvars;
