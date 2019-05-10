@@ -86,8 +86,8 @@ public class BurstGame extends Contract {
 		emu.airDrop(creator, 1000 * ONE_BURST);
 		emu.airDrop(challenger, 1000 * ONE_BURST);
 
-		Address game = Emulator.getInstance().getAddress("GAME");
-		emu.createConctract(creator, game, BurstGame.class.getName(), ONE_BURST);
+		Address odds = Emulator.getInstance().getAddress("GAME");
+		emu.createConctract(creator, odds, BurstGame.class.getName(), ONE_BURST);
 
 		emu.forgeBlock();
 
@@ -102,17 +102,6 @@ public class BurstGame extends Contract {
 		emu.send(challenger, odds, 100*ONE_BURST);
 		emu.send(challenger, odds, 100*ONE_BURST);
 		emu.send(challenger, odds, 100*ONE_BURST);
-
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
 
 		emu.forgeBlock();
 		emu.forgeBlock();
