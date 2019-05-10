@@ -30,6 +30,41 @@ public class Printer {
 		out.print(hexArray[c2]);
 	}
 
+	static int printAddress(byte[] code, int p, PrintStream out, Compiler c) {
+		out.print(tab);
+		int ret = print(code, p, 4, out);
+		out.print(" address");
+		if (c != null) {
+			ByteBuffer address = ByteBuffer.allocate(4);
+			address.order(ByteOrder.LITTLE_ENDIAN);
+			for (int i = 0; i < 4; i++) {
+				address.put(code[p + i]);
+			}
+			address.clear();
+			int ad = address.getInt();
+
+			// print the variable name here
+			for (Field fi : c.fields.values()) {
+				if (fi.address == ad) {
+					out.print(" (" + fi.node.name + ")");
+					break;
+				}
+			}
+			if (ad == c.lastTxReceived)
+				out.print(" (lastTxReceived)");
+			else if (ad == c.lastTxTimestamp)
+				out.print(" (lastTxTimestamp)");
+			else if (ad == c.tmpVar1)
+				out.print(" (tmpVar1)");
+			else if (ad == c.tmpVar2)
+				out.print(" (tmpVar2)");
+			else if (ad == c.tmpVar3)
+				out.print(" (tmpVar3)");
+		}
+		out.println();
+		return ret;
+	}
+
 	static int printOp(byte[] bytes, int start, int length, PrintStream out) {
 		// Print the address of this operation first, making it easier to inspect jumps
 		out.print('@');
@@ -49,13 +84,13 @@ public class Printer {
 		}
 	}
 
-	public static void print(ByteBuffer buf, PrintStream out) {
-		print(buf.array(), buf.position(), out);
+	public static void print(ByteBuffer buf, PrintStream out, Compiler c) {
+		print(buf.array(), buf.position(), out, c);
 	}
 
 	private static final String tab = "\t";
 
-	public static void print(byte[] code, int length, PrintStream out) {
+	public static void print(byte[] code, int length, PrintStream out, Compiler c) {
 
 		ByteBuffer address = ByteBuffer.allocate(4);
 		address.order(ByteOrder.LITTLE_ENDIAN);
@@ -73,9 +108,7 @@ public class Printer {
 			case OpCode.e_op_code_SET_VAL:
 				p += printOp(code, p, 1, out);
 				out.println("\tSET_VAL");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				out.print(tab);
 				p += print(code, p, 8, out);
 				out.println(" value");

@@ -136,7 +136,7 @@ class CompileDialog extends JDialog implements ActionListener {
             String code = new String(baos.toByteArray(), StandardCharsets.UTF_8);
 
             baos.reset();
-            Printer.print(comp.getCode(), out);
+            Printer.print(comp.getCode(), out, comp);
             String codeForm = new String(baos.toByteArray(), StandardCharsets.UTF_8);
 
             byte[] bcode = new byte[comp.getCode().position()];

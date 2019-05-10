@@ -1072,7 +1072,7 @@ public class Compiler {
 
 		System.out.println("Code size: " + reader.code.position());
 
-		Printer.print(reader.code, System.out);
+		Printer.print(reader.code, System.out, reader);
 
 		System.out.println("Code single line:");
 		Printer.printCode(reader.code, System.out);
