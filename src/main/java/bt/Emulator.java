@@ -141,6 +141,9 @@ public class Emulator {
 		// check for sleeping contracts
 		for(Block b : blocks){
 			for(Transaction tx : b.txs){
+				if(tx.receiver==null || tx.receiver.contract==null)
+					continue;
+
 				Contract c = tx.receiver.contract;
 				// sleeping contract
 				if(c.sleepUntil!=null && c.sleepUntil.le(curBlockTs)) {
@@ -233,7 +236,7 @@ public class Emulator {
 				c.semaphore.acquire();
 				c.running = true;
 				ct.start();
-				while(c.running && c.sleepUntil!=null){
+				while(c.running && c.sleepUntil==null){
 					Thread.sleep(10);
 				}
 				if(c.sleepUntil==null)
