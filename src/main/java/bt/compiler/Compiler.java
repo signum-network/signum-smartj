@@ -622,9 +622,9 @@ public class Compiler {
 								code.put(OpCode.e_op_code_BLT_DAT);
 							else
 								code.put(OpCode.e_op_code_BGT_DAT);
-							code.putInt(arg1.address);
 							code.putInt(arg2.address);
-							code.put((byte) 0x0e); // offset
+							code.putInt(arg1.address);
+							code.put((byte) 0x0f); // offset
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar3);
 							pushVar(m, tmpVar3);
@@ -890,7 +890,7 @@ public class Compiler {
 					} else {
 						// PUTFIELD
 						Field field = fields.get(fi.name);
-						popVar(m, field.address, false);
+						popVar(m, field.address, true);
 						stack.pollLast(); // remove the 'this'
 					}
 				} else {

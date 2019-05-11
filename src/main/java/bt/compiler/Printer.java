@@ -152,12 +152,12 @@ public class Printer {
 			case OpCode.e_op_code_JMP_SUB:
 				p += printOp(code, p, 1, out);
 				out.println("\tJMP_SUB");
-				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, null);
 				break;
 			case OpCode.e_op_code_JMP_ADR:
 				p += printOp(code, p, 1, out);
 				out.println("\tJMP_ADR");
-				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, null);
 				break;
 			case OpCode.e_op_code_ADD_DAT:
 			case OpCode.e_op_code_SUB_DAT:
