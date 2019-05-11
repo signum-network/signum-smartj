@@ -70,8 +70,6 @@ class Will extends Contract {
 			// only creator is allowed
 			return;
 
-		getFieldValues();
-
 		if(expired()){
 			txReceived();
 			return;
