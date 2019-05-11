@@ -26,16 +26,20 @@ public class HappyCIP20 extends Contract {
 
 	static final long AMOUNT = ONE_BURST;
 
+	boolean alreadyGotSome;
+	Transaction tx, curTX;
+	Address sender;
+
 	@Override
 	public void txReceived() {
-		boolean alreadyGotSome = false;
+		alreadyGotSome = false;
 
-		Transaction curTX = getCurrentTx();
-		Address sender = curTX.getSenderAddress();
+		curTX = getCurrentTx();
+		sender = curTX.getSenderAddress();
 
 		// we will iterate all the transactions, from the first one
 		// to the last one
-		Transaction tx = this.getTxAfterTimestamp(null);
+		tx = this.getTxAfterTimestamp(null);
 		while(tx!=null && tx != curTX){
 			if(tx.getSenderAddress() == sender){
 				alreadyGotSome = true;

@@ -37,8 +37,8 @@ public class OddsGame extends Contract {
 	long blockOdd, pay, amount;
 	Address developer;
 
-	static final long MAX_PAYMENT = 2000*ONE_BURST;
-	static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
+	public static final long MAX_PAYMENT = 2000*ONE_BURST;
+	public static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
 
 	/**
 	 * This method is executed every time a transaction is received by the contract.
@@ -101,26 +101,10 @@ public class OddsGame extends Contract {
 
 		emu.forgeBlock();
 
-		// 10 bets each
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
-		emu.send(bet1, odds, 100*ONE_BURST);
+		// 2 bets each
 		emu.send(bet1, odds, 100*ONE_BURST);
 		emu.send(bet1, odds, 100*ONE_BURST);
 
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
-		emu.send(bet2, odds, 100*ONE_BURST);
 		emu.send(bet2, odds, 100*ONE_BURST);
 		emu.send(bet2, odds, 100*ONE_BURST);
 
@@ -131,7 +115,6 @@ public class OddsGame extends Contract {
 		emu.send(bet1, odds, 10*ONE_BURST);
 		emu.forgeBlock();
 		emu.send(bet1, odds, 20*ONE_BURST);
-		emu.forgeBlock();
 		emu.forgeBlock();
 		emu.send(bet1, odds, 30*ONE_BURST);
 		emu.forgeBlock();

@@ -12,7 +12,7 @@ import bt.ui.EmulatorWindow;
  * send 1000 BURST plus fees. Then, say a challenger bet against the creator by sending 100 BURST
  * plus fees.
  * 
- * Based on the next block hash (on future) a random number will be generated between 1 and 1000+10.
+ * Based on the next block hash (on future) a random number will be generated between 1 and 1000+100.
  * Any number between 1-1000 will make the creator the winner and any number between 1001-1100
  * will make the challenger the winner. So, if you bet with a larger amount you increase your
  * chances but put more at stake.
@@ -33,15 +33,14 @@ public class BurstGame extends Contract {
 
 	static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
 
-	public void withdraw(){
-		// Only creator can withdraw
-		if(getCurrentTx().getSenderAddress()==getCreator())
-			sendBalance(getCreator());
-	}
-
 	public void txReceived(){
 		challenger = getCurrentTx().getSenderAddress();
 		if(challenger == getCreator()){
+			if(getCurrentTx().getAmount() == 0){
+				// If creator sends a message with 0 amount (exactly the activation fee)
+				// we withdraw the current balance
+				sendBalance(challenger);
+			}
 			// do nothing, creator is just increasing his amount
 			return;
 		}

@@ -5,6 +5,7 @@ import org.junit.Test;
 import bt.compiler.Compiler;
 import bt.sample.Forward;
 import bt.sample.ForwardMin;
+import bt.sample.OddsGame;
 import bt.sample.TipThanks;
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstAddress;
@@ -43,9 +44,10 @@ public class CompilerTest {
         CompilerTest t = new CompilerTest();
         t.setup();
 
-        // t.testForward();
+        //t.testForward();
         //t.testForwardMin();
-        t.testTipThanks();
+        //t.testTipThanks();
+        t.testOdds();
     }
 
     @BeforeClass
@@ -56,6 +58,40 @@ public class CompilerTest {
         myAddress = bc.getBurstAddressFromPassphrase(PASSPHRASE);
 
         // forge a fitst block to get some balance
+        forgeBlock();
+    }
+
+    @Test
+    public void testOdds() throws Exception {
+
+        // Send some burst for the players
+        forgeBlock(PASSPHRASE);
+        BurstAddress player1 = bc.getBurstAddressFromPassphrase(PASSPHRASE2);
+        BurstAddress player2 = bc.getBurstAddressFromPassphrase(PASSPHRASE3);
+        sendAmount(PASSPHRASE, player1, BurstValue.fromBurst(1000));
+        sendAmount(PASSPHRASE, player2, BurstValue.fromBurst(1000));
+        forgeBlock(PASSPHRASE);
+
+        BurstValue actvFee = BurstValue.fromBurst(10);
+        BurstValue amount = BurstValue.fromBurst(100);
+
+        ATResponse at = registerAT(OddsGame.class, actvFee);
+        assertNotNull("AT could not be registered", at);
+
+        // Fill the contract with 3 times the max payment value
+        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck(OddsGame.MAX_PAYMENT*3));
+        forgeBlock();
+        
+        // 1 bet each
+        sendAmount(PASSPHRASE, at.getAt(), amount);
+        sendAmount(PASSPHRASE2, at.getAt(), amount);
+        sendAmount(PASSPHRASE3, at.getAt(), amount);
+        forgeBlock();
+        forgeBlock();
+
+        // send some just to run the code
+        sendAmount(PASSPHRASE2, at.getAt(), amount);
+        forgeBlock();
         forgeBlock();
     }
 
@@ -77,12 +113,13 @@ public class CompilerTest {
 
         sendAmount(PASSPHRASE, at.getAt(), amount);
         forgeBlock();
+        forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
         BurstValue newBalance = bmfAccount.getUnconfirmedBalanceNQT();
         double result = newBalance.doubleValue() - balance.doubleValue() - actvFee.doubleValue();
 
-        assertEquals("Value not forwarded", result, 0, 1e-3);
+        assertTrue("Value not forwarded", result>actvFee.doubleValue());
     }
 
     @Test
@@ -110,6 +147,7 @@ public class CompilerTest {
         assertTrue("Value forwarded while it should not", result < amount);
 
         sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        forgeBlock();
         forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
@@ -158,7 +196,7 @@ public class CompilerTest {
 
         return bns.generateTransaction(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440).flatMap(response -> {
             byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
-            byte[] signedTransactionBytes = bc.signTransaction(PASSPHRASE, unsignedTransactionBytes);
+            byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
             return bns.broadcastTransaction(signedTransactionBytes);
         }).blockingGet();
     }
