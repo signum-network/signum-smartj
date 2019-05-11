@@ -1,10 +1,7 @@
 package bt.sample;
 
-import bt.Contract;
-import bt.Emulator;
+import bt.*;
 import bt.ui.EmulatorWindow;
-import bt.Timestamp;
-import bt.Address;
 
 /**
  * A unique (non-fungible) token smart contract.
@@ -22,6 +19,7 @@ import bt.Address;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class UniqueToken extends Contract {
 
 	Address owner;

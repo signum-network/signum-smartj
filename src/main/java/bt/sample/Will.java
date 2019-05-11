@@ -1,9 +1,7 @@
 package bt.sample;
 
-import bt.Contract;
+import bt.*;
 import bt.ui.EmulatorWindow;
-import bt.Address;
-import bt.Timestamp;
 
 /**
  * A "will" contract that transfers its balance to beneficiary account 
@@ -13,6 +11,7 @@ import bt.Timestamp;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 class Will extends Contract {
 	Address beneficiary;
 	Timestamp timeout;

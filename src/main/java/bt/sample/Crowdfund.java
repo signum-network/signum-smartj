@@ -1,10 +1,7 @@
 package bt.sample;
 
-import bt.Contract;
+import bt.*;
 import bt.ui.EmulatorWindow;
-import bt.Address;
-import bt.Timestamp;
-import bt.Transaction;
 
 /**
  * Crowdfunding smart contract
@@ -18,6 +15,7 @@ import bt.Transaction;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 class Crowdfund extends Contract {
 	
 	Address targetAddress;

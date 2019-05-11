@@ -1,6 +1,8 @@
 package bt.sample;
 
+import bt.CompilerVersion;
 import bt.Contract;
+import bt.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**
@@ -8,6 +10,7 @@ import bt.ui.EmulatorWindow;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class Refund extends Contract {
 
 	@Override

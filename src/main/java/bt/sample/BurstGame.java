@@ -1,8 +1,6 @@
 package bt.sample;
 
-import bt.Address;
-import bt.Contract;
-import bt.Emulator;
+import bt.*;
 import bt.ui.EmulatorWindow;
 
 /**
@@ -22,6 +20,7 @@ import bt.ui.EmulatorWindow;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class BurstGame extends Contract {
 
 	Address challenger;
