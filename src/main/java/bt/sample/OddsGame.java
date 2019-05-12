@@ -53,8 +53,8 @@ public class OddsGame extends Contract {
 
 		while (nextTX != null) {
 			nextBetTimestamp = nextTX.getTimestamp();
-			if (nextBetTimestamp.ge(prevBlockTimestamp))
-				break; // only bets before previous block can run in this round
+			//if (nextBetTimestamp.ge(prevBlockTimestamp))
+			//	break; // only bets before previous block can run in this round
 
 			lastTimestamp = nextBetTimestamp;
 
