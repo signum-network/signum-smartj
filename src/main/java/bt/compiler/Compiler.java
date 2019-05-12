@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import bt.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -25,11 +26,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import bt.Address;
-import bt.Contract;
-import bt.Register;
-import bt.Timestamp;
-import bt.Transaction;
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstID;
 
@@ -39,6 +35,8 @@ import burst.kit.entity.BurstID;
  * @author jjos
  */
 public class Compiler {
+
+	public static final CompilerVersion currentVersion = WarningProcessor.currentVersion;
 
 	public static final String INIT_METHOD = "<init>";
 	public static final String MAIN_METHOD = "main";
@@ -78,8 +76,19 @@ public class Compiler {
 
 	ArrayList<Error> errors = new ArrayList<>();
 
-	public Compiler(String className) throws IOException {
+	public Compiler(String className) throws IOException, ClassNotFoundException {
 		this.className = className;
+
+		Class<?> clazz = Class.forName(className);
+		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
+		if (targetCompilerVersion == null) {
+			System.err.println("WARNING: Target compiler version not specified");
+		} else if (targetCompilerVersion.value() != currentVersion) {
+			if (targetCompilerVersion.value().ordinal() > currentVersion.ordinal())
+				System.err.println("WARNING: Target compiler version newer than compiler version. Newer features may not compile or work.");
+			if (targetCompilerVersion.value().ordinal() < currentVersion.ordinal())
+				System.err.println("WARNING: Target compiler version older than compiler version. Contract source code may be incompatible.");
+		}
 
 		// read in, build classNode
 		ClassNode classNode = new ClassNode();
@@ -1060,11 +1069,11 @@ public class Compiler {
 
 	public static void main(String[] args) throws Exception {
 
-		// String name = "bt.examples.Auction";
-		// String name = "bt.examples.Hello";
-		String name = "bt.examples.Crowdfund";
-		// String name = "bt.examples.Refuse";
-		// String name = "bt.examples.Will";
+		// String name = "bt.sample.Auction";
+		// String name = "bt.sample.Hello";
+		String name = "bt.sample.Crowdfund";
+		// String name = "bt.sample.Refuse";
+		// String name = "bt.sample.Will";
 
 		Compiler reader = new Compiler(name);
 

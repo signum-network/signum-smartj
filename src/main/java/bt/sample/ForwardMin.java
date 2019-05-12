@@ -1,7 +1,9 @@
 package bt.sample;
 
 import bt.Address;
+import bt.CompilerVersion;
 import bt.Contract;
+import bt.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**
@@ -10,6 +12,7 @@ import bt.ui.EmulatorWindow;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class ForwardMin extends Contract {
 	
 	Address bmf;

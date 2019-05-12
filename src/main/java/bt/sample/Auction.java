@@ -1,10 +1,7 @@
 package bt.sample;
 
-import bt.Contract;
-import bt.Emulator;
+import bt.*;
 import bt.ui.EmulatorWindow;
-import bt.Address;
-import bt.Timestamp;
 
 /**
  * Auction smart contract.
@@ -17,6 +14,7 @@ import bt.Timestamp;
  * 
  * @author jjos
  */
+@TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class Auction extends Contract {
 	
 	Address beneficiary;

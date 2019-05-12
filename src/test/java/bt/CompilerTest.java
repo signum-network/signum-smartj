@@ -51,7 +51,7 @@ public class CompilerTest {
     }
 
     @BeforeClass
-    public void setup() {
+    public static void setup() {
         bns = BurstNodeService.getInstance(NODE);
         bc = BurstCrypto.getInstance();
 
@@ -201,11 +201,11 @@ public class CompilerTest {
         }).blockingGet();
     }
 
-    private void forgeBlock(){
+    private static void forgeBlock(){
         forgeBlock(PASSPHRASE);
     }
 
-    private void forgeBlock(String pass) {
+    private static void forgeBlock(String pass) {
         Single<SubmitNonceResponse> submit = bns.submitNonce(pass, "0", null);
         SubmitNonceResponse r = submit.blockingGet();
         assertTrue(r.getResult(), r.getResult().equals("success"));
