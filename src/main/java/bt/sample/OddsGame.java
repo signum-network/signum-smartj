@@ -32,7 +32,7 @@ public class OddsGame extends Contract {
 	Timestamp nextBetTimestamp;
 	Transaction nextTX;
 	long blockOdd, pay, amount;
-	Address developer;
+	Address nextAddress, developer;
 
 	public static final long MAX_PAYMENT = 2000*ONE_BURST;
 	public static final String DEV_ADDRESS = "BURST-JJQS-MMA4-GHB4-4ZNZU";
@@ -53,6 +53,7 @@ public class OddsGame extends Contract {
 
 		while (nextTX != null) {
 			nextBetTimestamp = nextTX.getTimestamp();
+			nextAddress = nextTX.getSenderAddress();
 			//if (nextBetTimestamp.ge(prevBlockTimestamp))
 			//	break; // only bets before previous block can run in this round
 
@@ -66,8 +67,10 @@ public class OddsGame extends Contract {
 				amount = nextTX.getAmount() * 2;
 				if(amount > MAX_PAYMENT)
 					amount = MAX_PAYMENT;
-				sendAmount(amount, nextTX.getSenderAddress());
+				sendAmount(amount, nextAddress);
 			}
+			else
+				sendMessage("Better luck next time!", nextAddress);
 
 			// Check the next transaction
 			nextTX = getTxAfterTimestamp(lastTimestamp);
