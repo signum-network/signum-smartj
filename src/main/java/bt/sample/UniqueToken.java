@@ -118,5 +118,6 @@ public class UniqueToken extends Contract {
 		emu.forgeBlock();
 
 		new EmulatorWindow(UniqueToken.class);
+		compile();
 	}
 }
