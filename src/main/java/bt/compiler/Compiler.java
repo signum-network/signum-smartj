@@ -3,17 +3,16 @@ package bt.compiler;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.*;
 
 import bt.*;
 import bt.sample.Crowdfund;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -61,6 +60,8 @@ public class Compiler {
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
 	int maxLocals;
 
+	private final boolean isFunctional;
+
 	public class Error {
 		AbstractInsnNode node;
 		String message;
@@ -84,6 +85,7 @@ public class Compiler {
 
 	public Compiler(Class<? extends Contract> clazz) throws IOException {
 		this.className = clazz.getName();
+		this.isFunctional = FunctionBasedContract.class.isAssignableFrom(clazz);
 		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
 		if (targetCompilerVersion == null) {
 			System.err.println("WARNING: Target compiler version not specified");
@@ -322,21 +324,41 @@ public class Compiler {
 	private void readMethods() {
 		useLastTx = false;
 
+		Map<Long, Method> functionIdentifiers = new HashMap<>();
+
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
 			if (mnode.name.equals(MAIN_METHOD))
 				continue; // skyp the main function (should be for deubgging only)
 
+			if (isFunctional && mnode.name.equals(TX_RECEIVED_METHOD)) continue; // We must manually assemble the txReceived method for ATs that support methods.
+
 			Method m = new Method();
 			m.node = mnode;
 
 			methods.put(mnode.name, m);
+			if (isFunctional && !mnode.name.equals(INIT_METHOD)) functionIdentifiers.put(getMethodSignature(m), m);
+		}
+
+		if (isFunctional) {
+			// TODO generate txReceived method on the fly
 		}
 
 		// Then parse
 		for (Method m : methods.values()) {
 			System.out.println("** METHOD: " + m.node.name);
 			parseMethod(m);
+		}
+
+
+		if (isFunctional) {
+			StringBuilder methodIdentifiersString = new StringBuilder("Function Identifiers:");
+			if (functionIdentifiers.isEmpty()) {
+				methodIdentifiersString.append(" None Declared.");
+			} else {
+				functionIdentifiers.forEach((identifier, method) -> methodIdentifiersString.append('\n').append(method.node.name).append(method.node.desc).append(": ").append(Long.toHexString(identifier)));
+			}
+			System.out.println(methodIdentifiersString);
 		}
 	}
 
@@ -1139,24 +1161,8 @@ public class Compiler {
 		Printer.printCode(reader.code, System.out);
 	}
 
-	public static String getSignature(java.lang.reflect.Method m) {
-		String sig;
-		try {
-			java.lang.reflect.Field gSig = java.lang.reflect.Method.class.getDeclaredField("signature");
-			gSig.setAccessible(true);
-			sig = (String) gSig.get(m);
-			if (sig != null)
-				return m.getName() + sig;
-		} catch (IllegalAccessException | NoSuchFieldException e) {
-			e.printStackTrace();
-		}
-
-		StringBuilder sb = new StringBuilder(m.getName() + "(");
-		for (Class<?> c : m.getParameterTypes())
-			sb.append((sig = Array.newInstance(c, 0).toString()).substring(1, sig.indexOf('@')));
-		return sb.append(')')
-				.append(m.getReturnType() == void.class ? "V"
-						: (sig = Array.newInstance(m.getReturnType(), 0).toString()).substring(1, sig.indexOf('@')))
-				.toString();
+	public static long getMethodSignature(Method m) {
+		MessageDigest sha256 = new SHA256.Digest(); // TODO use burstkit4j, need to update
+		return BurstCrypto.getInstance().hashToId(sha256.digest((m.node.name+m.node.desc).getBytes(StandardCharsets.UTF_8))).getSignedLongId();
 	}
 }

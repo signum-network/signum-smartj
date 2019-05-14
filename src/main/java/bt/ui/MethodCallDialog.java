@@ -21,12 +21,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
+import bt.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
-import bt.Address;
-import bt.Contract;
-import bt.Emulator;
-import bt.Register;
 import bt.compiler.Compiler;
 
 /**
@@ -110,6 +107,7 @@ class MethodCallDialog extends JDialog implements ActionListener {
         for (Method m : contract.getClass().getDeclaredMethods()) {
             if (!Modifier.isPublic(m.getModifiers()) || Modifier.isStatic(m.getModifiers()))
                 continue;
+
             if (m.getName().equals(Compiler.INIT_METHOD) || m.getName().equals(Compiler.MAIN_METHOD)
                     || m.getName().equals(Compiler.TX_RECEIVED_METHOD))
                 continue;
