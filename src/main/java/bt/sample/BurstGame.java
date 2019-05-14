@@ -115,5 +115,6 @@ public class BurstGame extends Contract {
 		emu.forgeBlock();
 
 		new EmulatorWindow(BurstGame.class);
+		compile();
 	}
 }

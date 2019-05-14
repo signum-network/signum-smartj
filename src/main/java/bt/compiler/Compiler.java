@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import bt.*;
+import bt.sample.Crowdfund;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -76,10 +77,13 @@ public class Compiler {
 
 	ArrayList<Error> errors = new ArrayList<>();
 
-	public Compiler(String className) throws IOException, ClassNotFoundException {
-		this.className = className;
+    public Compiler(String className) throws ClassNotFoundException, ClassCastException, IOException {
+        //noinspection unchecked
+        this((Class<? extends Contract>) Class.forName(className));
+    }
 
-		Class<?> clazz = Class.forName(className);
+	public Compiler(Class<? extends Contract> clazz) throws IOException {
+		this.className = clazz.getName();
 		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
 		if (targetCompilerVersion == null) {
 			System.err.println("WARNING: Target compiler version not specified");
@@ -1069,13 +1073,9 @@ public class Compiler {
 
 	public static void main(String[] args) throws Exception {
 
-		// String name = "bt.sample.Auction";
-		// String name = "bt.sample.Hello";
-		String name = "bt.sample.Crowdfund";
-		// String name = "bt.sample.Refuse";
-		// String name = "bt.sample.Will";
+	    Class<? extends Contract> contractClass = Crowdfund.class;
 
-		Compiler reader = new Compiler(name);
+		Compiler reader = new Compiler(contractClass);
 
 		reader.compile();
 		reader.link();

@@ -68,7 +68,7 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 	private JButton callButton;
 	private JLabel blockLabel;
 
-	public EmulatorWindow(Class<?> c) {
+	public EmulatorWindow(Class<? extends Contract> contractClass) {
 		super("BlockTalk Emulator");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -147,8 +147,8 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		atActivation.setToolTipText("Contract activation fee in BURST = 10\u2078 NQT");
 		cmdPanel.add(atClassField = new HintTextField("Java class path", createATButton));
 		atClassField.setToolTipText("Full path for the contract java class");
-		if (c != null)
-			atClassField.setText(c.getName());
+		if (contractClass != null)
+			atClassField.setText(contractClass.getName());
 
 		compileATButton = new JButton();
 		compileATButton.addActionListener(this);
