@@ -85,9 +85,11 @@ public class Compiler {
 			System.err.println("WARNING: Target compiler version not specified");
 		} else if (targetCompilerVersion.value() != currentVersion) {
 			if (targetCompilerVersion.value().ordinal() > currentVersion.ordinal())
-				System.err.println("WARNING: Target compiler version newer than compiler version. Newer features may not compile or work.");
+				System.err.println(
+						"WARNING: Target compiler version newer than compiler version. Newer features may not compile or work.");
 			if (targetCompilerVersion.value().ordinal() < currentVersion.ordinal())
-				System.err.println("WARNING: Target compiler version older than compiler version. Contract source code may be incompatible.");
+				System.err.println(
+						"WARNING: Target compiler version older than compiler version. Contract source code may be incompatible.");
 		}
 
 		// read in, build classNode
@@ -362,11 +364,11 @@ public class Compiler {
 			m.code.putInt(destAddress);
 			var.address = destAddress;
 		} else if (var.type == STACK_FIELD) {
-			if(forceCopy){
+			if (forceCopy) {
 				m.code.put(OpCode.e_op_code_SET_DAT);
 				m.code.putInt(destAddress);
 				m.code.putInt(var.address);
-				var.address = destAddress;	
+				var.address = destAddress;
 			}
 			// otherwise, do nothing
 		} else if (var.type == STACK_THIS) {
@@ -772,25 +774,36 @@ public class Compiler {
 							code.putShort(OpCode.Set_B1);
 							code.putInt(arg1.address); // address
 
-							StackVar msg = stack.pollLast();
-							// Fill A1-A4 with 4*long
-							int pos = 0;
-							for (int a = 0; a < 4; a++) {
-								long value = 0;
-								for (int i = 0; i < 8; i++, pos++) {
-									if (pos >= msg.svalue.length())
-										break;
-									long c = msg.svalue.charAt(pos);
-									c <<= 8 * i;
-									value += c;
-								}
-								code.put(OpCode.e_op_code_SET_VAL);
-								code.putInt(tmpVar1);
-								code.putLong(value);
+							if(mi.desc.equals("(Ljava/lang/String;Lbt/Address;)V")){
+								// It should be a constant string, fill A1-A4 with 4*longs
+								StackVar msg = stack.pollLast();
+								int pos = 0;
+								for (int a = 0; a < 4; a++) {
+									long value = 0;
+									for (int i = 0; i < 8; i++, pos++) {
+										if (pos >= msg.svalue.length())
+											break;
+										long c = msg.svalue.charAt(pos);
+										c <<= 8 * i;
+										value += c;
+									}
+									code.put(OpCode.e_op_code_SET_VAL);
+									code.putInt(tmpVar1);
+									code.putLong(value);
 
-								code.put(OpCode.e_op_code_EXT_FUN_DAT);
-								code.putShort((short) (OpCode.Set_A1 + a));
-								code.putInt(tmpVar1);
+									code.put(OpCode.e_op_code_EXT_FUN_DAT);
+									code.putShort((short) (OpCode.Set_A1 + a));
+									code.putInt(tmpVar1);
+								}
+							}
+							else {
+								// We should have received a Register, it is on stack
+								for (int i = 0; i < 4; i++) {
+									StackVar reg = popVar(m, tmpVar1, false);
+									code.put(OpCode.e_op_code_EXT_FUN_DAT);
+									code.putShort((short) (OpCode.Set_A1 + i));
+									code.putInt(reg.address);
+								}
 							}
 
 							code.put(OpCode.e_op_code_EXT_FUN);
@@ -854,6 +867,24 @@ public class Compiler {
 							code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 							code.putInt(tmpVar1); // the timestamp
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getMessage")) {
+							arg1 = popVar(m, tmpVar1, false); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(arg1.address); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
+
+							// we push the four longs to the stack, so the field that receive
+							// this should consume all of them
+							for (int i = 0; i < 4; i++) {
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort((short) (OpCode.Get_B1 + i));
+								code.putInt(tmpVar1); // the message contents
+								pushVar(m, tmpVar1);
+							}
 						} else {
 							System.err.println("Method problem: " + mi.name + " " + owner);
 						}
