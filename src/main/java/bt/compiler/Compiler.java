@@ -14,17 +14,7 @@ import bt.*;
 import bt.sample.Crowdfund;
 import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.LineNumberNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstID;
@@ -337,7 +327,16 @@ public class Compiler {
 			m.node = mnode;
 
 			methods.put(mnode.name, m);
-			if (isFunctional && !mnode.name.equals(INIT_METHOD)) functionIdentifiers.put(getMethodSignature(m), m);
+
+			if (isFunctional && !mnode.name.equals(INIT_METHOD)) {
+				boolean contractFunction = false;
+				if (mnode.visibleAnnotations != null) {
+					for (AnnotationNode visibleAnnotation : mnode.visibleAnnotations) {
+						if (visibleAnnotation.desc.equals("Lbt/ContractFunction;")) contractFunction = true;
+					}
+				}
+				if (contractFunction) functionIdentifiers.put(getMethodSignature(m), m);
+			}
 		}
 
 		if (isFunctional) {
