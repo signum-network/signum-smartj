@@ -798,7 +798,7 @@ public class Compiler {
 							}
 							else {
 								// We should have received a Register, it is on stack
-								for (int i = 0; i < 4; i++) {
+								for (int i = 3; i >= 0; i--) {
 									StackVar reg = popVar(m, tmpVar1, false);
 									code.put(OpCode.e_op_code_EXT_FUN_DAT);
 									code.putShort((short) (OpCode.Set_A1 + i));
