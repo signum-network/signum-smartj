@@ -9,12 +9,13 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import bt.*;
 import bt.sample.Crowdfund;
 import org.bouncycastle.jcajce.provider.digest.SHA256;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import burst.kit.burst.BurstCrypto;
@@ -32,6 +33,7 @@ public class Compiler {
 	public static final String INIT_METHOD = "<init>";
 	public static final String MAIN_METHOD = "main";
 	public static final String TX_RECEIVED_METHOD = "txReceived";
+	public static final String NO_FUNCTION_CALLED_METHOD = "onNoFunctionCalled";
 	public static final int MAX_SIZE = 10 * 256;
 
 	ClassNode cn;
@@ -42,6 +44,7 @@ public class Compiler {
 	HashMap<String, Field> fields = new HashMap<>();
 	HashMap<LabelNode, Integer> labels = new HashMap<>();
 
+	Class<? extends Contract> clazz;
 	String className;
 
 	int lastFreeVar;
@@ -75,6 +78,7 @@ public class Compiler {
     }
 
 	public Compiler(Class<? extends Contract> clazz) throws IOException {
+    	this.clazz = clazz;
 		this.className = clazz.getName();
 		this.isFunctional = FunctionBasedContract.class.isAssignableFrom(clazz);
 		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
@@ -322,7 +326,7 @@ public class Compiler {
 			if (mnode.name.equals(MAIN_METHOD))
 				continue; // skyp the main function (should be for deubgging only)
 
-			if (isFunctional && mnode.name.equals(TX_RECEIVED_METHOD)) continue; // We must manually assemble the txReceived method for ATs that support methods.
+			if (isFunctional && (mnode.name.equals(TX_RECEIVED_METHOD) || mnode.name.equals(NO_FUNCTION_CALLED_METHOD))) continue; // We must manually assemble the txReceived method for ATs that support methods.
 
 			Method m = new Method();
 			m.node = mnode;
@@ -341,15 +345,73 @@ public class Compiler {
 		}
 
 		if (isFunctional) {
-			cn.accept(new FBCVisitor(Opcodes.ASM7, cn));
-			MethodNode txReceived = null;
-			for (MethodNode method : cn.methods) {
-				if (method.name.equals(TX_RECEIVED_METHOD)) txReceived = method;
-			}
-			if (txReceived == null) throw new NullPointerException("Could not find txReceived");
+			// Generate txReceived method
+			MethodVisitor methodVisitor = cn.visitMethod(ACC_PUBLIC | ACC_FINAL, TX_RECEIVED_METHOD, "()V", null, null);
+			methodVisitor.visitCode();
+
+			// Set methodIdentifier based on first 8 bytes of received message
+			Label startLabel = new Label();
+			methodVisitor.visitLabel(startLabel);
+			methodVisitor.visitVarInsn(ALOAD, 0);
+			methodVisitor.visitVarInsn(ALOAD, 0);
+			methodVisitor.visitVarInsn(ALOAD, 0);
+			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "bt/FunctionBasedContract", "getCurrentTx", "()Lbt/Transaction;", false);
+			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "bt/FunctionBasedContract", "getMessage", "(Lbt/Transaction;)Lbt/Register;", false);
+			methodVisitor.visitFieldInsn(GETFIELD, "bt/Register", "value", "[J");
+			methodVisitor.visitInsn(ICONST_0);
+			methodVisitor.visitInsn(LALOAD);
+			methodVisitor.visitFieldInsn(PUTFIELD, "bt/FunctionBasedContract", "methodIdentifier", "J");
+
+			// Start building if() chain TODO use switch once it is supported as it will save space
+			Label doneLabel = new Label();
+			AtomicBoolean first = new AtomicBoolean(true);
+			AtomicReference<Label> lastNotEqualLabel = new AtomicReference<>(new Label());
+			functionIdentifiers.forEach((identifier, method) -> {
+				methodVisitor.visitLabel(lastNotEqualLabel.get()); // Start label
+				if (first.get()) {
+					first.set(false);
+				} else {
+					methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+				}
+				methodVisitor.visitVarInsn(ALOAD, 0); // load this
+				methodVisitor.visitFieldInsn(GETFIELD, "bt/FunctionBasedContract", "methodIdentifier", "J"); // Get method identifier
+				methodVisitor.visitLdcInsn(identifier); // Add identifier we are checking for
+				methodVisitor.visitInsn(LCMP); // Compare
+				Label notEqual = new Label();
+				lastNotEqualLabel.set(notEqual);
+				methodVisitor.visitJumpInsn(IFNE, notEqual); // Jump here if not equal
+				Label equal = new Label(); // TODO is equal label pointless?
+				methodVisitor.visitLabel(equal);
+				methodVisitor.visitVarInsn(ALOAD, 0); // Load this
+				methodVisitor.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(clazz), method.node.name, method.node.desc, false);
+				methodVisitor.visitJumpInsn(GOTO, doneLabel);
+			});
+
+			// Else
+			methodVisitor.visitLabel(lastNotEqualLabel.get());
+			methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+			methodVisitor.visitVarInsn(ALOAD, 0);
+			methodVisitor.visitMethodInsn(INVOKESPECIAL, "bt/FunctionBasedContract", NO_FUNCTION_CALLED_METHOD, "()V", false);
+
+			// Return
+			methodVisitor.visitLabel(doneLabel);
+			methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+			methodVisitor.visitInsn(RETURN);
+
+			// Mandatory end of method stuff
+			Label endLabel = new Label();
+			methodVisitor.visitLabel(endLabel);
+			methodVisitor.visitLocalVariable("this", Type.getInternalName(clazz), null, startLabel, endLabel, 0);
+			methodVisitor.visitMaxs(4, 1);
+			methodVisitor.visitEnd();
+
 			Method m = new Method();
-			m.node = txReceived;
-			methods.put(txReceived.name, m);
+			for (MethodNode methodNode : cn.methods) {
+				if (methodNode.name.equals(TX_RECEIVED_METHOD) && methodNode.desc.equals("()V"))
+					m.node = methodNode;
+			}
+			if (m.node == null) throw new NullPointerException();
+			methods.put(m.node.name, m);
 		}
 
 		// Then parse
