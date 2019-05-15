@@ -44,7 +44,7 @@ public class Compiler {
 	HashMap<String, Field> fields = new HashMap<>();
 	HashMap<LabelNode, Integer> labels = new HashMap<>();
 
-	Class<? extends Contract> clazz;
+	String internalClassName;
 	String className;
 
 	int lastFreeVar;
@@ -78,7 +78,7 @@ public class Compiler {
     }
 
 	public Compiler(Class<? extends Contract> clazz) throws IOException {
-    	this.clazz = clazz;
+    	this.internalClassName = Type.getInternalName(clazz);
 		this.className = clazz.getName();
 		this.isFunctional = FunctionBasedContract.class.isAssignableFrom(clazz);
 		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
@@ -355,12 +355,12 @@ public class Compiler {
 			methodVisitor.visitVarInsn(ALOAD, 0);
 			methodVisitor.visitVarInsn(ALOAD, 0);
 			methodVisitor.visitVarInsn(ALOAD, 0);
-			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "bt/FunctionBasedContract", "getCurrentTx", "()Lbt/Transaction;", false);
-			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "bt/FunctionBasedContract", "getMessage", "(Lbt/Transaction;)Lbt/Register;", false);
+			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, internalClassName, "getCurrentTx", "()Lbt/Transaction;", false);
+			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, internalClassName, "getMessage", "(Lbt/Transaction;)Lbt/Register;", false);
 			methodVisitor.visitFieldInsn(GETFIELD, "bt/Register", "value", "[J");
 			methodVisitor.visitInsn(ICONST_0);
 			methodVisitor.visitInsn(LALOAD);
-			methodVisitor.visitFieldInsn(PUTFIELD, "bt/FunctionBasedContract", "methodIdentifier", "J");
+			methodVisitor.visitFieldInsn(PUTFIELD, internalClassName, "methodIdentifier", "J");
 
 			// Start building if() chain TODO use switch once it is supported as it will save space
 			Label doneLabel = new Label();
@@ -374,24 +374,24 @@ public class Compiler {
 					methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
 				}
 				methodVisitor.visitVarInsn(ALOAD, 0); // load this
-				methodVisitor.visitFieldInsn(GETFIELD, "bt/FunctionBasedContract", "methodIdentifier", "J"); // Get method identifier
+				methodVisitor.visitFieldInsn(GETFIELD, internalClassName, "methodIdentifier", "J"); // Get method identifier
 				methodVisitor.visitLdcInsn(identifier); // Add identifier we are checking for
 				methodVisitor.visitInsn(LCMP); // Compare
 				Label notEqual = new Label();
-				lastNotEqualLabel.set(notEqual);
+				lastNotEqualLabel.set(notEqual); // Set the start point of the next else / else if block
 				methodVisitor.visitJumpInsn(IFNE, notEqual); // Jump here if not equal
 				Label equal = new Label(); // TODO is equal label pointless?
 				methodVisitor.visitLabel(equal);
 				methodVisitor.visitVarInsn(ALOAD, 0); // Load this
-				methodVisitor.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(clazz), method.node.name, method.node.desc, false);
-				methodVisitor.visitJumpInsn(GOTO, doneLabel);
+				methodVisitor.visitMethodInsn(INVOKESPECIAL, internalClassName, method.node.name, method.node.desc, false); // Invoke method
+				methodVisitor.visitJumpInsn(GOTO, doneLabel); // Jump to done
 			});
 
 			// Else
 			methodVisitor.visitLabel(lastNotEqualLabel.get());
 			methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
 			methodVisitor.visitVarInsn(ALOAD, 0);
-			methodVisitor.visitMethodInsn(INVOKESPECIAL, "bt/FunctionBasedContract", NO_FUNCTION_CALLED_METHOD, "()V", false);
+			methodVisitor.visitMethodInsn(INVOKESPECIAL, internalClassName, NO_FUNCTION_CALLED_METHOD, "()V", false);
 
 			// Return
 			methodVisitor.visitLabel(doneLabel);
@@ -401,7 +401,7 @@ public class Compiler {
 			// Mandatory end of method stuff
 			Label endLabel = new Label();
 			methodVisitor.visitLabel(endLabel);
-			methodVisitor.visitLocalVariable("this", Type.getInternalName(clazz), null, startLabel, endLabel, 0);
+			methodVisitor.visitLocalVariable("this", "L"+internalClassName+";",  null, startLabel, endLabel, 0);
 			methodVisitor.visitMaxs(4, 1);
 			methodVisitor.visitEnd();
 
@@ -411,6 +411,7 @@ public class Compiler {
 					m.node = methodNode;
 			}
 			if (m.node == null) throw new NullPointerException();
+			m.node.check(Opcodes.ASM7);
 			methods.put(m.node.name, m);
 		}
 
@@ -1232,6 +1233,7 @@ public class Compiler {
 	}
 
 	public static long getMethodSignature(Method m) {
+		if (true) return 0x4849000000000000L;
 		MessageDigest sha256 = new SHA256.Digest(); // TODO use burstkit4j, need to update
 		return BurstCrypto.getInstance().hashToId(sha256.digest((m.node.name+m.node.desc).getBytes(StandardCharsets.UTF_8))).getSignedLongId();
 	}
