@@ -57,7 +57,7 @@ public class Compiler {
 	boolean useLastTx;
 	int lastTxReceived;
 	int lastTxTimestamp;
-	int tmpVar1, tmpVar2, tmpVar3;
+	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
 	int maxLocals;
 
 	public class Error {
@@ -190,6 +190,7 @@ public class Compiler {
 			Field fld = new Field();
 			fld.address = lastFreeVar;
 			fld.node = f;
+			fld.size = nvars;
 			fields.put(f.name, fld);
 
 			lastFreeVar += nvars;
@@ -205,6 +206,7 @@ public class Compiler {
 		tmpVar1 = lastFreeVar++;
 		tmpVar2 = lastFreeVar++;
 		tmpVar3 = lastFreeVar++;
+		tmpVar4 = lastFreeVar++;
 	}
 
 	public void compile() {
@@ -909,8 +911,22 @@ public class Compiler {
 						} else {
 							System.err.println("Method not implemented: " + mi.name + " " + owner);
 						}
-					} else {
-						System.err.println("Class not implemented: " + mi.owner);
+					}
+					else if (owner.equals(Register.class.getName())) {
+						StackVar values[] = new StackVar[4];
+						// we should pop the 4 values from stack
+						for (int i = values.length -1; i >= 0; i--) {
+							values[i] = popVar(m, tmpVar1 + i, false);
+						}
+						if (mi.name.startsWith("getValue")) {
+							int pos = Integer.parseInt(mi.name.substring(mi.name.length()-1)) - 1;
+							pushVar(m, values[pos].address);
+						}
+						else
+							addError(insn, "Method not implemented: " + mi.name);
+					}
+					else {
+						addError(insn, "Class not implemented: " + mi.owner);
 					}
 				} else {
 					System.err.println("problem");
@@ -924,13 +940,17 @@ public class Compiler {
 
 					System.out.println((opcode == GETFIELD ? "get " : "put ") + "field: " + fi.name);
 
+					Field field = fields.get(fi.name);
 					if (opcode == GETFIELD) {
 						stack.pollLast(); // remove the 'this'
-						pushVar(m, fields.get(fi.name).address);
+						for (int i = 0; i < field.size; i++) {							
+							pushVar(m, field.address + i);
+						}
 					} else {
 						// PUTFIELD
-						Field field = fields.get(fi.name);
-						popVar(m, field.address, true);
+						for (int i = field.size-1; i >= 0; i--) {
+							popVar(m, field.address + i, true);
+						}
 						stack.pollLast(); // remove the 'this'
 					}
 				} else {

@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
  * @author jjos
  */
 public class Register {
-	public long value[] = new long[4];
+	long value[] = new long[4];
 
 	Method method;
 	Object[] args;
@@ -22,6 +22,31 @@ public class Register {
 		r.method = m;
 		r.args = args;
 		return r;
+	}
+
+	/**
+	 * @return the first long value
+	 */
+	public long getValue1(){
+		return value[0];
+	}
+	/**
+	 * @return the second long value
+	 */
+	public long getValue2(){
+		return value[1];
+	}
+	/**
+	 * @return the third long value
+	 */
+	public long getValue3(){
+		return value[2];
+	}
+	/**
+	 * @return the fourth long value
+	 */
+	public long getValue4(){
+		return value[3];
 	}
 
 	@EmulatorWarning
