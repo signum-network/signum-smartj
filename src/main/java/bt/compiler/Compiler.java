@@ -14,6 +14,7 @@ import bt.*;
 import bt.sample.Crowdfund;
 import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import burst.kit.burst.BurstCrypto;
@@ -340,7 +341,15 @@ public class Compiler {
 		}
 
 		if (isFunctional) {
-			// TODO generate txReceived method on the fly
+			cn.accept(new FBCVisitor(Opcodes.ASM7, cn));
+			MethodNode txReceived = null;
+			for (MethodNode method : cn.methods) {
+				if (method.name.equals(TX_RECEIVED_METHOD)) txReceived = method;
+			}
+			if (txReceived == null) throw new NullPointerException("Could not find txReceived");
+			Method m = new Method();
+			m.node = txReceived;
+			methods.put(txReceived.name, m);
 		}
 
 		// Then parse
