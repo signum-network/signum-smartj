@@ -3,6 +3,7 @@ package bt.sample;
 import bt.Address;
 import bt.ContractFunction;
 import bt.FunctionBasedContract;
+import bt.ui.EmulatorWindow;
 
 /**
  * Fairly useless contract to demonstrate FunctionBasedContracts.
@@ -71,5 +72,6 @@ public class Counter extends FunctionBasedContract {
 
     public static void main(String[] args) {
         compile();
+        new EmulatorWindow(Counter.class);
     }
 }

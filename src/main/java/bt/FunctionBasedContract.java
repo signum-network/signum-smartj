@@ -1,5 +1,8 @@
 package bt;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 public abstract class FunctionBasedContract extends Contract {
     public Register receivedMessage;
     public long selectedFunction;
@@ -12,6 +15,19 @@ public abstract class FunctionBasedContract extends Contract {
     public void txReceived() {
         receivedMessage = getCurrentTx().getMessage();
         selectedFunction = receivedMessage.getValue1() & 0xFF; // TODO use byte when compiler supports it
+        Class<? extends FunctionBasedContract> clazz = getClass();
+        boolean called = false;
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.getAnnotation(ContractFunction.class) != null && method.getAnnotation(ContractFunction.class).value() == selectedFunction) {
+                try {
+                    called = true;
+                    method.invoke(this);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        if (!called) onNoFunctionCalled();
     }
 
     public abstract void onNoFunctionCalled();
