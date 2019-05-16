@@ -32,6 +32,8 @@ public class Compiler {
 	public static final String NO_FUNCTION_CALLED_METHOD = "onNoFunctionCalled";
 	public static final int MAX_SIZE = 10 * 256;
 
+	private static final String UNEXPECTED_ERROR = "Unexpected error, please report at https://github.com/burst-apps-team/blocktalk/issues";
+
 	ClassNode cn;
 	ByteBuffer code;
 
@@ -74,7 +76,7 @@ public class Compiler {
     }
 
 	public Compiler(Class<? extends Contract> clazz) throws IOException {
-    	this.internalClassName = Type.getInternalName(clazz);
+    this.internalClassName = Type.getInternalName(clazz);
 		this.className = clazz.getName();
 		this.isFunctional = FunctionBasedContract.class.isAssignableFrom(clazz);
 		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
@@ -297,7 +299,7 @@ public class Compiler {
 				else {
 					Integer position = labels.get(j.label);
 					if (position == null) {
-						System.err.println("Label not found: " + j.label.getLabel());
+						addError(j.label, "Label not found: " + j.label.getLabel());
 						continue;
 					}
 					jaddress = position + m.address;
@@ -501,7 +503,7 @@ public class Compiler {
 		} else if (var.type == STACK_THIS) {
 			// do nothing
 		} else
-			System.err.println("Unexpected variable");
+			addError(null, UNEXPECTED_ERROR);
 		return var;
 	}
 
@@ -571,7 +573,7 @@ public class Compiler {
 					}
 					System.out.println((opcode < ISTORE ? "load" : "store") + " local: " + vi.var);
 				} else {
-					System.err.println("problem");
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
@@ -581,7 +583,7 @@ public class Compiler {
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
 					if (vi.var == 0)
-						System.err.println("problem");
+						addError(insn, UNEXPECTED_ERROR);
 					// local 0 is 'this', others are stored after the last variable
 
 					arg1 = popVar(m, lastFreeVar + vi.var, false);
@@ -590,7 +592,7 @@ public class Compiler {
 					// we are not allowing local variables for now
 					addError(vi, "local variables are not supported");
 				} else {
-					System.err.println("problem");
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
@@ -599,7 +601,7 @@ public class Compiler {
 			case I2B: // int 2 byte
 			case I2C: // int 2 char
 			case I2S: // int 2 short
-				System.out.println("int conversion");
+				System.out.println("int conversion, we currently do nothing");
 				break;
 
 			case ICONST_0:
@@ -722,7 +724,7 @@ public class Compiler {
 					pushVar(m, var.address);
 					pushVar(m, var.address);
 				} else {
-					System.err.println("DUP error");
+					addError(insn, UNEXPECTED_ERROR);
 				}
 
 				System.out.println("dup");
@@ -781,7 +783,7 @@ public class Compiler {
 							// it is the timestamp object itself (already on stack)
 							// so do nothing
 						} else
-							System.err.println("Problem " + owner);
+							addError(insn, UNEXPECTED_ERROR);
 					} else if (owner.equals(className)) {
 						// call on the contract itself
 						if (mi.name.equals("getCurrentTx")) {
@@ -1013,7 +1015,7 @@ public class Compiler {
 								pushVar(m, tmpVar1);
 							}
 						} else {
-							System.err.println("Method problem: " + mi.name + " " + owner);
+							addError(insn, UNEXPECTED_ERROR);
 						}
 					} else if (owner.equals(Object.class.getName())) {
 						if (mi.name.equals("equals")) {
@@ -1034,7 +1036,7 @@ public class Compiler {
 							code.putInt(tmpVar2);
 							pushVar(m, tmpVar2);
 						} else {
-							System.err.println("Method not implemented: " + mi.name + " " + owner);
+							addError(insn, UNEXPECTED_ERROR);
 						}
 					}
 					else if (owner.equals(Register.class.getName())) {
@@ -1054,7 +1056,7 @@ public class Compiler {
 						addError(insn, "Class not implemented: " + mi.owner);
 					}
 				} else {
-					System.err.println("problem");
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
@@ -1079,7 +1081,7 @@ public class Compiler {
 						stack.pollLast(); // remove the 'this'
 					}
 				} else {
-					System.err.println("problem");
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
@@ -1106,7 +1108,7 @@ public class Compiler {
 						pushVar(m, tmpVar1);
 					}
 				} else {
-					System.err.println(opcode);
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
@@ -1186,7 +1188,7 @@ public class Compiler {
 
 					System.out.println("ifeq: " + jmp.label.getLabel());
 				} else {
-					System.err.println(opcode);
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
@@ -1212,7 +1214,7 @@ public class Compiler {
 
 					System.out.println("ifeq: " + jmp.label.getLabel());
 				} else {
-					System.err.println(opcode);
+					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
 
