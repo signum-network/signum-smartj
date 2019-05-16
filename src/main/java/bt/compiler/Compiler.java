@@ -410,8 +410,6 @@ public class Compiler {
 				Label notEqual = new Label();
 				lastNotEqualLabel.set(notEqual); // Set the start point of the next else / else if block
 				methodVisitor.visitJumpInsn(IFNE, notEqual); // Jump here if not equal
-				Label equal = new Label(); // TODO is equal label pointless?
-				methodVisitor.visitLabel(equal);
 				methodVisitor.visitVarInsn(ALOAD, 0); // Load this
 				methodVisitor.visitMethodInsn(INVOKESPECIAL, internalClassName, method.node.name, method.node.desc, false); // Invoke method
 				methodVisitor.visitJumpInsn(GOTO, doneLabel); // Jump to done

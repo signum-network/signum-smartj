@@ -6,7 +6,7 @@ import bt.FunctionBasedContract;
 
 /**
  * Fairly useless contract to demonstrate FunctionBasedContracts.
- * Also, this AT is over 1.8KB.
+ * Also, this AT is over 2KB.
  */
 public class Counter extends FunctionBasedContract {
 
