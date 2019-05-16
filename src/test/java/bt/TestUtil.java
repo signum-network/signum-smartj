@@ -43,6 +43,16 @@ public class TestUtil {
         }).blockingGet();
     }
 
+    public static BroadcastTransactionResponse sendMessage(String passFrom, BurstAddress receiver, BurstValue value, String msg) {
+        byte[] pubKeyFrom = bc.getPublicKey(passFrom);
+
+        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440, msg).flatMap(response -> {
+            byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
+            byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
+            return bns.broadcastTransaction(signedTransactionBytes);
+        }).blockingGet();
+    }
+
     public static void forgeBlock(){
         forgeBlock(PASSPHRASE);
     }
