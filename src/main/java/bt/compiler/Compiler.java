@@ -1,25 +1,21 @@
 package bt.compiler;
 
-import static org.objectweb.asm.Opcodes.*;
+import bt.*;
+import bt.sample.Crowdfund;
+import burst.kit.burst.BurstCrypto;
+import burst.kit.entity.BurstID;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import bt.*;
-import bt.sample.Crowdfund;
-import org.bouncycastle.jcajce.provider.digest.SHA256;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-
-import burst.kit.burst.BurstCrypto;
-import burst.kit.entity.BurstID;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * Class to convert a {@link Contract} java bytecode to ciyam bytecode.
@@ -357,6 +353,7 @@ public class Compiler {
 					for (AnnotationNode visibleAnnotation : mnode.visibleAnnotations) {
 						if (visibleAnnotation.desc.equals("Lbt/ContractFunction;")) {
 							if (mnode.name.equals(NO_FUNCTION_CALLED_METHOD)) throw new IllegalArgumentException(NO_FUNCTION_CALLED_METHOD + " must not be annotated with @ContractFunction");
+							if (!mnode.desc.equals("()V")) throw new IllegalArgumentException("Contract Functions must take no arguments and return void");
 							contractFunction = true;
 							identifier = ((byte) visibleAnnotation.values.get(1));
 						}
@@ -367,7 +364,7 @@ public class Compiler {
 						throw new IllegalArgumentException("Identifier must not be 0");
 					}
 					if (functionIdentifiers.containsKey(identifier)) {
-						throw new IllegalArgumentException("Duplicate identifier: " + identifier);
+						throw new IllegalArgumentException("Duplicate identifier: 0x" + identifier);
 					}
 					functionIdentifiers.put(identifier, m);
 				}
@@ -460,7 +457,7 @@ public class Compiler {
 			if (functionIdentifiers.isEmpty()) {
 				methodIdentifiersString.append(" None Declared.");
 			} else {
-				functionIdentifiers.forEach((identifier, method) -> methodIdentifiersString.append('\n').append(method.node.name).append(method.node.desc).append(": ").append(Long.toHexString(identifier)));
+				functionIdentifiers.forEach((identifier, method) -> methodIdentifiersString.append('\n').append(method.node.name).append(method.node.desc).append(": 0x").append(Long.toHexString(identifier)));
 			}
 			System.out.println(methodIdentifiersString);
 		}
