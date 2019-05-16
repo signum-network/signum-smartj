@@ -2,6 +2,7 @@ package bt.sample;
 
 import bt.*;
 import bt.ui.EmulatorWindow;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * Crowdfunding smart contract
@@ -16,7 +17,7 @@ import bt.ui.EmulatorWindow;
  * @author jjos
  */
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
-class Crowdfund extends Contract {
+public class Crowdfund extends Contract {
 	
 	Address targetAddress;
 	long targetAmount;
@@ -85,6 +86,7 @@ class Crowdfund extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(Crowdfund.class);
+		compile();
 	}
 }
 

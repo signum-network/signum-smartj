@@ -95,6 +95,7 @@ class Will extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(Will.class);
+		compile();
 	}
 }
 

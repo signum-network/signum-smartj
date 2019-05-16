@@ -30,5 +30,6 @@ public class Hello extends Contract {
 	 */
 	public static void main(String[] args) {
 		new EmulatorWindow(Hello.class);
+		compile();
 	}
 }
