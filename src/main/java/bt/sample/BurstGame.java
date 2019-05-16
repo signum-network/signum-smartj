@@ -52,7 +52,7 @@ public class BurstGame extends Contract {
 		// sleep two blocks
 		sleep(getBlockTimestamp().addMinutes(8));
 
-		blockHash = getPrevBlockHash();
+		blockHash = getPrevBlockHash().getValue1();
 		blockHash &= 0x0FFFFFFFFFFFFFFFL; // avoid negative values
 		blockHash %= balance;
 		

@@ -43,7 +43,7 @@ public class OddsGame extends Contract {
 	@Override
 	public void txReceived() {
 		// Previous block hash is the random value we use
-		blockOdd = getPrevBlockHash();
+		blockOdd = getPrevBlockHash().getValue1();
 		prevBlockTimestamp = getPrevBlockTimestamp();
 		blockOdd &= 0xffL; // bitwise AND to get the last part of the number (and avoid negative values)
 		blockOdd %= 2; // MOD 2 to get just 1 or 0

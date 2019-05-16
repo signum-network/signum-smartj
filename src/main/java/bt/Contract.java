@@ -120,9 +120,8 @@ public abstract class Contract {
 	/**
 	 * @return the block hash of the previous block (part 1 of 4)
 	 */
-	protected long getPrevBlockHash() {
-		// TODO: think about a better interface to get other parts or the entire hash
-		return Emulator.getInstance().getPrevBlock().hash.value[0];
+	protected Register getPrevBlockHash() {
+	return Emulator.getInstance().getPrevBlock().hash;
 	}
 
 	/**
