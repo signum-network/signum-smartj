@@ -148,14 +148,26 @@ public class Compiler {
 
 	private void readFields() {
 
-		if (!cn.superName.replace('/', '.').equals(Contract.class.getName())) {
+		if (!(cn.superName.replace('/', '.').equals(Contract.class.getName()) || cn.superName.replace('/', '.').equals(FunctionBasedContract.class.getName()))) {
 			addError(null, "A contract should derive from " + Contract.class.getName());
+		}
+
+		List<FieldNode> fieldNodes = new ArrayList<>(cn.fields);
+		if (cn.superName.replace('/', '.').equals(FunctionBasedContract.class.getName())) {
+			try {
+				ClassReader classReader = new ClassReader(cn.superName);
+				ClassNode fbc = new ClassNode();
+				classReader.accept(fbc, 0);
+				fieldNodes.addAll(fbc.fields);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
 		errors.clear();
 		lastFreeVar = maxLocals = 0;
 
-		for (FieldNode f : cn.fields) {
+		for (FieldNode f : fieldNodes) {
 			// System.out.println("field name:" + f.name);
 			int nvars = 0;
 
@@ -319,14 +331,14 @@ public class Compiler {
 	private void readMethods() {
 		useLastTx = false;
 
-		Map<Long, Method> functionIdentifiers = new HashMap<>();
+		Map<Byte, Method> functionIdentifiers = new HashMap<>();
 
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
 			if (mnode.name.equals(MAIN_METHOD))
 				continue; // skyp the main function (should be for deubgging only)
 
-			if (isFunctional && (mnode.name.equals(TX_RECEIVED_METHOD) || mnode.name.equals(NO_FUNCTION_CALLED_METHOD))) continue; // We must manually assemble the txReceived method for ATs that support methods.
+			if (isFunctional && mnode.name.equals(TX_RECEIVED_METHOD)) continue;
 
 			Method m = new Method();
 			m.node = mnode;
@@ -335,12 +347,30 @@ public class Compiler {
 
 			if (isFunctional && !mnode.name.equals(INIT_METHOD)) {
 				boolean contractFunction = false;
+				boolean zeroIdentifierAllowed = false;
+				byte identifier = 0;
+				if (mnode.name.equals(NO_FUNCTION_CALLED_METHOD)) {
+					contractFunction = true;
+					zeroIdentifierAllowed = true;
+				}
 				if (mnode.visibleAnnotations != null) {
 					for (AnnotationNode visibleAnnotation : mnode.visibleAnnotations) {
-						if (visibleAnnotation.desc.equals("Lbt/ContractFunction;")) contractFunction = true;
+						if (visibleAnnotation.desc.equals("Lbt/ContractFunction;")) {
+							if (mnode.name.equals(NO_FUNCTION_CALLED_METHOD)) throw new IllegalArgumentException(NO_FUNCTION_CALLED_METHOD + " must not be annotated with @ContractFunction");
+							contractFunction = true;
+							identifier = ((byte) visibleAnnotation.values.get(1));
+						}
 					}
 				}
-				if (contractFunction) functionIdentifiers.put(getMethodSignature(m), m);
+				if (contractFunction) {
+					if (!zeroIdentifierAllowed && identifier == 0) {
+						throw new IllegalArgumentException("Identifier must not be 0");
+					}
+					if (functionIdentifiers.containsKey(identifier)) {
+						throw new IllegalArgumentException("Duplicate identifier: " + identifier);
+					}
+					functionIdentifiers.put(identifier, m);
+				}
 			}
 		}
 
@@ -354,13 +384,16 @@ public class Compiler {
 			methodVisitor.visitLabel(startLabel);
 			methodVisitor.visitVarInsn(ALOAD, 0);
 			methodVisitor.visitVarInsn(ALOAD, 0);
-			methodVisitor.visitVarInsn(ALOAD, 0);
 			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, internalClassName, "getCurrentTx", "()Lbt/Transaction;", false);
-			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, internalClassName, "getMessage", "(Lbt/Transaction;)Lbt/Register;", false);
-			methodVisitor.visitFieldInsn(GETFIELD, "bt/Register", "value", "[J");
-			methodVisitor.visitInsn(ICONST_0);
-			methodVisitor.visitInsn(LALOAD);
-			methodVisitor.visitFieldInsn(PUTFIELD, internalClassName, "methodIdentifier", "J");
+			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "bt/Transaction", "getMessage", "()Lbt/Register;", false);
+			methodVisitor.visitFieldInsn(PUTFIELD, internalClassName, "receivedMessage", "Lbt/Register;");
+			methodVisitor.visitVarInsn(ALOAD, 0);
+			methodVisitor.visitVarInsn(ALOAD, 0);
+			methodVisitor.visitFieldInsn(GETFIELD, internalClassName, "receivedMessage", "Lbt/Register;");
+			methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "bt/Register", "getValue1", "()J", false);
+			methodVisitor.visitLdcInsn(255L);
+			methodVisitor.visitInsn(LAND);
+			methodVisitor.visitFieldInsn(PUTFIELD, internalClassName, "selectedFunction", "J");
 
 			// Start building if() chain TODO use switch once it is supported as it will save space
 			Label doneLabel = new Label();
@@ -374,8 +407,8 @@ public class Compiler {
 					methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
 				}
 				methodVisitor.visitVarInsn(ALOAD, 0); // load this
-				methodVisitor.visitFieldInsn(GETFIELD, internalClassName, "methodIdentifier", "J"); // Get method identifier
-				methodVisitor.visitLdcInsn(identifier); // Add identifier we are checking for
+				methodVisitor.visitFieldInsn(GETFIELD, internalClassName, "selectedFunction", "J"); // Get method identifier
+				methodVisitor.visitLdcInsn(new Long(identifier)); // Add identifier we are checking for
 				methodVisitor.visitInsn(LCMP); // Compare
 				Label notEqual = new Label();
 				lastNotEqualLabel.set(notEqual); // Set the start point of the next else / else if block
@@ -1230,11 +1263,5 @@ public class Compiler {
 
 		System.out.println("Code single line:");
 		Printer.printCode(reader.code, System.out);
-	}
-
-	public static long getMethodSignature(Method m) {
-		if (true) return 0x4849000000000000L;
-		MessageDigest sha256 = new SHA256.Digest(); // TODO use burstkit4j, need to update
-		return BurstCrypto.getInstance().hashToId(sha256.digest((m.node.name+m.node.desc).getBytes(StandardCharsets.UTF_8))).getSignedLongId();
 	}
 }

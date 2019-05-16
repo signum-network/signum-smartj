@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
  * @author jjos
  */
 public class Register {
-	long value[] = new long[4];
+	public long[] value = new long[4];
 
 	Method method;
 	Object[] args;

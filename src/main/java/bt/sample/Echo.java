@@ -20,6 +20,7 @@ public class Echo extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(Echo.class);
+		compile();
 	}
 }
 
