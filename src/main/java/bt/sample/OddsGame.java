@@ -121,5 +121,6 @@ public class OddsGame extends Contract {
 		emu.forgeBlock();
 
 		new EmulatorWindow(OddsGame.class);
+		compile();
 	}
 }

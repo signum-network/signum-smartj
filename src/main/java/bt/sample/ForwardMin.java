@@ -37,6 +37,7 @@ public class ForwardMin extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(ForwardMin.class);
+		compile();
 	}
 }
 

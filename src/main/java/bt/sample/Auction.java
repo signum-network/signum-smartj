@@ -94,6 +94,7 @@ public class Auction extends Contract {
 		emu.forgeBlock();
 
 		new EmulatorWindow(Auction.class);
+		compile();
 	}
 }
 

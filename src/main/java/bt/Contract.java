@@ -1,7 +1,11 @@
 package bt;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.concurrent.Semaphore;
+
+import bt.compiler.Compiler;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * The BlockTalk smart contract abstract class.
@@ -229,5 +233,63 @@ public abstract class Contract {
 			}
 		}
 		return ret;
+	}
+
+	/**
+	 * This method should **NOT** be called except from in a main() method for convenience.
+	 * Class detection taken from javafx.application.Application::launch
+	 * @return The AT code byte
+	 */
+	@EmulatorWarning
+	protected static byte[] compile() {
+		// Figure out the right class to call
+		StackTraceElement[] cause = Thread.currentThread().getStackTrace();
+
+		boolean foundThisMethod = false;
+		String callingClassName = null;
+		for (StackTraceElement se : cause) {
+			// Skip entries until we get to the entry for this class
+			String className = se.getClassName();
+			String methodName = se.getMethodName();
+			if (foundThisMethod) {
+				callingClassName = className;
+				break;
+			} else if (Contract.class.getName().equals(className)
+					&& "compile".equals(methodName)) {
+				foundThisMethod = true;
+			}
+		}
+
+		if (callingClassName == null) {
+			throw new RuntimeException("Error: unable to determine contract class");
+		}
+
+		try {
+			Class theClass = Class.forName(callingClassName, false,
+					Thread.currentThread().getContextClassLoader());
+			if (Contract.class.isAssignableFrom(theClass)) {
+				//noinspection unchecked
+				byte[] code = compile(theClass);
+				System.out.println("Compiled AT bytecode: " + Hex.toHexString(code));
+				return code;
+			} else {
+				throw new RuntimeException("Error: " + theClass
+						+ " is not a subclass of bt.Contract");
+			}
+		} catch (RuntimeException ex) {
+			throw ex;
+		} catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	private static byte[] compile(Class<? extends Contract> clazz) throws IOException {
+		Compiler compiler = new Compiler(clazz);
+		compiler.compile();
+		compiler.link();
+		byte[] code = new byte[compiler.getCode().position()];
+		compiler.getCode().rewind();
+		compiler.getCode().get(code);
+		return code;
 	}
 }

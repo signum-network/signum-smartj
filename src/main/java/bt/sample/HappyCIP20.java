@@ -55,5 +55,6 @@ public class HappyCIP20 extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(HappyCIP20.class);
+		compile();
 	}
 }
