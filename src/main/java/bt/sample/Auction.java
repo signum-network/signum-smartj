@@ -19,6 +19,7 @@ public class Auction extends Contract {
 	
 	Address beneficiary;
 	long highestBid;
+	long newBid;
 	Address highestBidder;
 	Timestamp timeout;
 	boolean finished;
@@ -62,7 +63,7 @@ public class Auction extends Contract {
 			return;
 		}
 
-		long newBid = getCurrentTx().getAmount();
+		newBid = getCurrentTx().getAmount();
 		if(newBid > highestBid){
 			// we have a new higher bid, return the previous one
 			if(highestBidder != null) {
