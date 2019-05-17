@@ -79,10 +79,10 @@ public class Compiler {
 
 	ArrayList<Error> errors = new ArrayList<>();
 
-    public Compiler(String className) throws ClassNotFoundException, ClassCastException, IOException {
-        //noinspection unchecked
-        this((Class<? extends Contract>) Class.forName(className));
-    }
+	public Compiler(String className) throws ClassNotFoundException, ClassCastException, IOException {
+		// noinspection unchecked
+		this((Class<? extends Contract>) Class.forName(className));
+	}
 
 	public Compiler(Class<? extends Contract> clazz) throws IOException {
 		this.className = clazz.getName();
@@ -187,6 +187,12 @@ public class Compiler {
 				nvars = 1; // integer
 			else if (f.desc.equals("J"))
 				nvars = 1; // long
+			/* some related operators are still missing
+			else if (f.desc.equals("B"))
+				nvars = 1; // byte
+			else if (f.desc.equals("S"))
+				nvars = 1; // short
+			*/
 
 			if (nvars == 0) {
 				addError(null, f.name + ", invalid field type: " + f.desc);
@@ -476,11 +482,31 @@ public class Compiler {
 				break;
 
 			case I2L:
-			case L2I:
+				break; // nothing needed
+			case L2I: // long 2 int
 			case I2B: // int 2 byte
 			case I2C: // int 2 char
 			case I2S: // int 2 short
-				System.out.println("int conversion, we currently do nothing");
+				arg1 = popVar(m, tmpVar1, true);
+				code.put(OpCode.e_op_code_SET_VAL);
+				code.putInt(tmpVar2);
+				switch (opcode) {
+				case L2I:
+					code.putLong(0xFFFFFFFFL);
+					break;
+				case I2B:
+					code.putLong(0xFFL);
+					break;
+				case I2C:
+				case I2S:
+					code.putLong(0xFFFFL);
+					break;
+				}
+				code.put(OpCode.e_op_code_AND_DAT);
+				code.putInt(arg1.address);
+				code.putInt(tmpVar2);
+
+				pushVar(m, arg1.address);
 				break;
 
 			case ICONST_0:
@@ -738,8 +764,8 @@ public class Compiler {
 							// Load the 4 register values
 							for (int i = 0; i < 4; i++) {
 								code.put(OpCode.e_op_code_EXT_FUN_RET);
-								code.putShort((short)(OpCode.Get_A1 + 1));
-								code.putInt(tmpVar1);									
+								code.putShort((short) (OpCode.Get_A1 + 1));
+								code.putInt(tmpVar1);
 								pushVar(m, tmpVar1);
 							}
 
@@ -785,7 +811,7 @@ public class Compiler {
 							code.putShort(OpCode.Set_B1);
 							code.putInt(arg1.address); // address
 
-							if(mi.desc.equals("(Ljava/lang/String;Lbt/Address;)V")){
+							if (mi.desc.equals("(Ljava/lang/String;Lbt/Address;)V")) {
 								// It should be a constant string, fill A1-A4 with 4*longs
 								StackVar msg = stack.pollLast();
 								int pos = 0;
@@ -806,8 +832,7 @@ public class Compiler {
 									code.putShort((short) (OpCode.Set_A1 + a));
 									code.putInt(tmpVar1);
 								}
-							}
-							else {
+							} else {
 								// We should have received a Register, it is on stack
 								for (int i = 3; i >= 0; i--) {
 									StackVar reg = popVar(m, tmpVar1, false);
@@ -920,21 +945,18 @@ public class Compiler {
 						} else {
 							addError(insn, UNEXPECTED_ERROR);
 						}
-					}
-					else if (owner.equals(Register.class.getName())) {
+					} else if (owner.equals(Register.class.getName())) {
 						StackVar values[] = new StackVar[4];
 						// we should pop the 4 values from stack
-						for (int i = values.length -1; i >= 0; i--) {
+						for (int i = values.length - 1; i >= 0; i--) {
 							values[i] = popVar(m, tmpVar1 + i, false);
 						}
 						if (mi.name.startsWith("getValue")) {
-							int pos = Integer.parseInt(mi.name.substring(mi.name.length()-1)) - 1;
+							int pos = Integer.parseInt(mi.name.substring(mi.name.length() - 1)) - 1;
 							pushVar(m, values[pos].address);
-						}
-						else
+						} else
 							addError(insn, "Method not implemented: " + mi.name);
-					}
-					else {
+					} else {
 						addError(insn, "Class not implemented: " + mi.owner);
 					}
 				} else {
@@ -952,12 +974,12 @@ public class Compiler {
 					Field field = fields.get(fi.name);
 					if (opcode == GETFIELD) {
 						stack.pollLast(); // remove the 'this'
-						for (int i = 0; i < field.size; i++) {							
+						for (int i = 0; i < field.size; i++) {
 							pushVar(m, field.address + i);
 						}
 					} else {
 						// PUTFIELD
-						for (int i = field.size-1; i >= 0; i--) {
+						for (int i = field.size - 1; i >= 0; i--) {
 							popVar(m, field.address + i, true);
 						}
 						stack.pollLast(); // remove the 'this'
@@ -1076,6 +1098,8 @@ public class Compiler {
 
 			case IF_ACMPEQ:
 			case IF_ACMPNE:
+			case IF_ICMPEQ:
+			case IF_ICMPNE:
 				if (insn instanceof JumpInsnNode) {
 					JumpInsnNode jmp = (JumpInsnNode) insn;
 
@@ -1083,11 +1107,11 @@ public class Compiler {
 					arg2 = popVar(m, tmpVar2, false);
 
 					code.put(OpCode.e_op_code_SUB_DAT);
-					code.putInt(tmpVar1);
-					code.putInt(tmpVar2);
+					code.putInt(arg1.address);
+					code.putInt(arg2.address);
 
-					code.put(opcode == IF_ACMPEQ ? OpCode.e_op_code_BNZ_DAT : OpCode.e_op_code_BZR_DAT);
-					code.putInt(tmpVar1);
+					code.put(opcode == IF_ACMPEQ || opcode == IF_ICMPEQ ? OpCode.e_op_code_BNZ_DAT : OpCode.e_op_code_BZR_DAT);
+					code.putInt(arg1.address);
 					code.put((byte) 11); // offset
 
 					code.put(OpCode.e_op_code_JMP_ADR);
@@ -1129,7 +1153,7 @@ public class Compiler {
 
 	public static void main(String[] args) throws Exception {
 
-	    Class<? extends Contract> contractClass = Crowdfund.class;
+		Class<? extends Contract> contractClass = Crowdfund.class;
 
 		Compiler reader = new Compiler(contractClass);
 
