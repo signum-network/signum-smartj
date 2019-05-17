@@ -60,6 +60,8 @@ public class Printer {
 				out.print(" (tmpVar2)");
 			else if (ad == c.tmpVar3)
 				out.print(" (tmpVar3)");
+			else if (ad == c.tmpVar4)
+				out.print(" (tmpVar4)");
 		}
 		out.println();
 		return ret;
