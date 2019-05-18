@@ -3,17 +3,22 @@ package bt.compiler;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import bt.*;
 import bt.sample.Crowdfund;
+
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -62,6 +67,9 @@ public class Compiler {
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
 	int maxLocals;
+
+	/** If we have public methods other than txReceived */
+	boolean hasPublicMethods;
 
 	public class Error {
 		AbstractInsnNode node;
@@ -167,32 +175,29 @@ public class Compiler {
 			if (Modifier.isFinal(f.access) && Modifier.isStatic(f.access))
 				continue; // we simply skip this
 
-			if (f.desc.charAt(0) == 'L') {
-				// this is a class reference
-				f.desc = f.desc.substring(1, f.desc.length() - 1);
+			String desc = f.desc;
+			if (desc.startsWith("L"))
+				desc = desc.substring(1, desc.length() - 1).replace('/', '.');
 
-				f.desc = f.desc.replace('/', '.');
-
-				if (f.desc.equals(Address.class.getName()))
-					nvars = 1;
-				else if (f.desc.equals(Transaction.class.getName()))
-					nvars = 1;
-				else if (f.desc.equals(Timestamp.class.getName()))
-					nvars = 1;
-				else if (f.desc.equals(Register.class.getName()))
-					nvars = 4;
-			} else if (f.desc.equals("Z"))
-				nvars = 1; // boolean
-			else if (f.desc.equals("I"))
-				nvars = 1; // integer
-			else if (f.desc.equals("J"))
+			if (desc.equals("J"))
 				nvars = 1; // long
-			/* some related operators are still missing
-			else if (f.desc.equals("B"))
-				nvars = 1; // byte
-			else if (f.desc.equals("S"))
-				nvars = 1; // short
-			*/
+			else if (desc.equals("Z"))
+				nvars = 1; // boolean
+			else if (desc.equals("I"))
+				nvars = 1; // integer
+			else if (desc.equals(Address.class.getName()))
+				nvars = 1;
+			else if (desc.equals(Transaction.class.getName()))
+				nvars = 1;
+			else if (desc.equals(Timestamp.class.getName()))
+				nvars = 1;
+			else if (desc.equals(Register.class.getName()))
+				nvars = 4;
+
+			/*
+			 * some related operators are still missing else if (f.desc.equals("B")) nvars =
+			 * 1; // byte else if (f.desc.equals("S")) nvars = 1; // short
+			 */
 
 			if (nvars == 0) {
 				addError(null, f.name + ", invalid field type: " + f.desc);
@@ -263,11 +268,55 @@ public class Compiler {
 			code.putInt(lastTxTimestamp);
 		}
 
-		// TODO: handle external method calls here (our ABI must be defined first)
+		if (hasPublicMethods) {
+			// external method calls here
+			code.put(OpCode.e_op_code_EXT_FUN);
+			code.putShort(OpCode.Message_From_Tx_In_A_To_B);
+
+			// First bytes will have the function to call (using tmpVar4)
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_B1);
+			code.putInt(tmpVar4);
+
+			for (Method m : methods.values()) {
+				if (m.node.name.equals(MAIN_METHOD) || m.node.name.equals(TX_RECEIVED_METHOD)
+						|| !Modifier.isPublic(m.node.access))
+					continue;
+
+				code.put(OpCode.e_op_code_SET_VAL);
+				code.putInt(tmpVar1);
+				code.putLong(m.hash);
+
+				code.put(OpCode.e_op_code_SUB_DAT);
+				code.putInt(tmpVar1);
+				code.putInt(tmpVar4);
+
+				code.put(OpCode.e_op_code_BNZ_DAT);
+				code.putInt(tmpVar1);
+				code.put((byte) (12 + m.nargs * 12));
+
+				// fill the stack with the arguments
+				for (int i = 0; i < m.nargs; i++) {
+					code.put(OpCode.e_op_code_EXT_FUN_RET);
+					code.putShort((short) (OpCode.Get_B1 + i + 1));
+					code.putInt(tmpVar2);
+
+					code.put(OpCode.e_op_code_PSH_DAT);
+					code.putInt(tmpVar2);
+				}
+				// call the method
+				code.put(OpCode.e_op_code_JMP_SUB);
+				code.putInt(m.address);
+				// end this run
+				code.put(OpCode.e_op_code_FIN_IMD);
+			}
+		}
 
 		// call the txReceived method
 		code.put(OpCode.e_op_code_JMP_SUB);
 		code.putInt(methods.get(TX_RECEIVED_METHOD).address);
+
+		// end this run
 		code.put(OpCode.e_op_code_FIN_IMD);
 	}
 
@@ -329,6 +378,7 @@ public class Compiler {
 
 	private void readMethods() {
 		useLastTx = false;
+		hasPublicMethods = false;
 
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
@@ -339,11 +389,24 @@ public class Compiler {
 			m.node = mnode;
 
 			methods.put(mnode.name, m);
+
+			if (!mnode.name.equals(TX_RECEIVED_METHOD) && Modifier.isPublic(mnode.access)) {
+				hasPublicMethods = true;
+				useLastTx = true;
+				m.nargs = getMethodParamCount(m);
+				m.hash = getMethodSignature(m);
+			}
 		}
+
+		if (errors.size() > 0)
+			return;
 
 		// Then parse
 		for (Method m : methods.values()) {
-			System.out.println("** METHOD: " + m.node.name);
+			System.out.print("** METHOD: " + m.node.name);
+			if (m.hash != 0)
+				System.out.print(" hash: " + m.hash);
+			System.out.println();
 			parseMethod(m);
 		}
 	}
@@ -404,6 +467,17 @@ public class Compiler {
 
 			if (!m.node.desc.equals("()V"))
 				addError(m.node.instructions.get(0), "Contract constructor cannot have arguments");
+		}
+
+		if (Modifier.isPublic(m.node.access) && !m.node.name.equals(TX_RECEIVED_METHOD)
+				&& !m.node.name.equals(INIT_METHOD) && !m.node.name.equals(MAIN_METHOD)) {
+			int nargs = getMethodParamCount(m);
+			if (nargs > 3) {
+				addError(m.node.instructions.getFirst(),
+						"Public functions with more than 3 arguments are not supported");
+			}
+			long hash = getMethodSignature(m);
+			System.out.println(m.node.name + ":" + hash);
 		}
 
 		StackVar arg1, arg2;
@@ -1110,7 +1184,8 @@ public class Compiler {
 					code.putInt(arg1.address);
 					code.putInt(arg2.address);
 
-					code.put(opcode == IF_ACMPEQ || opcode == IF_ICMPEQ ? OpCode.e_op_code_BNZ_DAT : OpCode.e_op_code_BZR_DAT);
+					code.put(opcode == IF_ACMPEQ || opcode == IF_ICMPEQ ? OpCode.e_op_code_BNZ_DAT
+							: OpCode.e_op_code_BZR_DAT);
 					code.putInt(arg1.address);
 					code.put((byte) 11); // offset
 
@@ -1168,24 +1243,45 @@ public class Compiler {
 		Printer.printCode(reader.code, System.out);
 	}
 
-	public static String getSignature(java.lang.reflect.Method m) {
-		String sig;
-		try {
-			java.lang.reflect.Field gSig = java.lang.reflect.Method.class.getDeclaredField("signature");
-			gSig.setAccessible(true);
-			sig = (String) gSig.get(m);
-			if (sig != null)
-				return m.getName() + sig;
-		} catch (IllegalAccessException | NoSuchFieldException e) {
-			e.printStackTrace();
-		}
+	public static long getMethodSignature(Method m) {
+		MessageDigest sha256 = new SHA256.Digest(); // TODO use burstkit4j, need to update
+		return BurstCrypto.getInstance()
+				.hashToId(sha256.digest((m.node.name + m.node.desc).getBytes(StandardCharsets.UTF_8)))
+				.getSignedLongId();
+	}
 
-		StringBuilder sb = new StringBuilder(m.getName() + "(");
-		for (Class<?> c : m.getParameterTypes())
-			sb.append((sig = Array.newInstance(c, 0).toString()).substring(1, sig.indexOf('@')));
-		return sb.append(')')
-				.append(m.getReturnType() == void.class ? "V"
-						: (sig = Array.newInstance(m.getReturnType(), 0).toString()).substring(1, sig.indexOf('@')))
-				.toString();
+	public static String getMethodSignatureString(Method m) {
+		return m.node.name + m.node.desc;
+	}
+
+	private static Pattern allParamsPattern = Pattern.compile("(\\(.*?\\))");
+	private static Pattern paramsPattern = Pattern.compile("(\\[?)(C|Z|S|I|J|F|D|(:?L[^;]+;))");
+	private static ArrayList<String> supportedParams = new ArrayList<>();
+	static {
+		supportedParams.add("Z");
+		supportedParams.add("I");
+		supportedParams.add("J");
+		supportedParams.add("L" + Address.class.getName().replace('.', '/'));
+		supportedParams.add("L" + Transaction.class.getName().replace('.', '/'));
+		supportedParams.add("L" + Timestamp.class.getName().replace('.', '/'));
+	}
+
+	int getMethodParamCount(Method method) {
+		Matcher m = allParamsPattern.matcher(method.node.desc);
+		if (!m.find()) {
+			throw new IllegalArgumentException("Method signature does not contain parameters");
+		}
+		String paramsDescriptor = m.group(1);
+		Matcher mParam = paramsPattern.matcher(paramsDescriptor);
+
+		int count = 0;
+		while (mParam.find()) {
+			String p = mParam.group();
+			if (!supportedParams.contains(p)) {
+				addError(method.node.instructions.getFirst(), "Unsupported parameter type " + p);
+			}
+			count++;
+		}
+		return count;
 	}
 }

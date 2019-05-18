@@ -26,6 +26,8 @@ public class Method {
 	ArrayList<Jump> jumps = new ArrayList<>();
 	ByteBuffer code;
 	MethodNode node;
+	int nargs;
+	long hash;
 	
 	int address;
 }
