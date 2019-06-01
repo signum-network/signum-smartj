@@ -2,7 +2,6 @@ package bt.sample;
 
 import bt.*;
 import bt.ui.EmulatorWindow;
-import org.bouncycastle.util.encoders.Hex;
 
 /**
  * Crowdfunding smart contract

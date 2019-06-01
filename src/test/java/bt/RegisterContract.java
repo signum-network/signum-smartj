@@ -13,16 +13,16 @@ public class RegisterContract {
 
     public static void main(String[] args) throws Exception {
 
-//        String NODE = TestUtil.NODE_LOCAL_TESTNET;
-        String NODE = TestUtil.NODE_AT_TESTNET;
+        String NODE = BT.NODE_LOCAL_TESTNET;
+//        String NODE = BT.NODE_AT_TESTNET;
 
-        Class<?> CONTRACT = OddsGame.class;
+        Class<? extends Contract> CONTRACT = Cast.class;
         BurstValue ACT_FEE = BurstValue.fromBurst(10);
         BurstValue FEE = BurstValue.fromBurst(0.1);
 
-        TestUtil.setNode(NODE);
+        BT.setNodeAddress(NODE);
 
-        ATResponse at = TestUtil.registerAT(TestUtil.PASSPHRASE, CONTRACT, ACT_FEE, FEE);
+        ATResponse at = BT.registerContract(CONTRACT, ACT_FEE);
 
         System.out.println(at.getAt().getFullAddress());
     }

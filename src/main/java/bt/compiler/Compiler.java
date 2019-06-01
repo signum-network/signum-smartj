@@ -9,6 +9,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -86,11 +87,6 @@ public class Compiler {
 	}
 
 	ArrayList<Error> errors = new ArrayList<>();
-
-	public Compiler(String className) throws ClassNotFoundException, ClassCastException, IOException {
-		// noinspection unchecked
-		this((Class<? extends Contract>) Class.forName(className));
-	}
 
 	public Compiler(Class<? extends Contract> clazz) throws IOException {
 		this.className = clazz.getName();
@@ -409,6 +405,20 @@ public class Compiler {
 			System.out.println();
 			parseMethod(m);
 		}
+	}
+
+	/**
+	 * @return the methods
+	 */
+	public Collection<Method> getMethods() {
+		return methods.values();
+	}
+
+	/**
+	 * @return the method for the given name
+	 */
+	public Method getMethod(String name) {
+		return methods.get(name);
 	}
 
 	/**

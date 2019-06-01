@@ -22,7 +22,7 @@ public class Sleep extends Contract {
 		emu.airDrop(creator, 1000 * ONE_BURST);
 
 		Address contract = Emulator.getInstance().getAddress("C");
-		emu.createConctract(creator, contract, Sleep.class.getName(), ONE_BURST);
+		emu.createConctract(creator, contract, Sleep.class, ONE_BURST);
 
 		emu.forgeBlock();
 

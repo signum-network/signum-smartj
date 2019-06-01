@@ -184,15 +184,15 @@ public abstract class Contract {
 	/**
 	 * @return a SHA256 hash of the given input
 	 */
-	protected Register SHA256(Register input) {
+	protected Register performSHA256(Register input) {
+		Register ret = new Register();
+
 		ByteBuffer b = ByteBuffer.allocate( 32 );
 		b.order( ByteOrder.LITTLE_ENDIAN );
 		
-		b.putLong( input.getValue1() );
-		b.putLong( input.getValue2() );
-		b.putLong( input.getValue3() );
-		b.putLong( input.getValue4() );
-		Register ret = new Register();
+		for (int i = 0; i < 4; i++) {
+			b.putLong( input.value[i] );
+		}
 		
 		try {
 			MessageDigest sha256 = MessageDigest.getInstance("SHA-256");

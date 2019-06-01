@@ -112,8 +112,8 @@ public class UniqueToken extends Contract {
 
 		Address token1 = Emulator.getInstance().getAddress("TOKEN1");
 		Address token2 = Emulator.getInstance().getAddress("TOKEN2");
-		emu.createConctract(creator, token1, UniqueToken.class.getName(), Contract.ONE_BURST);
-		emu.createConctract(creator, token2, UniqueToken.class.getName(), Contract.ONE_BURST);
+		emu.createConctract(creator, token1, UniqueToken.class, Contract.ONE_BURST);
+		emu.createConctract(creator, token2, UniqueToken.class, Contract.ONE_BURST);
 
 		emu.forgeBlock();
 

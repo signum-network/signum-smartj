@@ -20,6 +20,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.border.TitledBorder;
 
+import bt.Contract;
 import bt.compiler.Compiler;
 import bt.compiler.Printer;
 import burst.kit.burst.BurstCrypto;
@@ -52,11 +53,11 @@ class CompileDialog extends JDialog implements ActionListener {
 
     private JTextArea codeAreaForm;
 
-    private String atClass;
+    private Class<? extends Contract> atClass;
 
     private JButton closeButton, publishButton;
 
-    CompileDialog(Window parent, String atClass) {
+    CompileDialog(Window parent, Class<? extends Contract> atClass) {
         super(parent, "Compile/Publish Contract", ModalityType.APPLICATION_MODAL);
         setLayout(new BorderLayout());
 
@@ -79,7 +80,7 @@ class CompileDialog extends JDialog implements ActionListener {
         JPanel config = new JPanel(new GridLayout(0, 1));
         config.setBorder(new TitledBorder("PUBLISH"));
         config.add(nameField = new HintTextField("Contract name", null));
-        nameField.setText(atClass.replace('.', '_'));
+        nameField.setText(atClass.getName().replace('.', '_'));
         config.add(descField = new HintTextField("Contract description", null));
         config.add(nodeField = new HintTextField("Network node", null));
         config.add(passField = new JPasswordField());

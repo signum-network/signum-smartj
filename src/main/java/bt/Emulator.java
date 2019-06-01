@@ -50,23 +50,6 @@ public class Emulator {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		Emulator e = Emulator.getInstance();
-
-		Address add1 = e.getAddress("BURST-C6HC-TZF2-FXPU-GCCSC");
-		Address add2 = e.getAddress("BURST-9VBL-B3KR-HE6P-98L5G");
-
-		e.airDrop(add1, 100000);
-		e.airDrop(add2, 100000);
-
-		Address c1 = e.getAddress("AUCTION-1");
-		e.createConctract(add1, c1, "test.Auction", Contract.ONE_BURST);
-		e.forgeBlock();
-
-		e.send(add1, c1, 1000 * Contract.ONE_BURST);
-		e.forgeBlock();
-	}
-
 	public Address findAddress(String rs) {
 		for (Address a : addresses) {
 			if (a.rsAddress.equals(rs))
@@ -120,9 +103,9 @@ public class Emulator {
 		txs.add(t);
 	}
 
-	public void createConctract(Address from, Address to, String contractClass, long actFee) {
+	public void createConctract(Address from, Address to, Class<? extends Contract> contractClass, long actFee) {
 		Transaction t = new Transaction(from, to, actFee, Transaction.TYPE_AT_CREATE,
-				new Timestamp(currentBlock.height, currentBlock.txs.size()), contractClass);
+				new Timestamp(currentBlock.height, currentBlock.txs.size()), contractClass.getName());
 		currentBlock.txs.add(t);
 		t.block = currentBlock;
 		txs.add(t);

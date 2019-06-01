@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
  * 
  * @author jjos
  */
-public class CompilerTest extends TestUtil {
+public class CompilerTest extends BT {
 
     public static void main(String[] args) throws Exception {
         CompilerTest t = new CompilerTest();
@@ -36,24 +36,24 @@ public class CompilerTest extends TestUtil {
     @BeforeClass
     public void setup() {
         // forge a fitst block to get some balance
-        TestUtil.forgeBlock();
+        forgeBlock();
     }
 
     @Test
     public void testOdds() throws Exception {
 
         // Send some burst for the players
-        forgeBlock(PASSPHRASE);
+        forgeBlock(PASSPHRASE, 500);
         BurstAddress player1 = bc.getBurstAddressFromPassphrase(PASSPHRASE2);
         BurstAddress player2 = bc.getBurstAddressFromPassphrase(PASSPHRASE3);
-        sendAmount(PASSPHRASE, player1, BurstValue.fromBurst(1000));
-        sendAmount(PASSPHRASE, player2, BurstValue.fromBurst(1000));
-        forgeBlock(PASSPHRASE);
+        sendAmount(PASSPHRASE, player1, BurstValue.fromBurst(1000)).blockingGet();
+        sendAmount(PASSPHRASE, player2, BurstValue.fromBurst(1000)).blockingGet();
+        forgeBlock(PASSPHRASE, 500);
 
         BurstValue actvFee = BurstValue.fromBurst(10);
         BurstValue amount = BurstValue.fromBurst(100);
 
-        ATResponse at = registerAT(OddsGame.class, actvFee);
+        ATResponse at = registerContract(OddsGame.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
         // Fill the contract with 3 times the max payment value
@@ -86,7 +86,7 @@ public class CompilerTest extends TestUtil {
         BurstValue actvFee = BurstValue.fromBurst(1);
         BurstValue amount = BurstValue.fromBurst(10);
 
-        ATResponse at = registerAT(Forward.class, actvFee);
+        ATResponse at = registerContract(Forward.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
         sendAmount(PASSPHRASE, at.getAt(), amount);
@@ -113,7 +113,7 @@ public class CompilerTest extends TestUtil {
         BurstValue actvFee = BurstValue.fromBurst(1);
         double amount = ForwardMin.MIN_AMOUNT * 0.8;
 
-        ATResponse at = registerAT(ForwardMin.class, actvFee);
+        ATResponse at = registerContract(ForwardMin.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
         sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
@@ -148,7 +148,7 @@ public class CompilerTest extends TestUtil {
         BurstValue actvFee = BurstValue.fromBurst(1);
         double amount = TipThanks.MIN_AMOUNT * 0.8;
 
-        ATResponse at = registerAT(TipThanks.class, actvFee);
+        ATResponse at = registerContract(TipThanks.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
         sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));

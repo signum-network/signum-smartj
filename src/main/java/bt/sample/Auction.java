@@ -90,7 +90,7 @@ public class Auction extends Contract {
 		Address creator = Emulator.getInstance().getAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
 		emu.airDrop(creator, 1000*Contract.ONE_BURST);		
 		Address auction = Emulator.getInstance().getAddress("AUCTION");
-		emu.createConctract(creator, auction, Auction.class.getName(), Contract.ONE_BURST);
+		emu.createConctract(creator, auction, Auction.class, Contract.ONE_BURST);
 
 		emu.forgeBlock();
 

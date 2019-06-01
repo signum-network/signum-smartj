@@ -97,7 +97,7 @@ public class OddsGame extends Contract {
 		emu.airDrop(bet1, 1000 * ONE_BURST);
 		emu.airDrop(bet2, 1000 * ONE_BURST);
 		Address odds = Emulator.getInstance().getAddress("ODDS");
-		emu.createConctract(creator, odds, OddsGame.class.getName(), ONE_BURST);
+		emu.createConctract(creator, odds, OddsGame.class, ONE_BURST);
 
 		emu.forgeBlock();
 

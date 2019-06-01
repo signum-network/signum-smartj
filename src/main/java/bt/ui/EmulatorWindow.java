@@ -424,9 +424,10 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 			}
 			actAmount *= Contract.ONE_BURST;
 
-			String atClass = atClassField.getText();
+			String atClassName = atClassField.getText();
+			Class<? extends Contract> atClass = null;
 			try {
-				Class.forName(atClass);
+				atClass = (Class<? extends Contract>) Class.forName(atClassName);
 			} catch (Exception ex) {
 				JOptionPane.showMessageDialog(EmulatorWindow.this, "Contract instantiation: " + ex.getMessage(),
 						"Error", JOptionPane.ERROR_MESSAGE);
@@ -440,7 +441,16 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 		} else if (e.getSource() == sendTo){
 			sendMessage.setObject(null);
 		} else if (e.getSource() == compileATButton) {
-			String atClass = atClassField.getText();
+			String atClassName = atClassField.getText();
+			Class<? extends Contract> atClass = null;
+			try {
+				atClass = (Class<? extends Contract>) Class.forName(atClassName);
+			} catch (Exception ex) {
+				JOptionPane.showMessageDialog(EmulatorWindow.this, "Contract instantiation: " + ex.getMessage(),
+						"Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
 			CompileDialog dlg = new CompileDialog(this, atClass);
 			dlg.execute();
 		}
