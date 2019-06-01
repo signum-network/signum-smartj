@@ -2,6 +2,10 @@ package bt;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 
 import bt.compiler.Compiler;
@@ -175,6 +179,34 @@ public abstract class Contract {
 	 */
 	protected Register getMessage(Transaction tx) {
 		return tx.getMessage();
+	}
+
+	/**
+	 * @return a SHA256 hash of the given input
+	 */
+	protected Register SHA256(Register input) {
+		ByteBuffer b = ByteBuffer.allocate( 32 );
+		b.order( ByteOrder.LITTLE_ENDIAN );
+		
+		b.putLong( input.getValue1() );
+		b.putLong( input.getValue2() );
+		b.putLong( input.getValue3() );
+		b.putLong( input.getValue4() );
+		Register ret = new Register();
+		
+		try {
+			MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+			ByteBuffer shab = ByteBuffer.wrap( sha256.digest( b.array() ) );
+			shab.order( ByteOrder.LITTLE_ENDIAN );
+
+			for (int i = 0; i < 4; i++) {
+				ret.value[i] = shab.getLong(i*8);
+			}
+		} catch (NoSuchAlgorithmException e) {
+			//not expected to reach that point
+			e.printStackTrace();
+		}
+		return ret;
 	}
 
 	/**
