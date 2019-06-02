@@ -22,7 +22,7 @@ public class Field {
 	/**
 	 * @return the address of this field
 	 */
-	public String getAddress(){
+	public int getAddress(){
 		return address;
 	}
 }

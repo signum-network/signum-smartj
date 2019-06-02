@@ -6,10 +6,12 @@ import java.nio.ByteOrder;
 import java.security.InvalidParameterException;
 
 import bt.compiler.Compiler;
+import bt.compiler.Field;
 import bt.compiler.Method;
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
+import burst.kit.entity.HexStringByteArray;
 import burst.kit.entity.response.ATResponse;
 import burst.kit.entity.response.AccountATsResponse;
 import burst.kit.entity.response.BroadcastTransactionResponse;
@@ -173,14 +175,14 @@ public class BT {
     /**
      * Register the given contract with the given activation fee.
      */
-    public static ATResponse registerContract(Class<? extends Contract> contract,
-            BurstValue activationFee) throws Exception {
+    public static ATResponse registerContract(Class<? extends Contract> contract, BurstValue activationFee)
+            throws Exception {
         Compiler compiledContract = compileContract(contract);
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
 
-        registerContract(PASSPHRASE, compiledContract, name,
-                contract.getSimpleName(), activationFee, BurstValue.fromBurst(0.1), 1440).blockingGet();
+        registerContract(PASSPHRASE, compiledContract, name, contract.getSimpleName(), activationFee,
+                BurstValue.fromBurst(0.1), 1440).blockingGet();
         forgeBlock();
 
         return findContract(bc.getBurstAddressFromPassphrase(PASSPHRASE), name);
@@ -229,5 +231,14 @@ public class BT {
                 return ati;
         }
         return null;
+    }
+
+    public static long getContractFieldValue(ATResponse contract, Field field) {
+        HexStringByteArray data = contract.getMachineData();
+
+        ByteBuffer b = ByteBuffer.wrap(data.getBytes());
+        b.order(ByteOrder.LITTLE_ENDIAN);
+
+        return b.getLong(field.getAddress() * 8);
     }
 }
