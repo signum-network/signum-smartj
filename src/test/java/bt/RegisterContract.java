@@ -1,6 +1,5 @@
 package bt;
 
-import bt.sample.OddsGame;
 import burst.kit.entity.BurstValue;
 import burst.kit.entity.response.ATResponse;
 
@@ -18,7 +17,6 @@ public class RegisterContract {
 
         Class<? extends Contract> CONTRACT = Cast.class;
         BurstValue ACT_FEE = BurstValue.fromBurst(10);
-        BurstValue FEE = BurstValue.fromBurst(0.1);
 
         BT.setNodeAddress(NODE);
 

@@ -13,6 +13,8 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class Method {
 
+	public static final int MAX_ARGS = 3;
+
 	static class Jump {
 		int position;
 		LabelNode label;
@@ -53,6 +55,10 @@ public class Method {
 	ByteBuffer code;
 	MethodNode node;
 	int nargs;
+	int localArgPos[] = new int[MAX_ARGS];
+	int localArgSize[] = new int[MAX_ARGS];
+	int localArgTotal;
+
 	long hash;
 	
 	int address;

@@ -101,6 +101,14 @@ public class Printer {
 
 		int p = 0;
 		while (p < length) {
+			if (p > 0) {
+				// check if this is the start position of a method
+				for (Method m : c.getMethods()) {
+					if (m.address == p)
+						out.println(m.getName() + " method");
+				}
+			}
+
 			int op = code[p];
 			switch (op) {
 			case OpCode.e_op_code_NOP:
@@ -201,8 +209,14 @@ public class Printer {
 				p += printAddress(code, p, out, c);
 				p += printAddress(code, p, out, c);
 				break;
-			case OpCode.e_op_code_SET_IND:
 			case OpCode.e_op_code_SET_IDX:
+			case OpCode.e_op_code_IDX_DAT:
+				p += printOp(code, p, 1, out);
+				out.println(op == OpCode.e_op_code_SET_IDX ? "\tSET_IDX" : "\tIDX_DAT");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				break;
 
 			case OpCode.e_op_code_RET_SUB:
 				p += printOp(code, p, 1, out);
@@ -309,7 +323,6 @@ public class Printer {
 				break;
 
 			case OpCode.e_op_code_IND_DAT:
-			case OpCode.e_op_code_IDX_DAT:
 			case OpCode.e_op_code_SHL_DAT:
 			case OpCode.e_op_code_SHR_DAT:
 

@@ -129,7 +129,7 @@ public abstract class Contract {
 	 * @return the block hash of the previous block (part 1 of 4)
 	 */
 	protected Register getPrevBlockHash() {
-	return Emulator.getInstance().getPrevBlock().hash;
+		return Emulator.getInstance().getPrevBlock().hash;
 	}
 
 	/**
@@ -171,8 +171,8 @@ public abstract class Contract {
 	 * Return the the message encoded in 4 long's.
 	 * 
 	 * Care should be taken, since if the message is longer than 4 longs in size,
-	 * the message is not forwarded to the AT and this will result in a register with
-	 * all values zero. 
+	 * the message is not forwarded to the AT and this will result in a register
+	 * with all values zero.
 	 * 
 	 * @param tx
 	 * @return the message for the given transaction
@@ -187,23 +187,23 @@ public abstract class Contract {
 	protected Register performSHA256(Register input) {
 		Register ret = new Register();
 
-		ByteBuffer b = ByteBuffer.allocate( 32 );
-		b.order( ByteOrder.LITTLE_ENDIAN );
-		
+		ByteBuffer b = ByteBuffer.allocate(32);
+		b.order(ByteOrder.LITTLE_ENDIAN);
+
 		for (int i = 0; i < 4; i++) {
-			b.putLong( input.value[i] );
+			b.putLong(input.value[i]);
 		}
-		
+
 		try {
 			MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-			ByteBuffer shab = ByteBuffer.wrap( sha256.digest( b.array() ) );
-			shab.order( ByteOrder.LITTLE_ENDIAN );
+			ByteBuffer shab = ByteBuffer.wrap(sha256.digest(b.array()));
+			shab.order(ByteOrder.LITTLE_ENDIAN);
 
 			for (int i = 0; i < 4; i++) {
-				ret.value[i] = shab.getLong(i*8);
+				ret.value[i] = shab.getLong(i * 8);
 			}
 		} catch (NoSuchAlgorithmException e) {
-			//not expected to reach that point
+			// not expected to reach that point
 			e.printStackTrace();
 		}
 		return ret;
@@ -219,7 +219,7 @@ public abstract class Contract {
 	 */
 	protected void sleep(Timestamp ts) {
 		sleepUntil = ts;
-		if(sleepUntil==null)
+		if (sleepUntil == null)
 			sleepUntil = new Timestamp(0, 0);
 		try {
 			semaphore.acquire();
@@ -259,7 +259,7 @@ public abstract class Contract {
 			try {
 				f.setAccessible(true);
 				Object v = f.get(this);
-				ret += "<b>" + f.getName() + "</b> = " + (v!=null ? v.toString(): "null") + "<br>";
+				ret += "<b>" + f.getName() + "</b> = " + (v != null ? v.toString() : "null") + "<br>";
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -268,8 +268,10 @@ public abstract class Contract {
 	}
 
 	/**
-	 * This method should **NOT** be called except from in a main() method for convenience.
-	 * Class detection taken from javafx.application.Application::launch
+	 * This method should **NOT** be called except from in a main() method for
+	 * convenience. Class detection taken from
+	 * javafx.application.Application::launch
+	 * 
 	 * @return The AT code byte
 	 */
 	@EmulatorWarning
@@ -286,8 +288,7 @@ public abstract class Contract {
 			if (foundThisMethod) {
 				callingClassName = className;
 				break;
-			} else if (Contract.class.getName().equals(className)
-					&& "compile".equals(methodName)) {
+			} else if (Contract.class.getName().equals(className) && "compile".equals(methodName)) {
 				foundThisMethod = true;
 			}
 		}
@@ -297,16 +298,15 @@ public abstract class Contract {
 		}
 
 		try {
-			Class theClass = Class.forName(callingClassName, false,
-					Thread.currentThread().getContextClassLoader());
+			Class theClass = Class.forName(callingClassName, false, Thread.currentThread().getContextClassLoader());
 			if (Contract.class.isAssignableFrom(theClass)) {
-				//noinspection unchecked
+				// noinspection unchecked
 				byte[] code = compile(theClass);
-				System.out.println("Compiled AT bytecode: " + Hex.toHexString(code));
+				if(code!=null)
+					System.out.println("Compiled AT bytecode: " + Hex.toHexString(code));
 				return code;
 			} else {
-				throw new RuntimeException("Error: " + theClass
-						+ " is not a subclass of bt.Contract");
+				throw new RuntimeException("Error: " + theClass + " is not a subclass of bt.Contract");
 			}
 		} catch (RuntimeException ex) {
 			throw ex;
@@ -318,6 +318,9 @@ public abstract class Contract {
 	private static byte[] compile(Class<? extends Contract> clazz) throws IOException {
 		Compiler compiler = new Compiler(clazz);
 		compiler.compile();
+		if (compiler.getErrors().size() > 0)
+			return null;
+
 		compiler.link();
 		byte[] code = new byte[compiler.getCode().position()];
 		compiler.getCode().rewind();

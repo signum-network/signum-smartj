@@ -17,7 +17,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import bt.*;
-import bt.sample.Crowdfund;
 
 import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.objectweb.asm.ClassReader;
@@ -67,7 +66,7 @@ public class Compiler {
 	int lastTxReceived;
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
-	int maxLocals;
+	int localStart;
 
 	/** If we have public methods other than txReceived */
 	boolean hasPublicMethods;
@@ -162,7 +161,7 @@ public class Compiler {
 		}
 
 		errors.clear();
-		lastFreeVar = maxLocals = 0;
+		lastFreeVar = 0;
 
 		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
@@ -220,6 +219,8 @@ public class Compiler {
 		tmpVar2 = lastFreeVar++;
 		tmpVar3 = lastFreeVar++;
 		tmpVar4 = lastFreeVar++;
+
+		localStart = lastFreeVar++;
 	}
 
 	public void compile() {
@@ -235,6 +236,11 @@ public class Compiler {
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(methods.get(INIT_METHOD).address);
 		}
+
+		// set the local variables start position
+		code.put(OpCode.e_op_code_SET_VAL);
+		code.putInt(localStart);
+		code.putLong(lastFreeVar);
 
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
@@ -289,16 +295,13 @@ public class Compiler {
 
 				code.put(OpCode.e_op_code_BNZ_DAT);
 				code.putInt(tmpVar1);
-				code.put((byte) (12 + m.nargs * 12));
+				code.put((byte) (12 + m.nargs * 7));
 
-				// fill the stack with the arguments
+				// load the arguments on the local vars
 				for (int i = 0; i < m.nargs; i++) {
 					code.put(OpCode.e_op_code_EXT_FUN_RET);
 					code.putShort((short) (OpCode.Get_B1 + i + 1));
-					code.putInt(tmpVar2);
-
-					code.put(OpCode.e_op_code_PSH_DAT);
-					code.putInt(tmpVar2);
+					code.putInt(localStart + m.localArgPos[i]);
 				}
 				// call the method
 				code.put(OpCode.e_op_code_JMP_SUB);
@@ -383,14 +386,14 @@ public class Compiler {
 
 			Method m = new Method();
 			m.node = mnode;
+			countMethodParameters(m);
+			m.hash = getMethodSignature(m);
 
 			methods.put(mnode.name, m);
 
 			if (!mnode.name.equals(TX_RECEIVED_METHOD) && Modifier.isPublic(mnode.access)) {
 				hasPublicMethods = true;
 				useLastTx = true;
-				m.nargs = getMethodParamCount(m);
-				m.hash = getMethodSignature(m);
 			}
 		}
 
@@ -481,13 +484,10 @@ public class Compiler {
 
 		if (Modifier.isPublic(m.node.access) && !m.node.name.equals(TX_RECEIVED_METHOD)
 				&& !m.node.name.equals(INIT_METHOD) && !m.node.name.equals(MAIN_METHOD)) {
-			int nargs = getMethodParamCount(m);
-			if (nargs > 3) {
+			if (m.nargs > Method.MAX_ARGS) {
 				addError(m.node.instructions.getFirst(),
-						"Public functions with more than 3 arguments are not supported");
+						"Public functions with more than " + Method.MAX_ARGS + " arguments are not supported");
 			}
-			long hash = getMethodSignature(m);
-			System.out.println(m.node.name + ":" + hash);
 		}
 
 		StackVar arg1, arg2;
@@ -533,9 +533,16 @@ public class Compiler {
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
 					if (vi.var > 0) {
-						pushVar(m, lastFreeVar + vi.var);
-						maxLocals = Math.max(maxLocals, vi.var);
-						addError(vi, "local variables are not supported");
+						code.put(OpCode.e_op_code_SET_VAL);
+						code.putInt(tmpVar3);
+						code.putLong(vi.var - 1);
+
+						code.put(OpCode.e_op_code_SET_IDX);
+						code.putInt(tmpVar1);
+						code.putInt(localStart);
+						code.putInt(tmpVar3);
+
+						pushVar(m, tmpVar1);
 					} else {
 						// local 0 is 'this'
 						stack.add(new StackVar(STACK_THIS, null));
@@ -553,13 +560,19 @@ public class Compiler {
 					VarInsnNode vi = (VarInsnNode) insn;
 					if (vi.var == 0)
 						addError(insn, UNEXPECTED_ERROR);
-					// local 0 is 'this', others are stored after the last variable
+					// local 0 is 'this', others are stored after 'localStart' variable
 
-					arg1 = popVar(m, lastFreeVar + vi.var, false);
+					arg1 = popVar(m, tmpVar1, false);
 					System.out.println("store local: " + vi.var);
 
-					// we are not allowing local variables for now
-					addError(vi, "local variables are not supported");
+					code.put(OpCode.e_op_code_SET_VAL);
+					code.putInt(tmpVar3);
+					code.putLong(vi.var - 1);
+
+					code.put(OpCode.e_op_code_IDX_DAT);
+					code.putInt(localStart);
+					code.putInt(tmpVar3);
+					code.putInt(arg1.address);
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}
@@ -939,10 +952,47 @@ public class Compiler {
 								return;
 							}
 
+							// update the local variable start position to not conflict with this one
+							if (m.node.maxLocals > 0) {
+								code.put(OpCode.e_op_code_SET_VAL);
+								code.putInt(tmpVar1);
+								code.putLong(m.node.maxLocals);
+								code.putLong(OpCode.e_op_code_ADD_DAT);
+								code.putInt(localStart);
+								code.putInt(tmpVar1);
+							}
+
+							// load the arguments as local variables
+							code.put(OpCode.e_op_code_CLR_DAT);
+							code.putInt(tmpVar2);
+							for (int i = 0; i < mcall.nargs; i++) {
+								StackVar argi = popVar(m, tmpVar1, false);
+								code.put(OpCode.e_op_code_IDX_DAT);
+								code.putInt(localStart);
+								code.putInt(tmpVar2);
+								code.putInt(argi.address);
+
+								// increment the local postion, not needed if this is the last argument
+								for (int j = 0; i < mcall.nargs - 1 && j < mcall.localArgSize[i]; j++) {
+									code.put(OpCode.e_op_code_INC_DAT);
+									code.putInt(tmpVar2);
+								}
+							}
+
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
 							m.jumps.add(new Method.Jump(code.position(), mcall));
 							code.putInt(0); // address, to be resolved latter
+
+							// update the local variable start position back
+							if (m.node.maxLocals > 0) {
+								code.put(OpCode.e_op_code_SET_VAL);
+								code.putInt(tmpVar1);
+								code.putLong(m.node.maxLocals);
+								code.putLong(OpCode.e_op_code_SUB_DAT);
+								code.putInt(localStart);
+								code.putInt(tmpVar1);
+							}
 
 							// check if the method has a return value
 							if (!mcall.node.desc.endsWith("V")) {
@@ -1236,23 +1286,6 @@ public class Compiler {
 		errors.add(new Error(node, message));
 	}
 
-	public static void main(String[] args) throws Exception {
-
-		Class<? extends Contract> contractClass = Crowdfund.class;
-
-		Compiler reader = new Compiler(contractClass);
-
-		reader.compile();
-		reader.link();
-
-		System.out.println("Code size: " + reader.code.position());
-
-		Printer.print(reader.code, System.out, reader);
-
-		System.out.println("Code single line:");
-		Printer.printCode(reader.code, System.out);
-	}
-
 	public static long getMethodSignature(Method m) {
 		MessageDigest sha256 = new SHA256.Digest(); // TODO use burstkit4j, need to update
 		return BurstCrypto.getInstance()
@@ -1271,12 +1304,12 @@ public class Compiler {
 		supportedParams.add("Z");
 		supportedParams.add("I");
 		supportedParams.add("J");
-		supportedParams.add("L" + Address.class.getName().replace('.', '/'));
-		supportedParams.add("L" + Transaction.class.getName().replace('.', '/'));
-		supportedParams.add("L" + Timestamp.class.getName().replace('.', '/'));
+		supportedParams.add("L" + Address.class.getName().replace('.', '/') + ';');
+		supportedParams.add("L" + Transaction.class.getName().replace('.', '/') + ';');
+		supportedParams.add("L" + Timestamp.class.getName().replace('.', '/') + ';');
 	}
 
-	int getMethodParamCount(Method method) {
+	void countMethodParameters(Method method) {
 		Matcher m = allParamsPattern.matcher(method.node.desc);
 		if (!m.find()) {
 			throw new IllegalArgumentException("Method signature does not contain parameters");
@@ -1284,14 +1317,20 @@ public class Compiler {
 		String paramsDescriptor = m.group(1);
 		Matcher mParam = paramsPattern.matcher(paramsDescriptor);
 
-		int count = 0;
+		method.nargs = 0;
+		method.localArgTotal = 0;
 		while (mParam.find()) {
 			String p = mParam.group();
 			if (!supportedParams.contains(p)) {
 				addError(method.node.instructions.getFirst(), "Unsupported parameter type " + p);
 			}
-			count++;
+			if (method.nargs < Method.MAX_ARGS) {
+				int argSize = p.equals("J") ? 2 : 1;
+				method.localArgSize[method.nargs] = argSize;
+				method.localArgPos[method.nargs] = method.localArgTotal;
+				method.localArgTotal += argSize;
+			}
+			method.nargs++;
 		}
-		return count;
 	}
 }
