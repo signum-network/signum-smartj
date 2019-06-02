@@ -62,6 +62,8 @@ public class Printer {
 				out.print(" (tmpVar3)");
 			else if (ad == c.tmpVar4)
 				out.print(" (tmpVar4)");
+			else if (ad == c.localStart)
+				out.print(" (localStart)");
 		}
 		out.println();
 		return ret;
@@ -105,7 +107,7 @@ public class Printer {
 				// check if this is the start position of a method
 				for (Method m : c.getMethods()) {
 					if (m.address == p)
-						out.println(m.getName() + " method");
+						out.println("--> " + m.getName() + " method");
 				}
 			}
 
@@ -209,6 +211,14 @@ public class Printer {
 				p += printAddress(code, p, out, c);
 				p += printAddress(code, p, out, c);
 				break;
+			case OpCode.e_op_code_SET_IND:
+			case OpCode.e_op_code_IND_DAT:
+				p += printOp(code, p, 1, out);
+				out.println(op == OpCode.e_op_code_SET_IND ? "\tSET_IND" : "\tIND_DAT");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				break;
+
 			case OpCode.e_op_code_SET_IDX:
 			case OpCode.e_op_code_IDX_DAT:
 				p += printOp(code, p, 1, out);
@@ -322,7 +332,6 @@ public class Printer {
 				out.println("\tFIN");
 				break;
 
-			case OpCode.e_op_code_IND_DAT:
 			case OpCode.e_op_code_SHL_DAT:
 			case OpCode.e_op_code_SHR_DAT:
 

@@ -151,7 +151,7 @@ public class BT {
      * Forge block by mock mining, just for testing purposes.
      */
     public static void forgeBlock() {
-        forgeBlock(PASSPHRASE, 500);
+        forgeBlock(PASSPHRASE, 1000);
     }
 
     /**
@@ -233,12 +233,26 @@ public class BT {
         return null;
     }
 
-    public static long getContractFieldValue(ATResponse contract, Field field) {
+    /**
+     * Returns the current long value of a given field address.
+     * 
+     * If the update param is true, the node is consulted (in blocking way)
+     * to get the current value of the field.
+     * 
+     * @param contract a smart contract response
+     * @param address the field address, check {@link Field#getAddress()}
+     * @param update if the node should be contacted (in blocking way) for an updated value
+     * @return the current long value of a given field
+     */
+    public static long getContractFieldValue(ATResponse contract, int address, boolean update) {
+        if(update)
+            contract = bns.getAt(contract.getAt().getBurstID()).blockingGet();
+
         HexStringByteArray data = contract.getMachineData();
 
         ByteBuffer b = ByteBuffer.wrap(data.getBytes());
         b.order(ByteOrder.LITTLE_ENDIAN);
 
-        return b.getLong(field.getAddress() * 8);
+        return b.getLong(address * 8);
     }
 }

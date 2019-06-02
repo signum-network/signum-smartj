@@ -285,6 +285,9 @@ public class Compiler {
 						|| !Modifier.isPublic(m.node.access))
 					continue;
 
+				if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
+					continue; // empty constructor
+
 				code.put(OpCode.e_op_code_SET_VAL);
 				code.putInt(tmpVar1);
 				code.putLong(m.hash);
@@ -301,7 +304,7 @@ public class Compiler {
 				for (int i = 0; i < m.nargs; i++) {
 					code.put(OpCode.e_op_code_EXT_FUN_RET);
 					code.putShort((short) (OpCode.Get_B1 + i + 1));
-					code.putInt(localStart + m.localArgPos[i]);
+					code.putInt(localStart + 1 + m.localArgPos[i]);
 				}
 				// call the method
 				code.put(OpCode.e_op_code_JMP_SUB);
@@ -550,14 +553,20 @@ public class Compiler {
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
 					if (vi.var > 0) {
-						code.put(OpCode.e_op_code_SET_VAL);
-						code.putInt(tmpVar3);
-						code.putLong(vi.var - 1);
-
-						code.put(OpCode.e_op_code_SET_IDX);
-						code.putInt(tmpVar1);
+						// tmpVar2 have the local index, starting at localStart
+						code.put(OpCode.e_op_code_SET_DAT);
+						code.putInt(tmpVar2);
 						code.putInt(localStart);
-						code.putInt(tmpVar3);
+
+						// increment the index if 2 or higher
+						for (int i = 0; i < vi.var-2; i++) {
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar2);
+						}
+						// set tmpVar1 using the index on tmpVar2
+						code.put(OpCode.e_op_code_SET_IND);
+						code.putInt(tmpVar1);
+						code.putInt(tmpVar2);
 
 						pushVar(m, tmpVar1);
 					} else {
@@ -582,13 +591,19 @@ public class Compiler {
 					arg1 = popVar(m, tmpVar1, false);
 					System.out.println("store local: " + vi.var);
 
-					code.put(OpCode.e_op_code_SET_VAL);
-					code.putInt(tmpVar3);
-					code.putLong(vi.var - 1);
-
-					code.put(OpCode.e_op_code_IDX_DAT);
+					// tmpVar2 have the local index, starting at localStart
+					code.put(OpCode.e_op_code_SET_DAT);
+					code.putInt(tmpVar2);
 					code.putInt(localStart);
-					code.putInt(tmpVar3);
+
+					// increment the index if 2 or higher
+					for (int i = 0; i < vi.var-2; i++) {
+						code.put(OpCode.e_op_code_INC_DAT);
+						code.putInt(tmpVar2);
+					}
+					// set var using the index on tmpVar2
+					code.put(OpCode.e_op_code_IND_DAT);
+					code.putInt(tmpVar2);
 					code.putInt(arg1.address);
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
@@ -979,13 +994,13 @@ public class Compiler {
 								code.putInt(tmpVar1);
 							}
 
-							// load the arguments as local variables
-							code.put(OpCode.e_op_code_CLR_DAT);
+							// load the arguments as local variables, tmpVar2 is the index
+							code.put(OpCode.e_op_code_SET_DAT);
 							code.putInt(tmpVar2);
+							code.putInt(localStart);
 							for (int i = 0; i < mcall.nargs; i++) {
 								StackVar argi = popVar(m, tmpVar1, false);
-								code.put(OpCode.e_op_code_IDX_DAT);
-								code.putInt(localStart);
+								code.put(OpCode.e_op_code_IND_DAT);
 								code.putInt(tmpVar2);
 								code.putInt(argi.address);
 
