@@ -418,10 +418,27 @@ public class Compiler {
 	}
 
 	/**
+	 * @param name
 	 * @return the method for the given name
 	 */
 	public Method getMethod(String name) {
 		return methods.get(name);
+	}
+
+	/**
+	 * @return the fields
+	 */
+	public Collection<Field> getFields() {
+		return fields.values();
+	}
+
+	/**
+	 * 
+	 * @param name
+	 * @return the field for the given name
+	 */
+	public Field getField(String name){
+		return fields.get(name);
 	}
 
 	/**
