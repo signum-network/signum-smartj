@@ -69,6 +69,31 @@ public class Printer {
 		return ret;
 	}
 
+	static int printMethodAddress(byte[] code, int p, PrintStream out, Compiler c) {
+		out.print(tab);
+		int ret = print(code, p, 4, out);
+		out.print(" address");
+		if (c != null) {
+			ByteBuffer address = ByteBuffer.allocate(4);
+			address.order(ByteOrder.LITTLE_ENDIAN);
+			for (int i = 0; i < 4; i++) {
+				address.put(code[p + i]);
+			}
+			address.clear();
+			int ad = address.getInt();
+
+			// print the method name if found
+			for (Method mi : c.getMethods()) {
+				if (mi.address == ad) {
+					out.print(" (" + mi.node.name + ")");
+					break;
+				}
+			}
+		}
+		out.println();
+		return ret;
+	}
+
 	static int printOp(byte[] bytes, int start, int length, PrintStream out) {
 		// Print the address of this operation first, making it easier to inspect jumps
 		out.print('@');
@@ -164,7 +189,7 @@ public class Printer {
 			case OpCode.e_op_code_JMP_SUB:
 				p += printOp(code, p, 1, out);
 				out.println("\tJMP_SUB");
-				p += printAddress(code, p, out, null);
+				p += printMethodAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_JMP_ADR:
 				p += printOp(code, p, 1, out);
