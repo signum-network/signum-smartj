@@ -440,7 +440,7 @@ public class Compiler {
 	 * @param name
 	 * @return the field for the given name
 	 */
-	public Field getField(String name){
+	public Field getField(String name) {
 		return fields.get(name);
 	}
 
@@ -559,7 +559,7 @@ public class Compiler {
 						code.putInt(localStart);
 
 						// increment the index if 2 or higher
-						for (int i = 0; i < vi.var-2; i++) {
+						for (int i = 0; i < vi.var - 2; i++) {
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar2);
 						}
@@ -597,7 +597,7 @@ public class Compiler {
 					code.putInt(localStart);
 
 					// increment the index if 2 or higher
-					for (int i = 0; i < vi.var-2; i++) {
+					for (int i = 0; i < vi.var - 2; i++) {
 						code.put(OpCode.e_op_code_INC_DAT);
 						code.putInt(tmpVar2);
 					}
@@ -989,16 +989,19 @@ public class Compiler {
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
 								code.putLong(m.node.maxLocals);
-								code.putLong(OpCode.e_op_code_ADD_DAT);
+								code.put(OpCode.e_op_code_ADD_DAT);
 								code.putInt(localStart);
 								code.putInt(tmpVar1);
 							}
 
 							// load the arguments as local variables, tmpVar2 is the index
-							code.put(OpCode.e_op_code_SET_DAT);
-							code.putInt(tmpVar2);
-							code.putInt(localStart);
 							for (int i = 0; i < mcall.nargs; i++) {
+								if (i == 0) {
+									code.put(OpCode.e_op_code_SET_DAT);
+									code.putInt(tmpVar2);
+									code.putInt(localStart);
+								}
+
 								StackVar argi = popVar(m, tmpVar1, false);
 								code.put(OpCode.e_op_code_IND_DAT);
 								code.putInt(tmpVar2);
@@ -1021,7 +1024,7 @@ public class Compiler {
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
 								code.putLong(m.node.maxLocals);
-								code.putLong(OpCode.e_op_code_SUB_DAT);
+								code.put(OpCode.e_op_code_SUB_DAT);
 								code.putInt(localStart);
 								code.putInt(tmpVar1);
 							}
