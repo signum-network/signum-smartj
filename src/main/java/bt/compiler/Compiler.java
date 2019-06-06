@@ -1190,8 +1190,8 @@ public class Compiler {
 				arg2 = popVar(m, tmpVar2, false);
 				arg1 = popVar(m, tmpVar1, true);
 				code.put(OpCode.e_op_code_SUB_DAT);
-				code.putInt(tmpVar1);
-				code.putInt(tmpVar2);
+				code.putInt(arg1.address);
+				code.putInt(arg2.address);
 				pushVar(m, tmpVar1);
 
 				System.out.println("lcmp");
