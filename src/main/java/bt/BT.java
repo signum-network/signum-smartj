@@ -56,6 +56,13 @@ public class BT {
     }
 
     /**
+     * @return the BURST address fot the given passphrase
+     */
+    public static BurstAddress getBurstAddressFromPassphrase(String passphrase){
+        return bc.getBurstAddressFromPassphrase(passphrase);
+    }
+
+    /**
      * Return the compiled version of a Contract.
      * 
      * Using this compiled version the user can check for errors
