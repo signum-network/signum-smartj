@@ -559,7 +559,7 @@ public class Compiler {
 						code.putInt(localStart);
 
 						// increment the index if 2 or higher
-						for (int i = 0; i < vi.var - 2; i++) {
+						for (int i = 0; i < vi.var - 1; i++) {
 							code.put(OpCode.e_op_code_INC_DAT);
 							code.putInt(tmpVar2);
 						}
@@ -597,7 +597,7 @@ public class Compiler {
 					code.putInt(localStart);
 
 					// increment the index if 2 or higher
-					for (int i = 0; i < vi.var - 2; i++) {
+					for (int i = 0; i < vi.var - 1; i++) {
 						code.put(OpCode.e_op_code_INC_DAT);
 						code.putInt(tmpVar2);
 					}
@@ -804,8 +804,8 @@ public class Compiler {
 							pushVar(m, tmpVar3);
 						} else if (mi.name.equals("addMinutes")) {
 							// we should have two arguments
-							arg1 = popVar(m, tmpVar1, false); // the timestamp
 							arg2 = popVar(m, tmpVar2, false); // minutes
+							arg1 = popVar(m, tmpVar1, false); // the timestamp
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET_DAT_2);
 							code.putShort(OpCode.Add_Minutes_To_Timestamp);
