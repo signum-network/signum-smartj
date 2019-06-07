@@ -41,7 +41,7 @@ public class NFTTest extends BT {
         String name = NFT2.class.getSimpleName() + System.currentTimeMillis();
         BurstAddress creator = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE);
 
-        BT.registerContract(BT.PASSPHRASE, comp, name, name, BurstValue.fromPlanck(LocalVar.FEE),
+        BT.registerContract(BT.PASSPHRASE, comp, name, name, BurstValue.fromPlanck(NFT2.ACTIVATION_FEE),
                 BurstValue.fromBurst(0.1), 1000).blockingGet();
         BT.forgeBlock();
 
@@ -52,7 +52,7 @@ public class NFTTest extends BT {
         int timeout = 40;
 
         // put the contract for auction
-        BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("putForAuction"), BurstValue.fromBurst(1),
+        BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("putForAuction"), BurstValue.fromPlanck(NFT2.ACTIVATION_FEE),
                 BurstValue.fromBurst(0.1), 1000, startBid, timeout).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
@@ -75,28 +75,48 @@ public class NFTTest extends BT {
         assertEquals(startBid, highestBidChain);
 
         BurstAddress bidder = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE2);
+        BurstAddress bidder2 = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE3);
+        BT.forgeBlock(BT.PASSPHRASE2, 100);
+        BT.forgeBlock(BT.PASSPHRASE3, 100);
 
         // send a bid short on amount
-        BT.forgeBlock(BT.PASSPHRASE2, 100);
         BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
         highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
         // no changes are expected
         assertEquals(0, highestBidderChain);
         assertEquals(startBid, highestBidChain);
+        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
 
         // send a higher bid
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid*2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid*2 + NFT2.ACTIVATION_FEE)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        long debug = BT.getContractFieldValue(contract, comp.getField("debug").getAddress(), true);
+        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
+        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
+        // there should be updates here
+        assertEquals(bidder.getBurstID().getSignedLongId(), highestBidderChain);
+        assertEquals(startBid*2, highestBidChain);
+        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
+        
+        // send an even higher bid from another address
+        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromPlanck(startBid*3 + NFT2.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
         highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
         // there should be updates here
-        assertEquals(bidder.getBurstID().getSignedLongId(), highestBidderChain);
-        assertEquals(startBid, highestBidChain);
-        
+        assertEquals(bidder2.getBurstID().getSignedLongId(), highestBidderChain);
+        assertEquals(startBid*3, highestBidChain);
+        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
+
+
 
     }
 }

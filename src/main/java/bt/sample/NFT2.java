@@ -26,6 +26,8 @@ public class NFT2 extends Contract {
 	public static final int STATUS_FOR_SALE = 1;
 	public static final int STATUS_FOR_AUCTION = 2;
 
+	public static final long ACTIVATION_FEE = ONE_BURST * 10;
+
 	int status;
 	Address owner;
 
