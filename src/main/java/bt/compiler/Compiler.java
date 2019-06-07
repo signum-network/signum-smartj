@@ -229,18 +229,18 @@ public class Compiler {
 	}
 
 	private void initialCode() {
-		// First add the jump for the constructor
+		// set the local variables start position
+		code.put(OpCode.e_op_code_SET_VAL);
+		code.putInt(localStart);
+		code.putLong(lastFreeVar);
+		
+		// add the jump for the constructor
 		Method initMethod = methods.get(INIT_METHOD);
 		if (initMethod.code.position() > 1) {
 			// only if we actually have a construction (it is not just the RET command)
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(methods.get(INIT_METHOD).address);
 		}
-
-		// set the local variables start position
-		code.put(OpCode.e_op_code_SET_VAL);
-		code.putInt(localStart);
-		code.putLong(lastFreeVar);
 
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
