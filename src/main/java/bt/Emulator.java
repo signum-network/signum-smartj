@@ -151,10 +151,11 @@ public class Emulator {
 			}
 
 			if (tx.amount > 0) {
-				long ammount = Math.min(tx.sender.balance, tx.amount);
+				long amount = Math.min(tx.sender.balance, tx.amount);
+				tx.amount = amount;
 
-				tx.sender.balance -= ammount;
-				tx.receiver.balance += ammount;
+				tx.sender.balance -= amount;
+				tx.receiver.balance += amount;
 			}
 
 			if (tx.type == Transaction.TYPE_AT_CREATE) {
