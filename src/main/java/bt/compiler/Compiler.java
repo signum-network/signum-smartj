@@ -67,6 +67,7 @@ public class Compiler {
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
 	int localStart;
+	boolean useLocal;
 
 	/** If we have public methods other than txReceived */
 	boolean hasPublicMethods;
@@ -162,6 +163,7 @@ public class Compiler {
 
 		errors.clear();
 		lastFreeVar = 0;
+		useLocal = false;
 
 		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
@@ -230,9 +232,11 @@ public class Compiler {
 
 	private void initialCode() {
 		// set the local variables start position
-		code.put(OpCode.e_op_code_SET_VAL);
-		code.putInt(localStart);
-		code.putLong(lastFreeVar);
+		if(useLocal){
+			code.put(OpCode.e_op_code_SET_VAL);
+			code.putInt(localStart);
+			code.putLong(lastFreeVar);
+		}
 		
 		// add the jump for the constructor
 		Method initMethod = methods.get(INIT_METHOD);
@@ -281,8 +285,8 @@ public class Compiler {
 			code.putInt(tmpVar4);
 
 			for (Method m : methods.values()) {
-				if (m.node.name.equals(MAIN_METHOD) || m.node.name.equals(TX_RECEIVED_METHOD)
-						|| !Modifier.isPublic(m.node.access))
+				if (m.node.name.equals(MAIN_METHOD) || m.node.name.equals(TX_RECEIVED_METHOD) ||
+					m.node.name.equals(INIT_METHOD) || !Modifier.isPublic(m.node.access))
 					continue;
 
 				if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
@@ -302,6 +306,7 @@ public class Compiler {
 
 				// load the arguments on the local vars
 				for (int i = 0; i < m.nargs; i++) {
+					useLocal = true;
 					code.put(OpCode.e_op_code_EXT_FUN_RET);
 					code.putShort((short) (OpCode.Get_B1 + i + 1));
 					code.putInt(localStart + 1 + m.localArgPos[i]);
@@ -394,7 +399,8 @@ public class Compiler {
 
 			methods.put(mnode.name, m);
 
-			if (!mnode.name.equals(TX_RECEIVED_METHOD) && Modifier.isPublic(mnode.access)) {
+			if (!mnode.name.equals(TX_RECEIVED_METHOD) && !mnode.name.equals(INIT_METHOD)
+				&& Modifier.isPublic(mnode.access)) {
 				hasPublicMethods = true;
 				useLastTx = true;
 			}
@@ -553,6 +559,7 @@ public class Compiler {
 				if (insn instanceof VarInsnNode) {
 					VarInsnNode vi = (VarInsnNode) insn;
 					if (vi.var > 0) {
+						useLocal = true;
 						// tmpVar2 have the local index, starting at localStart
 						code.put(OpCode.e_op_code_SET_DAT);
 						code.putInt(tmpVar2);
@@ -592,6 +599,7 @@ public class Compiler {
 					System.out.println("store local: " + vi.var);
 
 					// tmpVar2 have the local index, starting at localStart
+					useLocal = true;
 					code.put(OpCode.e_op_code_SET_DAT);
 					code.putInt(tmpVar2);
 					code.putInt(localStart);
@@ -986,6 +994,7 @@ public class Compiler {
 
 							// update the local variable start position to not conflict with this one
 							if (m.node.maxLocals > 0) {
+								useLocal = true;
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
 								code.putLong(m.node.maxLocals);
@@ -997,6 +1006,7 @@ public class Compiler {
 							// load the arguments as local variables, tmpVar2 is the index
 							for (int i = 0; i < mcall.nargs; i++) {
 								if (i == 0) {
+									useLocal = true;
 									code.put(OpCode.e_op_code_SET_DAT);
 									code.putInt(tmpVar2);
 									code.putInt(localStart);
@@ -1021,6 +1031,7 @@ public class Compiler {
 
 							// update the local variable start position back
 							if (m.node.maxLocals > 0) {
+								useLocal = true;
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
 								code.putLong(m.node.maxLocals);
@@ -1295,7 +1306,7 @@ public class Compiler {
 				break;
 
 			default:
-				addError(insn, "Unsuported opcode: " + opcode);
+				addError(insn, "Unsupported opcode: " + opcode);
 				break;
 			}
 		}
