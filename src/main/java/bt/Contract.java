@@ -61,7 +61,10 @@ public abstract class Contract {
 	}
 
 	/**
-	 * Send the entire balance to the given address
+	 * Send the entire balance to the given address.
+	 * 
+	 * Care should be execised with this function since a contract with no balance
+	 * cannot continue to run!
 	 * 
 	 * @param ad the address
 	 */
