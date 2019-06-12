@@ -10,7 +10,7 @@ import bt.*;
  * 
  * When created, the contract is <i>owned</i> by the creator and a selling price
  * of 5000 BURST is set. Anyone that transfers more than this amount is the new
- * owner. When a new owner is set, the contract price is automatically rised by
+ * owner. When a new owner is set, the contract price is automatically increased by
  * 10%.
  * 
  * So, every new owner either have 10% return of investment (minus 1% fee) or
@@ -51,7 +51,7 @@ public class KohINoor extends Contract {
 			sendAmount(price - fee, owner); // pay the current owner the price, minus fee
 			sendMessage("Koh-I-Noor have a new owner.", owner);
 			owner = getCurrentTx().getSenderAddress(); // new owner
-			sendMessage("You are the Koh-I-Noor owner!", owner);
+			sendMessage("You are the Koh-i-Noor owner!", owner);
 
 			price += 10 * price / 100; // new price is 10% more
 

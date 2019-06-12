@@ -3,7 +3,7 @@ package bt;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
-import bt.sample.KhoINoor;
+import bt.sample.KohINoor;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
 import burst.kit.entity.response.ATResponse;
@@ -18,10 +18,10 @@ import org.junit.BeforeClass;
  * 
  * @author jjos
  */
-public class KhoINoorTest extends BT {
+public class KohINoorTest extends BT {
 
     public static void main(String[] args) throws Exception {
-        KhoINoorTest t = new KhoINoorTest();
+        KohINoorTest t = new KohINoorTest();
         t.setup();
 
         t.testTheOne();
@@ -36,22 +36,22 @@ public class KhoINoorTest extends BT {
     @Test
     public void testTheOne() throws Exception {
         BT.forgeBlock();
-        Compiler comp = BT.compileContract(KhoINoor.class);
+        Compiler comp = BT.compileContract(KohINoor.class);
 
-        String name = "KhoINoor" + System.currentTimeMillis();
+        String name = "KohINoor" + System.currentTimeMillis();
         BurstAddress creator = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE);
 
-        BT.registerContract(BT.PASSPHRASE, comp, name, name, BurstValue.fromPlanck(KhoINoor.ACTIVATION_FEE),
+        BT.registerContract(BT.PASSPHRASE, comp, name, name, BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE),
                 BurstValue.fromBurst(0.1), 1000).blockingGet();
         BT.forgeBlock();
 
         ATResponse contract = BT.findContract(creator, name);
         System.out.println(contract.getAt().getID());
 
-        long price = KhoINoor.INITIAL_PRICE;
+        long price = KohINoor.INITIAL_PRICE;
 
         // initialize the contract
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromPlanck(KhoINoor.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 

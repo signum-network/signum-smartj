@@ -1,6 +1,7 @@
 package bt;
 
-import bt.sample.KhoINoor;
+import bt.compiler.Compiler;
+import bt.sample.KohINoor;
 import bt.ui.EmulatorWindow;
 
 /**
@@ -9,9 +10,18 @@ import bt.ui.EmulatorWindow;
  * @author jjos
  */
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
-public class KhoINoorEmu {
+public class KohINoorEmu {
 
 	public static void main(String[] args) throws Exception {
+
+		Compiler comp = new Compiler(KohINoor.class);
+		comp.compile();
+		comp.link();
+
+		System.out.println("creator:" + comp.getField("creator").getAddress());
+		System.out.println("owner:" + comp.getField("owner").getAddress());
+		System.out.println("price:" + comp.getField("price").getAddress());
+
 		// some initialization code to make things easier to debug
 		Emulator emu = Emulator.getInstance();
 		Address creator = Emulator.getInstance().getAddress("CREATOR");
@@ -23,7 +33,7 @@ public class KhoINoorEmu {
 		emu.airDrop(buyer2, 10000 * Contract.ONE_BURST);
 
 		Address diamond = Emulator.getInstance().getAddress("DIAMOND");
-		emu.createConctract(creator, diamond, KhoINoor.class, KhoINoor.ACTIVATION_FEE);
+		emu.createConctract(creator, diamond, KohINoor.class, KohINoor.ACTIVATION_FEE);
 		emu.forgeBlock();
 
 		emu.send(buyer1, diamond, 5000 * Contract.ONE_BURST);
@@ -32,6 +42,6 @@ public class KhoINoorEmu {
 		emu.send(buyer2, diamond, 5500 * Contract.ONE_BURST);
 		emu.forgeBlock();
 
-		new EmulatorWindow(KhoINoor.class);
+		new EmulatorWindow(KohINoor.class);
 	}
 }
