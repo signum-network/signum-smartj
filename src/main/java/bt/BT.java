@@ -184,6 +184,10 @@ public class BT {
         }
     }
 
+    public static BurstValue getMinRegisteringFee(Compiler compiledContract){
+        return BurstValue.fromBurst(4 + compiledContract.getCode().position() / Compiler.PAGE_SIZE);
+    }
+
     /**
      * Register the given contract with the given activation fee.
      */
@@ -193,8 +197,10 @@ public class BT {
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
 
-        registerContract(PASSPHRASE, compiledContract, name, contract.getSimpleName(), activationFee,
-                BurstValue.fromBurst(0.1), 1440).blockingGet();
+        BroadcastTransactionResponse resp = registerContract(PASSPHRASE, compiledContract, name,
+                contract.getSimpleName(), activationFee,
+                getMinRegisteringFee(compiledContract), 1000).blockingGet();
+        resp.throwIfError();
         forgeBlock();
 
         return findContract(bc.getBurstAddressFromPassphrase(PASSPHRASE), name);
@@ -218,9 +224,11 @@ public class BT {
     public static Single<BroadcastTransactionResponse> registerContract(String passphrase, Compiler compiledContract,
             String name, String descrition, BurstValue activationFee, BurstValue fee, int deadline) throws Exception {
 
+        byte []code = new byte[compiledContract.getCode().position()];
+        System.arraycopy(compiledContract.getCode().array(), 0, code, 0, code.length);
         byte[] pubkey = bc.getPublicKey(passphrase);
         Single<GenerateTransactionResponse> createAT = bns.generateCreateATTransaction(pubkey, fee, deadline, name,
-                descrition, new byte[0], compiledContract.getCode().array(), new byte[0], 1, 1, 1, activationFee);
+                descrition, new byte[0], code, new byte[0], 1, 1, 1, activationFee);
 
         return createAT.flatMap(response -> {
             byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
