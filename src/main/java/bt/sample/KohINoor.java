@@ -3,7 +3,7 @@ package bt.sample;
 import bt.*;
 
 /**
- * The 'Koh-I-Noor' smart contract.
+ * The 'Koh-i-Noor' smart contract.
  * 
  * This smart contract was designed to be single, in the sense that there is
  * only one of his category in the entire world.
@@ -25,7 +25,10 @@ public class KohINoor extends Contract {
 	public static final long INITIAL_PRICE = ONE_BURST * 5000;
 
 	Address owner, creator;
-	long price, fee;
+	long price, fee, activationFee, balance;
+
+	Address curTXAddress;
+	long curTXAmount;
 
 	/**
 	 * Constructor, when in blockchain the constructor is called when the first TX
@@ -35,6 +38,7 @@ public class KohINoor extends Contract {
 		creator = getCreator();
 		owner = creator;
 		price = INITIAL_PRICE;
+		activationFee = ACTIVATION_FEE;
 	}
 
 	/**
@@ -45,24 +49,32 @@ public class KohINoor extends Contract {
 	 * 
 	 */
 	public void txReceived() {
-		if (getCurrentTx().getAmount() + ACTIVATION_FEE >= price) {
+		curTXAmount = getCurrentTx().getAmount();
+		curTXAddress = getCurrentTx().getSenderAddress();
+		if (curTXAmount + activationFee >= price) {
 			// Conditions match, let's execute the sale
 			fee = price / 100; // 1% fee
 			sendAmount(price - fee, owner); // pay the current owner the price, minus fee
-			sendMessage("Koh-I-Noor has a new owner.", owner);
-			owner = getCurrentTx().getSenderAddress(); // new owner
+			sendMessage("Koh-i-Noor has a new owner.", owner);
+			owner = curTXAddress; // new owner
 			sendMessage("You are the Koh-i-Noor owner!", owner);
 
 			price += 10 * price / 100; // new price is 10% more
-
-			sendAmount(getCurrentBalance() - ACTIVATION_FEE, creator); // round up with the creator
 			return;
 		}
 
-		sendMessage("Amount sent was not enough.", getCurrentTx().getSenderAddress());
+		sendMessage("Amount sent was not enough.", curTXAddress);
 		// send back funds of an invalid order, but only if it was twice the activation fee
-		if (getCurrentTx().getAmount() > ACTIVATION_FEE) {
-			sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
+		if (curTXAmount > activationFee) {
+			sendAmount(curTXAmount, curTXAddress);
 		}
+	}
+
+	@Override
+	protected void blockFinished() {
+		// round up with the creator if there is some balance left
+		balance = getCurrentBalance();
+		if(balance > activationFee)
+			sendAmount(balance - activationFee, creator);
 	}
 }

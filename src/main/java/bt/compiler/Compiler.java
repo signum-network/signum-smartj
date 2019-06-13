@@ -46,6 +46,7 @@ public class Compiler {
 
 	public static final String INIT_METHOD = "<init>";
 	public static final String MAIN_METHOD = "main";
+	public static final String FINISHED_METHOD = "blockFinished";
 	public static final String TX_RECEIVED_METHOD = "txReceived";
 	public static final int MAX_SIZE = 10 * 256;
 
@@ -259,10 +260,16 @@ public class Compiler {
 		code.putShort(OpCode.Get_A1);
 		code.putInt(lastTxReceived);
 
-		// if zero we will FINISH, otherwise continue
+		// if zero we will FINISH (after the blockFinish method), otherwise continue
+		Method finishMethod = getMethod(FINISHED_METHOD);
+		boolean hasFinish = finishMethod != null && finishMethod.code.position() > 0;
 		code.put(OpCode.e_op_code_BNZ_DAT);
 		code.putInt(lastTxReceived);
-		code.put((byte) 7);
+		code.put((byte) (7 + (hasFinish ? 5 : 0)) );
+		if(hasFinish){
+			code.put(OpCode.e_op_code_JMP_SUB);
+			code.putInt(finishMethod.address);
+		}
 		code.put(OpCode.e_op_code_FIN_IMD);
 
 		// Store the timestamp of the last transaction

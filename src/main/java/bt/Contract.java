@@ -112,6 +112,15 @@ public abstract class Contract {
 	}
 
 	/**
+	 * Function to be called when all transactions on the current block were processed.
+	 * 
+	 * Users should overload this function if there is some action to be taken
+	 * after the last {@link #txReceived()} was called for the current block.
+	 */
+	protected void blockFinished(){
+	}
+
+	/**
 	 * Get the first transaction received after the given timestamp
 	 * 
 	 * @param ts
