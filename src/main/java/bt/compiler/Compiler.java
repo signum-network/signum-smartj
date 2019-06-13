@@ -62,7 +62,6 @@ public class Compiler {
 	String className;
 
 	int lastFreeVar;
-	boolean useLastTx;
 	int lastTxReceived;
 	int lastTxTimestamp;
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
@@ -232,12 +231,12 @@ public class Compiler {
 
 	private void initialCode() {
 		// set the local variables start position
-		if(useLocal){
+		if (useLocal) {
 			code.put(OpCode.e_op_code_SET_VAL);
 			code.putInt(localStart);
 			code.putLong(lastFreeVar);
 		}
-		
+
 		// add the jump for the constructor
 		Method initMethod = methods.get(INIT_METHOD);
 		if (initMethod.code.position() > 1) {
@@ -248,31 +247,28 @@ public class Compiler {
 
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
+		int afterPCSAddress = code.position();
 
-		if (useLastTx) {
-			// put the last transaction received in A (after the last timestamp)
-			code.put(OpCode.e_op_code_EXT_FUN_DAT);
-			code.putShort(OpCode.A_To_Tx_After_Timestamp);
-			code.putInt(lastTxTimestamp);
+		// put the last transaction received in A (after the last timestamp)
+		code.put(OpCode.e_op_code_EXT_FUN_DAT);
+		code.putShort(OpCode.A_To_Tx_After_Timestamp);
+		code.putInt(lastTxTimestamp);
 
-			// get the value from A1
-			code.put(OpCode.e_op_code_EXT_FUN_RET);
-			code.putShort(OpCode.Get_A1);
-			code.putInt(lastTxReceived);
+		// get the value from A1
+		code.put(OpCode.e_op_code_EXT_FUN_RET);
+		code.putShort(OpCode.Get_A1);
+		code.putInt(lastTxReceived);
 
-			// if zero we will FINISH, otherwise continue
-			// TODO: check if this is really necessary, since there should always be a
-			// transaction
-			// code.put(OpCode.e_op_code_BNZ_DAT);
-			// code.putInt(lastTxReceived);
-			// code.put((byte) 7);
-			// code.put(OpCode.e_op_code_FIN_IMD);
+		// if zero we will FINISH, otherwise continue
+		code.put(OpCode.e_op_code_BNZ_DAT);
+		code.putInt(lastTxReceived);
+		code.put((byte) 7);
+		code.put(OpCode.e_op_code_FIN_IMD);
 
-			// Store the timestamp of the last transaction
-			code.put(OpCode.e_op_code_EXT_FUN_RET);
-			code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
-			code.putInt(lastTxTimestamp);
-		}
+		// Store the timestamp of the last transaction
+		code.put(OpCode.e_op_code_EXT_FUN_RET);
+		code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
+		code.putInt(lastTxTimestamp);
 
 		if (hasPublicMethods) {
 			// external method calls here
@@ -285,8 +281,8 @@ public class Compiler {
 			code.putInt(tmpVar4);
 
 			for (Method m : methods.values()) {
-				if (m.node.name.equals(MAIN_METHOD) || m.node.name.equals(TX_RECEIVED_METHOD) ||
-					m.node.name.equals(INIT_METHOD) || !Modifier.isPublic(m.node.access))
+				if (m.node.name.equals(MAIN_METHOD) || m.node.name.equals(TX_RECEIVED_METHOD)
+						|| m.node.name.equals(INIT_METHOD) || !Modifier.isPublic(m.node.access))
 					continue;
 
 				if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
@@ -323,8 +319,9 @@ public class Compiler {
 		code.put(OpCode.e_op_code_JMP_SUB);
 		code.putInt(methods.get(TX_RECEIVED_METHOD).address);
 
-		// end this run
-		code.put(OpCode.e_op_code_FIN_IMD);
+		// restart for a possible new transaction
+		code.put(OpCode.e_op_code_JMP_ADR);
+		code.putInt(afterPCSAddress);
 	}
 
 	public void link() {
@@ -384,7 +381,6 @@ public class Compiler {
 	}
 
 	private void readMethods() {
-		useLastTx = false;
 		hasPublicMethods = false;
 
 		// First list all methods available
@@ -400,9 +396,8 @@ public class Compiler {
 			methods.put(mnode.name, m);
 
 			if (!mnode.name.equals(TX_RECEIVED_METHOD) && !mnode.name.equals(INIT_METHOD)
-				&& Modifier.isPublic(mnode.access)) {
+					&& Modifier.isPublic(mnode.access)) {
 				hasPublicMethods = true;
-				useLastTx = true;
 			}
 		}
 
@@ -831,7 +826,6 @@ public class Compiler {
 						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
 							pushVar(m, lastTxReceived);
-							useLastTx = true;
 						} else if (mi.name.equals("getCurrentBalance")) {
 							stack.pollLast(); // remove the "this" from stack
 							code.put(OpCode.e_op_code_EXT_FUN_RET);

@@ -121,7 +121,12 @@ public class BT {
     }
 
     public static Single<BroadcastTransactionResponse> sendAmount(String passFrom, BurstAddress receiver,
-            BurstValue value) {
+    BurstValue value) {
+        return sendAmount(passFrom, receiver, value, BurstValue.fromBurst(0.1));
+    }
+
+    public static Single<BroadcastTransactionResponse> sendAmount(String passFrom, BurstAddress receiver,
+            BurstValue value, BurstValue fee) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
         return bns.generateTransaction(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440)
