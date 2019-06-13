@@ -45,7 +45,7 @@ public class KohINoor extends Contract {
 	 * A buyer needs to transfer the current price to the contract.
 	 * 
 	 * Current owner will receive this amount and the sender will become the new
-	 * owner. On this event, the price is rised by 10% automatically.
+	 * owner. On this event, the price is increased by 10% automatically.
 	 * 
 	 */
 	public void txReceived() {
@@ -63,11 +63,9 @@ public class KohINoor extends Contract {
 			return;
 		}
 
+		// send back funds of an invalid order
 		sendMessage("Amount sent was not enough.", curTXAddress);
-		// send back funds of an invalid order, but only if it was twice the activation fee
-		if (curTXAmount > activationFee) {
-			sendAmount(curTXAmount, curTXAddress);
-		}
+		sendAmount(curTXAmount, curTXAddress);
 	}
 
 	@Override
