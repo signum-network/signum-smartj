@@ -184,6 +184,9 @@ public class BT {
         }
     }
 
+    /**
+     * @return the minimum fee to register the given contract
+     */
     public static BurstValue getMinRegisteringFee(Compiler compiledContract){
         return BurstValue.fromBurst(4 + compiledContract.getCode().position() / Compiler.PAGE_SIZE);
     }
