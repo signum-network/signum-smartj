@@ -6,6 +6,7 @@ import bt.compiler.Compiler;
 import bt.sample.Forward;
 import bt.sample.ForwardMin;
 import bt.sample.OddsGame;
+import bt.sample.TXCounter;
 import bt.sample.TipThanks;
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstAddress;
@@ -33,7 +34,8 @@ public class CompilerTest extends BT {
         // t.testForwardMin();
         // t.testTipThanks();
         // t.testOdds();
-        t.testLocalVar();
+        // t.testLocalVar();
+        t.testCounter();
     }
 
     @BeforeClass
@@ -202,5 +204,34 @@ public class CompilerTest extends BT {
 		long valueChain = BT.getContractFieldValue(contract, comp.getField("valueTimes2").getAddress(), true);
 
         assertEquals(value*2, valueChain);
+    }
+
+
+    public void testCounter() throws Exception {
+        BT.forgeBlock();
+
+        long ntx, nblocks;
+
+		ATResponse contract = BT.registerContract(TXCounter.class, BurstValue.fromBurst(10));
+        
+        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        ntx = BT.getContractFieldValue(contract, 0, true);
+        nblocks = BT.getContractFieldValue(contract, 1, true);
+        assertEquals(1, ntx);
+        assertEquals(1, nblocks);
+
+        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        ntx = BT.getContractFieldValue(contract, 0, true);
+        nblocks = BT.getContractFieldValue(contract, 1, true);
+        assertEquals(4, ntx);
+        assertEquals(2, nblocks);
     }
 }
