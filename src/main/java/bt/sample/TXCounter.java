@@ -13,6 +13,7 @@ import bt.ui.EmulatorWindow;
 public class TXCounter extends Contract {
 
 	long ntx, nblocks;
+	Address address;
 	
 	/**
 	 * Any new transaction received will be handled by this function.
@@ -20,6 +21,7 @@ public class TXCounter extends Contract {
 	@Override
 	public void txReceived(){
 		ntx++;
+		address = getCurrentTx().getSenderAddress();
 	}
 
 	@Override

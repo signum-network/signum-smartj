@@ -210,6 +210,21 @@ public class BT {
     }
 
     /**
+     * Register the given contract with the given activation fee.
+     */
+    public static ATResponse registerContract(Compiler compiledContract, String name, BurstValue activationFee)
+            throws Exception {
+
+        BroadcastTransactionResponse resp = registerContract(PASSPHRASE, compiledContract, name,
+                name, activationFee,
+                getMinRegisteringFee(compiledContract), 1000).blockingGet();
+        resp.throwIfError();
+        forgeBlock();
+
+        return findContract(bc.getBurstAddressFromPassphrase(PASSPHRASE), name);
+    }
+
+    /**
      * Register the given contract with the given activation fee and paying the
      * given fee.
      * 
@@ -267,9 +282,8 @@ public class BT {
      * @param update if the node should be contacted (in blocking way) for an updated value
      * @return the current long value of a given field
      */
-    public static long getContractFieldValue(ATResponse contract, int address, boolean update) {
-        if(update)
-            contract = bns.getAt(contract.getAt().getBurstID()).blockingGet();
+    public static long getContractFieldValue(ATResponse contract, int address) {
+        contract = bns.getAt(contract.getAt().getBurstID()).blockingGet();
 
         HexStringByteArray data = contract.getMachineData();
 
@@ -277,5 +291,14 @@ public class BT {
         b.order(ByteOrder.LITTLE_ENDIAN);
 
         return b.getLong(address * 8);
+    }
+
+    /**
+     * @param contract
+     * @return the balance for the given contract
+     */
+    public static BurstValue getContractBalance(ATResponse contract) {
+        contract = bns.getAt(contract.getAt().getBurstID()).blockingGet();
+        return contract.getBalanceNQT();
     }
 }

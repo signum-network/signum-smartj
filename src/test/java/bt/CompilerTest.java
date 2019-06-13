@@ -193,7 +193,7 @@ public class CompilerTest extends BT {
 		BT.forgeBlock();
 
         assertEquals(valueSent.longValue()*Contract.ONE_BURST,
-            BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress(), true));
+            BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress()));
 
 		long value = 512;
 		BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("setValue"), BurstValue.fromBurst(1),
@@ -201,7 +201,7 @@ public class CompilerTest extends BT {
 		BT.forgeBlock();
 		BT.forgeBlock();
 
-		long valueChain = BT.getContractFieldValue(contract, comp.getField("valueTimes2").getAddress(), true);
+		long valueChain = BT.getContractFieldValue(contract, comp.getField("valueTimes2").getAddress());
 
         assertEquals(value*2, valueChain);
     }
@@ -210,28 +210,34 @@ public class CompilerTest extends BT {
     public void testCounter() throws Exception {
         BT.forgeBlock();
 
-        long ntx, nblocks;
+        long ntx, nblocks, address;
 
-		ATResponse contract = BT.registerContract(TXCounter.class, BurstValue.fromBurst(10));
+        Compiler compiled = BT.compileContract(TXCounter.class);
+        ATResponse contract = BT.registerContract(compiled, TXCounter.class.getSimpleName() + System.currentTimeMillis(),
+            BurstValue.fromBurst(10));
+        System.out.println(contract.getAt().getBurstID().getSignedLongId());
         
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(20)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
-        ntx = BT.getContractFieldValue(contract, 0, true);
-        nblocks = BT.getContractFieldValue(contract, 1, true);
+        ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
+        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
         assertEquals(1, ntx);
         assertEquals(1, nblocks);
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
-        ntx = BT.getContractFieldValue(contract, 0, true);
-        nblocks = BT.getContractFieldValue(contract, 1, true);
+        ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
+        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
+        address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
+        
         assertEquals(4, ntx);
         assertEquals(2, nblocks);
+        assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getBurstID().getSignedLongId(), address);
     }
 }

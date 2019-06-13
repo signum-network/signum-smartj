@@ -48,7 +48,7 @@ public class LocalVar extends Contract {
 		BT.forgeBlock();
 		BT.forgeBlock();
 
-		System.out.println(BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress(), true));
+		System.out.println(BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress()));
 
 		long value = 512;
 		BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("setValue"), BurstValue.fromBurst(1),
@@ -56,7 +56,7 @@ public class LocalVar extends Contract {
 		BT.forgeBlock();
 		BT.forgeBlock();
 
-		long valueChain = BT.getContractFieldValue(contract, comp.getField("valueTimes2").getAddress(), true);
+		long valueChain = BT.getContractFieldValue(contract, comp.getField("valueTimes2").getAddress());
 
 		System.out.println(value);
 		System.out.println(valueChain);

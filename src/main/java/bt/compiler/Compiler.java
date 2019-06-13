@@ -156,6 +156,10 @@ public class Compiler {
 		return code;
 	}
 
+	public String getClassName(){
+		return className;
+	}
+
 	private void readFields() {
 
 		if (!cn.superName.replace('/', '.').equals(Contract.class.getName())) {

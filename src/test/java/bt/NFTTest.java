@@ -57,11 +57,11 @@ public class NFTTest extends BT {
         BT.forgeBlock();
         BT.forgeBlock();
 
-        long ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
-        long statusChain = BT.getContractFieldValue(contract, comp.getField("status").getAddress(), true);
-        long timeoutChain = BT.getContractFieldValue(contract, comp.getField("saleTimeout").getAddress(), true);
-        long highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
-        long highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
+        long ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
+        long statusChain = BT.getContractFieldValue(contract, comp.getField("status").getAddress());
+        long timeoutChain = BT.getContractFieldValue(contract, comp.getField("saleTimeout").getAddress());
+        long highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
+        long highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress());
 
         // convert back to a timeout in minutes
         timeoutChain = timeoutChain >> 32; // only the block part
@@ -83,9 +83,9 @@ public class NFTTest extends BT {
         BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
-        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
-        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
+        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
+        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress());
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         // no changes are expected
         assertEquals(0, highestBidderChain);
         assertEquals(startBid, highestBidChain);
@@ -95,10 +95,10 @@ public class NFTTest extends BT {
         BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid*2 + NFT2.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        long debug = BT.getContractFieldValue(contract, comp.getField("debug").getAddress(), true);
-        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
-        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
-        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
+        long debug = BT.getContractFieldValue(contract, comp.getField("debug").getAddress());
+        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
+        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress());
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         // there should be updates here
         assertEquals(bidder.getBurstID().getSignedLongId(), highestBidderChain);
         assertEquals(startBid*2, highestBidChain);
@@ -108,9 +108,9 @@ public class NFTTest extends BT {
         BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromPlanck(startBid*3 + NFT2.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress(), true);
-        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress(), true);
-        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress(), true);
+        highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
+        highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress());
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         // there should be updates here
         assertEquals(bidder2.getBurstID().getSignedLongId(), highestBidderChain);
         assertEquals(startBid*3, highestBidChain);
