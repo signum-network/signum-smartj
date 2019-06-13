@@ -14,7 +14,7 @@ import bt.*;
  * 10%.
  * 
  * So, every new owner either have 10% return of investment (minus 1% fee) or
- * keep the ownership of the Koh-I-Noor.
+ * keep the ownership of the Koh-i-Noor.
  * 
  * @author jjos
  */
@@ -49,7 +49,7 @@ public class KohINoor extends Contract {
 			// Conditions match, let's execute the sale
 			fee = price / 100; // 1% fee
 			sendAmount(price - fee, owner); // pay the current owner the price, minus fee
-			sendMessage("Koh-I-Noor have a new owner.", owner);
+			sendMessage("Koh-I-Noor has a new owner.", owner);
 			owner = getCurrentTx().getSenderAddress(); // new owner
 			sendMessage("You are the Koh-i-Noor owner!", owner);
 
