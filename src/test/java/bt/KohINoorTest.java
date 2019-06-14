@@ -10,6 +10,8 @@ import burst.kit.entity.response.ATResponse;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+
 import org.junit.BeforeClass;
 
 /**
@@ -119,7 +121,46 @@ public class KohINoorTest extends BT {
 
         // check the changes
         price += 10 * price / 100;
-        assertEquals(bidder.getBurstID().getSignedLongId(), ownerChain);
+        //assertEquals(bidder.getBurstID().getSignedLongId(), ownerChain);
+        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        assertEquals(price, priceChain);
+
+
+        // test with a lot of simultaneous buyers
+        ArrayList<String> buyers = new ArrayList<>();
+        BurstAddress lastBuyer = null;
+        for (int i = 0; i < 10; i++) {
+            String pass = String.valueOf(i);
+            BurstAddress buyer = BT.getBurstAddressFromPassphrase(pass);
+            BT.sendAmount(PASSPHRASE, buyer, BurstValue.fromPlanck(price*2), BurstValue.fromBurst(10)).blockingGet();
+            buyers.add(pass);
+            lastBuyer = buyer;
+        }
+        forgeBlock();
+        forgeBlock();
+
+        int i = 0;
+        for (String buyer : buyers) {
+            BT.sendAmount(buyer, contract.getAt(), BurstValue.fromPlanck(price), BurstValue.fromBurst(0.1)).blockingGet();
+        }
+        forgeBlock();
+        forgeBlock();
+
+        creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
+        ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
+        priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
+        assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
+
+        for (String buyer : buyers) {
+            BurstAddress ad = BT.getBurstAddressFromPassphrase(buyer);
+            if(ad.getBurstID().getSignedLongId() == ownerChain){
+                System.out.println("Got the token, buyer: " + buyer);
+                break;
+            }
+        }
+
+        // check the changes
+        price += 10 * price / 100;
         assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
     }
