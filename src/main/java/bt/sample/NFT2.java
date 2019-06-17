@@ -32,7 +32,7 @@ public class NFT2 extends Contract {
 	Address owner;
 
 	long salePrice;
-	Timestamp saleTimeout;
+	Timestamp auctionTimeout;
 	Address highestBidder;
 	long highestBid;
 
@@ -54,10 +54,21 @@ public class NFT2 extends Contract {
 	 * @param newOwner
 	 */
 	public void transfer(Address newOwner) {
-		if (owner.equals(this.getCurrentTx().getSenderAddress())) {
-			// only current owner can do this
+		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+			// only if there is no bidder and it is the current owner
 			owner = newOwner;
 			status = STATUS_NOT_FOR_SALE;
+		}
+	}
+
+	/**
+	 * Cancels an open for sale or auction and sets it as not for sale.
+	 */
+	public void setNotForSale(){
+		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+			// only if there is no bidder and it is the current owner
+			status = STATUS_NOT_FOR_SALE;
+			salePrice = 0;
 		}
 	}
 
@@ -68,14 +79,12 @@ public class NFT2 extends Contract {
 	 * 
 	 * @param priceNQT the price in NQT==1E-8 BURST (buyer needs to transfer at least
 	 *                 this amount plus activation fee)
-	 * @param timeout  how many minutes the sale will be available
 	 */
-	public void putForSale(long priceNQT, long timeout) {
-		if (owner.equals(this.getCurrentTx().getSenderAddress())) {
-			// only current owner can do this
+	public void putForSale(long priceNQT) {
+		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			salePrice = priceNQT;
-			saleTimeout = getBlockTimestamp().addMinutes(timeout);
 		}
 	}
 
@@ -91,11 +100,10 @@ public class NFT2 extends Contract {
 	 * @param timeout  how many minutes the sale will be available
 	 */
 	public void putForAuction(int priceNQT, int timeout) {
-		if (owner.equals(this.getCurrentTx().getSenderAddress())) {
-			// only current owner can do this
+		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_AUCTION;
-			saleTimeout = getBlockTimestamp().addMinutes(timeout);
-			highestBidder = null;
+			auctionTimeout = getBlockTimestamp().addMinutes(timeout);
 			highestBid = priceNQT;
 		}
 	}
@@ -115,7 +123,7 @@ public class NFT2 extends Contract {
 	 */
 	public void txReceived() {
 		if (status == STATUS_FOR_SALE) {
-			if (getBlockTimestamp().le(saleTimeout) && getCurrentTx().getAmount() >= salePrice) {
+			if (getCurrentTx().getAmount() >= salePrice) {
 				// Conditions match, let's execute the sale
 				sendAmount(salePrice, owner); // pay the current owner
 				owner = getCurrentTx().getSenderAddress(); // new owner
@@ -124,11 +132,12 @@ public class NFT2 extends Contract {
 			}
 		}
 		if (status == STATUS_FOR_AUCTION) {
-			if (!getBlockTimestamp().le(saleTimeout)) {
+			if (getBlockTimestamp().ge(auctionTimeout)) {
 				// auction timed out, apply the transfer if any
 				if (highestBidder != null) {
 					sendAmount(highestBid, owner); // pay the current owner
 					owner = highestBidder; // new owner
+					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
 				}
 				// current transaction will be refunded below
@@ -148,6 +157,9 @@ public class NFT2 extends Contract {
 		refund();
 	}
 
+	/**
+	 * Send back funds of the current transaction.
+	 */
 	void refund() {
 		// send back funds of an invalid order
 		sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
