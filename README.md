@@ -20,8 +20,8 @@ BlockTalk consists of the following key components:
 
 [![Simple hello world contract](http://img.youtube.com/vi/XcN5WxqjjGw/0.jpg)](https://www.youtube.com/watch?v=XcN5WxqjjGw "BlockTalk sample application")
 
-This project is in **pre-alpha**. Most contracts still cannot be compiled into CIYAM bytecode.
-Please carefully inspect your compiled AT contracts and
+This project is in **alpha** stage. Most contracts can be compiled into CIYAM bytecode.
+However, please carefully inspect your compiled AT contracts and
 test it exhaustively on the [testnet](https://burstwiki.org/wiki/Testnet) before production.
 
 
