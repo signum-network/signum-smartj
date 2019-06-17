@@ -1,6 +1,7 @@
 package bt;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstID;
@@ -176,6 +177,7 @@ public class Emulator {
 		currentBlock = new Block(prevBlock);
 		currentBlock.txs.addAll(pendTxs);
 
+		HashSet<Contract> contractsExecuted = new HashSet<>();
 		// run all contracts, operations will be pending to be forged in the next block
 		for (Transaction tx : prevBlock.txs) {
 
@@ -187,6 +189,7 @@ public class Emulator {
 			if (c != null && tx.type != Transaction.TYPE_AT_CREATE && tx.amount >= c.activationFee) {
 				// a contract received a message
 				c.setCurrentTx(tx);
+				contractsExecuted.add(c);
 
 				Thread ct = new Thread() {
 					public void run() {
@@ -226,6 +229,11 @@ public class Emulator {
 				if(c.sleepUntil==null)
 					c.semaphore.release();
 			}
+		}
+		// run the block finish method on all contracts that received transactions
+		for(Contract c : contractsExecuted){
+			if(c.sleepUntil==null)
+				c.blockFinished();
 		}
 	}
 
