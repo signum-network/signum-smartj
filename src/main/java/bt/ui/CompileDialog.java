@@ -188,7 +188,7 @@ class CompileDialog extends JDialog implements ActionListener {
             BT.registerContract(passphrase, comp, name, description, actFee, fee, deadline)
                     .subscribe(this::onTransactionSent, this::handleError);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(getParent(), e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            handleError(e);
         }
     }
 
