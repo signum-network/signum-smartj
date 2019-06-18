@@ -32,9 +32,15 @@ public class BT {
     public static final String PASSPHRASE = "block talk, easy to use smart contracts for burst";
     public static final String PASSPHRASE2 = "block talk: easy to use smart contracts for burst";
     public static final String PASSPHRASE3 = "block talk! easy to use smart contracts for burst";
+
     public static final String NODE_LOCAL_TESTNET = "http://localhost:6876";
     public static final String NODE_AT_TESTNET = "http://at-testnet.burst-alliance.org:6876";
     public static final String NODE_TESTNET = "http://testnet.getburst.net:6876";
+
+    public static final String NODE_BURST_TEAM = "https://wallet1.burst-team.us:2083";
+    public static final String NODE_BURST_ALLIANCE = "https://wallet.burst-alliance.org:8125";
+    public static final String NODE_BURSTCOIN_RO = "https://wallet.burstcoin.ro:443";
+    public static final String NODE_BURSTCOIN_RO2 = "https://wallet2.burstcoin.ro:443";
 
     static BurstNodeService bns = BurstNodeService.getInstance(NODE_LOCAL_TESTNET);
     static BurstCrypto bc = BurstCrypto.getInstance();
