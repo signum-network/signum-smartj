@@ -1,8 +1,8 @@
 package bt.sample;
 
-import bt.CompilerVersion;
+import bt.compiler.CompilerVersion;
 import bt.Contract;
-import bt.TargetCompilerVersion;
+import bt.compiler.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**

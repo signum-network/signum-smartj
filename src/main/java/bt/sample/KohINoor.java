@@ -1,6 +1,8 @@
 package bt.sample;
 
 import bt.*;
+import bt.compiler.CompilerVersion;
+import bt.compiler.TargetCompilerVersion;
 
 /**
  * The 'Koh-i-Noor' smart contract.

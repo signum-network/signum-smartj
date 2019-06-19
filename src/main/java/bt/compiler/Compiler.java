@@ -42,7 +42,7 @@ import burst.kit.entity.BurstID;
  */
 public class Compiler {
 
-	public static final CompilerVersion currentVersion = WarningProcessor.currentVersion;
+	public static final CompilerVersion currentVersion = CompilerVersion.v0_0_0;
 
 	public static final String INIT_METHOD = "<init>";
 	public static final String MAIN_METHOD = "main";
