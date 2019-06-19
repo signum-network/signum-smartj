@@ -149,9 +149,6 @@ class CompileDialog extends JDialog implements ActionListener {
             Printer.print(comp.getCode(), out, comp);
             String codeForm = new String(baos.toByteArray(), StandardCharsets.UTF_8);
 
-            byte[] bcode = new byte[comp.getCode().position()];
-            System.arraycopy(comp.getCode().array(), 0, bcode, 0, bcode.length);
-
             BurstValue fee = BT.getMinRegisteringFee(comp);
             feeField.setText(Double.toString(fee.doubleValue()));
 
@@ -174,9 +171,6 @@ class CompileDialog extends JDialog implements ActionListener {
 
     private void publishAT() {
         try {
-            byte[] bcode = new byte[comp.getCode().position()];
-            System.arraycopy(comp.getCode().array(), 0, bcode, 0, bcode.length);
-
             String passphrase = String.valueOf(passField.getPassword());
             String name = nameField.getText();
             String description = descField.getText();

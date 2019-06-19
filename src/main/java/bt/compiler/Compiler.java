@@ -152,8 +152,20 @@ public class Compiler {
 		}
 	}
 
-	public ByteBuffer getCode() {
-		return code;
+	/**
+	 * @return the compiled code byte array
+	 */
+	public byte[] getCode() {
+		byte []ret = new byte[code.position()];
+        System.arraycopy(code.array(), 0, ret, 0, ret.length);
+		return ret;
+	}
+
+	/**
+	 * @return the number of pages occupied by this contract
+	 */
+	public int getCodeNPages(){
+		return code.position()/PAGE_SIZE + 1;
 	}
 
 	public String getClassName(){

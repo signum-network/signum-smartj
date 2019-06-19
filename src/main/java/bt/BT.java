@@ -194,7 +194,7 @@ public class BT {
      * @return the minimum fee to register the given contract
      */
     public static BurstValue getMinRegisteringFee(Compiler compiledContract){
-        return BurstValue.fromBurst(4 + compiledContract.getCode().position() / Compiler.PAGE_SIZE);
+        return BurstValue.fromBurst(3 + compiledContract.getCodeNPages());
     }
 
     /**
@@ -248,8 +248,7 @@ public class BT {
     public static Single<BroadcastTransactionResponse> registerContract(String passphrase, Compiler compiledContract,
             String name, String descrition, BurstValue activationFee, BurstValue fee, int deadline) throws Exception {
 
-        byte []code = new byte[compiledContract.getCode().position()];
-        System.arraycopy(compiledContract.getCode().array(), 0, code, 0, code.length);
+        byte []code = compiledContract.getCode();
         byte[] pubkey = bc.getPublicKey(passphrase);
         Single<GenerateTransactionResponse> createAT = bns.generateCreateATTransaction(pubkey, fee, deadline, name,
                 descrition, new byte[0], code, new byte[0], 1, 1, 1, activationFee);

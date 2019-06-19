@@ -105,16 +105,15 @@ public class Printer {
 		return length;
 	}
 
-	public static void printCode(ByteBuffer buf, PrintStream out) {
+	public static void printCode(byte []code, PrintStream out) {
 		int p = 0;
-		byte[] code = buf.array();
-		while (p < buf.position()) {
+		while (p < code.length) {
 			print(code[p++], out);
 		}
 	}
 
-	public static void print(ByteBuffer buf, PrintStream out, Compiler c) {
-		print(buf.array(), buf.position(), out, c);
+	public static void print(byte[] code, PrintStream out, Compiler c) {
+		print(code, code.length, out, c);
 	}
 
 	private static final String tab = "\t";

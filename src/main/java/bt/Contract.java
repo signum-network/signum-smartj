@@ -334,9 +334,6 @@ public abstract class Contract {
 			return null;
 
 		compiler.link();
-		byte[] code = new byte[compiler.getCode().position()];
-		compiler.getCode().rewind();
-		compiler.getCode().get(code);
-		return code;
+		return compiler.getCode();
 	}
 }
