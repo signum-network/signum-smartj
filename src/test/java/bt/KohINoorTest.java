@@ -1,12 +1,12 @@
 package bt;
 
+import burst.kit.entity.response.AT;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.sample.KohINoor;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.ATResponse;
 
 import static org.junit.Assert.*;
 
@@ -30,7 +30,7 @@ public class KohINoorTest extends BT {
     }
 
     @BeforeClass
-    public void setup() {
+    public static void setup() {
         // forge a fitst block to get some balance
         forgeBlock();
     }
@@ -43,13 +43,13 @@ public class KohINoorTest extends BT {
         String name = "KohINoor" + System.currentTimeMillis();
         BurstAddress creator = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE);
 
-        ATResponse contract = BT.registerContract(comp, name, BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE));
-        System.out.println(contract.getAt().getID());
+        AT contract = BT.registerContract(comp, name, BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE));
+        System.out.println(contract.getId().getID());
 
         long price = KohINoor.INITIAL_PRICE;
 
         // initialize the contract
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -57,8 +57,8 @@ public class KohINoorTest extends BT {
         long ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         long priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
 
-        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        assertEquals(creator.getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
@@ -68,20 +68,20 @@ public class KohINoorTest extends BT {
         BT.forgeBlock(BT.PASSPHRASE3, 100);
 
         // send a short amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(price / 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price / 2)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         // no changes are expected
-        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        assertEquals(creator.getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
@@ -89,13 +89,13 @@ public class KohINoorTest extends BT {
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         // check the changes
         price += 10 * price / 100;
-        assertEquals(bidder.getBurstID().getSignedLongId(), ownerChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        assertEquals(bidder.getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount, another buyer
-        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
@@ -103,15 +103,15 @@ public class KohINoorTest extends BT {
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         // check the changes
         price += 10 * price / 100;
-        assertEquals(bidder2.getBurstID().getSignedLongId(), ownerChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        assertEquals(bidder2.getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount, but three different buyers
-        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromPlanck(price)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromPlanck(price)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
@@ -121,8 +121,8 @@ public class KohINoorTest extends BT {
 
         // check the changes
         price += 10 * price / 100;
-        //assertEquals(bidder.getBurstID().getSignedLongId(), ownerChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        //assertEquals(bidder.getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
 
 
@@ -141,7 +141,7 @@ public class KohINoorTest extends BT {
 
         int i = 0;
         for (String buyer : buyers) {
-            BT.sendAmount(buyer, contract.getAt(), BurstValue.fromPlanck(price), BurstValue.fromBurst(0.1)).blockingGet();
+            BT.sendAmount(buyer, contract.getId(), BurstValue.fromPlanck(price), BurstValue.fromBurst(0.1)).blockingGet();
         }
         forgeBlock();
         forgeBlock();
@@ -153,7 +153,7 @@ public class KohINoorTest extends BT {
 
         for (String buyer : buyers) {
             BurstAddress ad = BT.getBurstAddressFromPassphrase(buyer);
-            if(ad.getBurstID().getSignedLongId() == ownerChain){
+            if(ad.getSignedLongId() == ownerChain){
                 System.out.println("Got the token, buyer: " + buyer);
                 break;
             }
@@ -161,7 +161,7 @@ public class KohINoorTest extends BT {
 
         // check the changes
         price += 10 * price / 100;
-        assertEquals(creator.getBurstID().getSignedLongId(), creatorChain);
+        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
     }
 }

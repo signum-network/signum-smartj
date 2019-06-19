@@ -1,14 +1,11 @@
 package bt;
 
-import java.io.IOException;
-
-import bt.Contract;
 import bt.compiler.Compiler;
-import bt.ui.EmulatorWindow;
-import burst.kit.burst.BurstCrypto;
+import burst.kit.crypto.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.ATResponse;
+import burst.kit.entity.response.AT;
+
 
 public class LocalVar extends Contract {
 
@@ -40,18 +37,18 @@ public class LocalVar extends Contract {
 				1000).blockingGet();
 		BT.forgeBlock();
 
-		ATResponse contract = BT.findContract(creator, name);
-		System.out.println(contract.getAt().getFullAddress());
-		System.out.println(contract.getAt().getID());
+		AT contract = BT.findContract(creator, name);
+		System.out.println(contract.getId().getFullAddress());
+		System.out.println(contract.getId().getID());
 
-		BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(10)).blockingGet();
+		BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(10)).blockingGet();
 		BT.forgeBlock();
 		BT.forgeBlock();
 
 		System.out.println(BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress()));
 
 		long value = 512;
-		BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("setValue"), BurstValue.fromBurst(1),
+		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("setValue"), BurstValue.fromBurst(1),
 				BurstValue.fromBurst(0.1), 1000, value).blockingGet();
 		BT.forgeBlock();
 		BT.forgeBlock();

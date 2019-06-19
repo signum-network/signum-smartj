@@ -3,7 +3,7 @@ package bt;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import burst.kit.burst.BurstCrypto;
+import burst.kit.crypto.BurstCrypto;
 import burst.kit.entity.BurstID;
 
 /**

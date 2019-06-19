@@ -1,7 +1,7 @@
 package bt;
 
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.ATResponse;
+import burst.kit.entity.response.AT;
 
 /**
  * Simple code to register a contract.
@@ -20,8 +20,8 @@ public class RegisterContract {
 
         BT.setNodeAddress(NODE);
 
-        ATResponse at = BT.registerContract(CONTRACT, ACT_FEE);
+        AT at = BT.registerContract(CONTRACT, ACT_FEE);
 
-        System.out.println(at.getAt().getFullAddress());
+        System.out.println(at.getId().getFullAddress());
     }
 }

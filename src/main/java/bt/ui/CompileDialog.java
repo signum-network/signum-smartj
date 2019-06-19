@@ -26,8 +26,8 @@ import bt.Contract;
 import bt.compiler.Compiler;
 import bt.compiler.Printer;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.BRSError;
-import burst.kit.entity.response.BroadcastTransactionResponse;
+import burst.kit.entity.response.TransactionBroadcast;
+import burst.kit.entity.response.http.BRSError;
 
 /**
  * Dialog to compile AT bytecode as well as to publish the contract on chain.
@@ -150,7 +150,7 @@ class CompileDialog extends JDialog implements ActionListener {
             String codeForm = new String(baos.toByteArray(), StandardCharsets.UTF_8);
 
             BurstValue fee = BT.getMinRegisteringFee(comp);
-            feeField.setText(Double.toString(fee.doubleValue()));
+            feeField.setText(fee.toFormattedString());
 
             codeArea.setText(code);
             codeAreaForm.setText(codeForm);
@@ -186,13 +186,13 @@ class CompileDialog extends JDialog implements ActionListener {
         }
     }
 
-    private void onTransactionSent(BroadcastTransactionResponse response) {
+    private void onTransactionSent(TransactionBroadcast transactionBroadcast) {
         setCursor(Cursor.getDefaultCursor());
         closeButton.setEnabled(true);
         publishButton.setEnabled(true);
 
         JOptionPane.showMessageDialog(getParent(),
-                "Transaction ID: " + response.getTransactionID().getID(), "Success",
+                "Transaction ID: " + transactionBroadcast.getTransactionId(), "Success",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 

@@ -8,15 +8,11 @@ import java.security.InvalidParameterException;
 import bt.compiler.Compiler;
 import bt.compiler.Field;
 import bt.compiler.Method;
-import burst.kit.burst.BurstCrypto;
+import burst.kit.crypto.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.HexStringByteArray;
-import burst.kit.entity.response.ATResponse;
-import burst.kit.entity.response.AccountATsResponse;
-import burst.kit.entity.response.BroadcastTransactionResponse;
-import burst.kit.entity.response.GenerateTransactionResponse;
-import burst.kit.entity.response.SubmitNonceResponse;
+import burst.kit.entity.response.AT;
+import burst.kit.entity.response.TransactionBroadcast;
 import burst.kit.service.BurstNodeService;
 import io.reactivex.Single;
 
@@ -89,7 +85,7 @@ public class BT {
     /**
      * Call a method on the given contract address.
      */
-    public static Single<BroadcastTransactionResponse> callMethod(String passFrom, BurstAddress contractAddress,
+    public static Single<TransactionBroadcast> callMethod(String passFrom, BurstAddress contractAddress,
             Method method, BurstValue value, BurstValue fee, int deadline, Object... args) {
 
         ByteBuffer b = ByteBuffer.allocate(32);
@@ -106,7 +102,7 @@ public class BT {
                 throw new InvalidParameterException("Maximum number of parameters is currently 3");
 
             if (arg instanceof Boolean)
-                b.putLong(((Boolean) arg == true) ? 1 : 0);
+                b.putLong(((Boolean) arg) ? 1 : 0);
             else if (arg instanceof Integer)
                 b.putLong((Integer) arg);
             else if (arg instanceof Long)
@@ -126,40 +122,35 @@ public class BT {
         return sendMessage(passFrom, contractAddress, value, fee, deadline, b.array());
     }
 
-    public static Single<BroadcastTransactionResponse> sendAmount(String passFrom, BurstAddress receiver,
-    BurstValue value) {
+    public static Single<TransactionBroadcast> sendAmount(String passFrom, BurstAddress receiver, BurstValue value) {
         return sendAmount(passFrom, receiver, value, BurstValue.fromBurst(0.1));
     }
 
-    public static Single<BroadcastTransactionResponse> sendAmount(String passFrom, BurstAddress receiver,
-            BurstValue value, BurstValue fee) {
+    public static Single<TransactionBroadcast> sendAmount(String passFrom, BurstAddress receiver, BurstValue value, BurstValue fee) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
         return bns.generateTransaction(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440)
-                .flatMap(response -> {
-                    byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
+                .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
                 });
     }
 
-    public static Single<BroadcastTransactionResponse> sendMessage(String passFrom, BurstAddress receiver,
-            BurstValue value, BurstValue fee, int deadline, String msg) {
+    public static Single<TransactionBroadcast> sendMessage(String passFrom, BurstAddress receiver, BurstValue value, BurstValue fee, int deadline, String msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg).flatMap(response -> {
-            byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
+        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg)
+                .flatMap(unsignedTransactionBytes -> {
             byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
             return bns.broadcastTransaction(signedTransactionBytes);
         });
     }
 
-    public static Single<BroadcastTransactionResponse> sendMessage(String passFrom, BurstAddress receiver,
-            BurstValue value, BurstValue fee, int deadline, byte[] msg) {
+    public static Single<TransactionBroadcast> sendMessage(String passFrom, BurstAddress receiver, BurstValue value, BurstValue fee, int deadline, byte[] msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg).flatMap(response -> {
-            byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
+        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg)
+                .flatMap(unsignedTransactionBytes -> {
             byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
             return bns.broadcastTransaction(signedTransactionBytes);
         });
@@ -179,15 +170,7 @@ public class BT {
      * Just for testing purposes.
      */
     public static void forgeBlock(String pass, int millis) {
-        Single<SubmitNonceResponse> submit = bns.submitNonce(pass, "0", null);
-        SubmitNonceResponse r = submit.blockingGet();
-        if (!r.getResult().equals("success"))
-            System.err.println(r.getResult());
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        Long deadline = bns.submitNonce(pass, "0", null).blockingGet();
     }
 
     /**
@@ -200,16 +183,14 @@ public class BT {
     /**
      * Register the given contract with the given activation fee.
      */
-    public static ATResponse registerContract(Class<? extends Contract> contract, BurstValue activationFee)
-            throws Exception {
+    public static AT registerContract(Class<? extends Contract> contract, BurstValue activationFee) throws Exception {
         Compiler compiledContract = compileContract(contract);
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
 
-        BroadcastTransactionResponse resp = registerContract(PASSPHRASE, compiledContract, name,
+        TransactionBroadcast transactionBroadcast = registerContract(PASSPHRASE, compiledContract, name,
                 contract.getSimpleName(), activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
-        resp.throwIfError();
         forgeBlock();
 
         return findContract(bc.getBurstAddressFromPassphrase(PASSPHRASE), name);
@@ -218,13 +199,12 @@ public class BT {
     /**
      * Register the given contract with the given activation fee.
      */
-    public static ATResponse registerContract(Compiler compiledContract, String name, BurstValue activationFee)
+    public static AT registerContract(Compiler compiledContract, String name, BurstValue activationFee)
             throws Exception {
 
-        BroadcastTransactionResponse resp = registerContract(PASSPHRASE, compiledContract, name,
+        TransactionBroadcast transactionBroadcast = registerContract(PASSPHRASE, compiledContract, name,
                 name, activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
-        resp.throwIfError();
         forgeBlock();
 
         return findContract(bc.getBurstAddressFromPassphrase(PASSPHRASE), name);
@@ -245,19 +225,15 @@ public class BT {
      * @return the response
      * @throws Exception
      */
-    public static Single<BroadcastTransactionResponse> registerContract(String passphrase, Compiler compiledContract,
-            String name, String descrition, BurstValue activationFee, BurstValue fee, int deadline) throws Exception {
-
+    public static Single<TransactionBroadcast> registerContract(String passphrase, Compiler compiledContract,
+                                                                String name, String description, BurstValue activationFee, BurstValue fee, int deadline) {
         byte []code = compiledContract.getCode();
         byte[] pubkey = bc.getPublicKey(passphrase);
-        Single<GenerateTransactionResponse> createAT = bns.generateCreateATTransaction(pubkey, fee, deadline, name,
-                descrition, new byte[0], code, new byte[0], 1, 1, 1, activationFee);
-
-        return createAT.flatMap(response -> {
-            byte[] unsignedTransactionBytes = response.getUnsignedTransactionBytes().getBytes();
-            byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
-            return bns.broadcastTransaction(signedTransactionBytes);
-        });
+        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, new byte[0], code, new byte[0], 1, 1, 1, activationFee)
+                .flatMap(unsignedTransactionBytes -> {
+                    byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
+                    return bns.broadcastTransaction(signedTransactionBytes);
+                });
     }
 
     /**
@@ -267,9 +243,9 @@ public class BT {
      * @param name
      * @return the ATResponse or null if not found
      */
-    public static ATResponse findContract(BurstAddress address, String name) {
-        AccountATsResponse ats = bns.getAccountATs(address).blockingGet();
-        for (ATResponse ati : ats.getATs()) {
+    public static AT findContract(BurstAddress address, String name) {
+        AT[] ats = bns.getAccountATs(address).blockingGet();
+        for (AT ati : ats) {
             if (ati.getName().equals(name))
                 return ati;
         }
@@ -284,15 +260,13 @@ public class BT {
      * 
      * @param contract a smart contract response
      * @param address the field address, check {@link Field#getAddress()}
-     * @param update if the node should be contacted (in blocking way) for an updated value
      * @return the current long value of a given field
      */
-    public static long getContractFieldValue(ATResponse contract, int address) {
-        contract = bns.getAt(contract.getAt().getBurstID()).blockingGet();
+    public static long getContractFieldValue(AT contract, int address) {
+        contract = bns.getAt(contract.getId()).blockingGet();
 
-        HexStringByteArray data = contract.getMachineData();
-
-        ByteBuffer b = ByteBuffer.wrap(data.getBytes());
+        byte[] data = contract.getMachineData();
+        ByteBuffer b = ByteBuffer.wrap(data);
         b.order(ByteOrder.LITTLE_ENDIAN);
 
         return b.getLong(address * 8);
@@ -302,8 +276,8 @@ public class BT {
      * @param contract
      * @return the balance for the given contract
      */
-    public static BurstValue getContractBalance(ATResponse contract) {
-        contract = bns.getAt(contract.getAt().getBurstID()).blockingGet();
-        return contract.getBalanceNQT();
+    public static BurstValue getContractBalance(AT contract) {
+        contract = bns.getAt(contract.getId()).blockingGet();
+        return contract.getBalance();
     }
 }
