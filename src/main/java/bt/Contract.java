@@ -112,12 +112,13 @@ public abstract class Contract {
 	}
 
 	/**
-	 * Function to be called when all transactions on the current block were processed.
+	 * Function to be called when all transactions on the current block were
+	 * processed.
 	 * 
-	 * Users should overload this function if there is some action to be taken
-	 * after the last {@link #txReceived()} was called for the current block.
+	 * Users should overload this function if there is some action to be taken after
+	 * the last {@link #txReceived()} was called for the current block.
 	 */
-	protected void blockFinished(){
+	protected void blockFinished() {
 	}
 
 	/**
@@ -140,14 +141,21 @@ public abstract class Contract {
 	/**
 	 * @return the current transaction sender address
 	 */
-	protected Address getCurrentTxSender(){
+	protected Timestamp getCurrentTxTimestamp() {
+		return getCurrentTx().getTimestamp();
+	}
+
+	/**
+	 * @return the current transaction sender address
+	 */
+	protected Address getCurrentTxSender() {
 		return getCurrentTx().getSenderAddress();
 	}
 
 	/**
 	 * @return the current transaction amount
 	 */
-	protected long getCurrentTxAmount(){
+	protected long getCurrentTxAmount() {
 		return getCurrentTx().getAmount();
 	}
 
@@ -328,7 +336,7 @@ public abstract class Contract {
 			if (Contract.class.isAssignableFrom(theClass)) {
 				// noinspection unchecked
 				byte[] code = compile(theClass);
-				if(code!=null)
+				if (code != null)
 					System.out.println("Compiled AT bytecode: " + BurstCrypto.getInstance().toHexString(code));
 				return code;
 			} else {

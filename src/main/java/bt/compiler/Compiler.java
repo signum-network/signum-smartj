@@ -56,6 +56,8 @@ public class Compiler {
 	ByteBuffer code;
 
 	LinkedList<StackVar> stack = new LinkedList<>();
+	StackVar pendingPush;
+
 	HashMap<String, Method> methods = new HashMap<>();
 	HashMap<String, Field> fields = new HashMap<>();
 	HashMap<LabelNode, Integer> labels = new HashMap<>();
@@ -433,7 +435,11 @@ public class Compiler {
 				continue; // empty constructor
 
 			if (m.code.position() > code.capacity() - code.position()) {
-				addError(m.node.instructions.get(0), "Maximum AT code size exceeded");
+				String methodList = "";
+				for (Method mi : methods.values()) {
+					methodList += "<br>" + mi.node.name + ", length: " + mi.code.position();
+				}
+				addError(m.node.instructions.get(0), "<html>Maximum AT code size exceeded:" + methodList);
 				return;
 			}
 			code.put(m.code.array(), 0, m.code.position());
@@ -509,13 +515,18 @@ public class Compiler {
 	 * Push the variable on the given address to the stack.
 	 */
 	StackVar pushVar(Method m, int address) {
+		if (pendingPush != null) {
+			// is a tmp var, not a field, push to AT stack
+			m.code.put(OpCode.e_op_code_PSH_DAT);
+			m.code.putInt(pendingPush.address);
+			pendingPush = null;
+		}
+
 		StackVar v = new StackVar(address >= tmpVar1 ? STACK_PUSH : STACK_FIELD, address);
 		stack.add(v);
 
 		if (v.type == STACK_PUSH) {
-			// is a tmp var, not a field, push to AT stack
-			m.code.put(OpCode.e_op_code_PSH_DAT);
-			m.code.putInt(address);
+			pendingPush = v;
 		}
 		return v;
 	}
@@ -528,6 +539,18 @@ public class Compiler {
 	 */
 	StackVar popVar(Method m, int destAddress, boolean forceCopy) {
 		StackVar var = stack.pollLast();
+
+		if (pendingPush != null && pendingPush.address == destAddress) {
+			// simply do nothing, this is a push and pop on same variable
+			pendingPush = null;
+			return var;
+		}
+		if (pendingPush != null) {
+			// execute the pending push
+			m.code.put(OpCode.e_op_code_PSH_DAT);
+			m.code.putInt(pendingPush.address);
+			pendingPush = null;
+		}
 
 		if (var.type == STACK_PUSH) {
 			// is a tmp var, pop needed
@@ -701,36 +724,36 @@ public class Compiler {
 				pushVar(m, arg1.address);
 				break;
 
-			case ICONST_0:
 			case ICONST_1:
 			case ICONST_2:
 			case ICONST_3:
 			case ICONST_4:
 			case ICONST_5:
 				code.put(OpCode.e_op_code_SET_VAL);
-				code.putInt(tmpVar1);
+				code.putInt(tmpVar2);
 				code.putLong(opcode - ICONST_0);
 
-				pushVar(m, tmpVar1);
+				pushVar(m, tmpVar2);
 				System.out.println("iconstant : " + (opcode - ICONST_0));
 				break;
 
-			case LCONST_0:
 			case LCONST_1:
 				code.put(OpCode.e_op_code_SET_VAL);
-				code.putInt(tmpVar1);
+				code.putInt(tmpVar2);
 				code.putLong(opcode - LCONST_0);
 
-				pushVar(m, tmpVar1);
+				pushVar(m, tmpVar2);
 				System.out.println("lconstant : " + (opcode - LCONST_0));
 				break;
 
 			case ACONST_NULL:
+			case ICONST_0:
+			case LCONST_0:
 				code.put(OpCode.e_op_code_CLR_DAT);
-				code.putInt(tmpVar1);
+				code.putInt(tmpVar2);
 
-				pushVar(m, tmpVar1);
-				System.out.println("load null");
+				pushVar(m, tmpVar2);
+				System.out.println("load null/zero");
 				break;
 
 			case IADD:
@@ -886,6 +909,9 @@ public class Compiler {
 						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
 							pushVar(m, lastTxReceived);
+						} else if (mi.name.equals("getCurrentTxTimestamp")) {
+							stack.pollLast(); // remove the "this" from stack
+							pushVar(m, lastTxTimestamp);
 						} else if (mi.name.equals("getCurrentTxSender")) {
 							stack.pollLast(); // remove the "this" from stack
 							pushVar(m, lastTxSender);
@@ -1258,7 +1284,7 @@ public class Compiler {
 				code.put(OpCode.e_op_code_SUB_DAT);
 				code.putInt(arg1.address);
 				code.putInt(arg2.address);
-				pushVar(m, tmpVar1);
+				pushVar(m, arg1.address);
 
 				System.out.println("lcmp");
 				break;
