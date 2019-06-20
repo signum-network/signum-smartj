@@ -138,6 +138,20 @@ public abstract class Contract {
 	}
 
 	/**
+	 * @return the current transaction sender address
+	 */
+	protected Address getCurrentTxSender(){
+		return getCurrentTx().getSenderAddress();
+	}
+
+	/**
+	 * @return the current transaction amount
+	 */
+	protected long getCurrentTxAmount(){
+		return getCurrentTx().getAmount();
+	}
+
+	/**
 	 * @return the block hash of the previous block (part 1 of 4)
 	 */
 	protected Register getPrevBlockHash() {

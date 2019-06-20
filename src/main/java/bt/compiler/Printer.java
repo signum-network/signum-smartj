@@ -54,6 +54,12 @@ public class Printer {
 				out.print(" (lastTxReceived)");
 			else if (ad == c.lastTxTimestamp)
 				out.print(" (lastTxTimestamp)");
+			else if (ad == c.lastTxSender)
+				out.print(" (lastTxSender)");
+			else if (ad == c.lastTxAmount)
+				out.print(" (lastTxAmount)");
+			else if (ad == c.creator)
+				out.print(" (creator)");
 			else if (ad == c.tmpVar1)
 				out.print(" (tmpVar1)");
 			else if (ad == c.tmpVar2)
@@ -105,7 +111,7 @@ public class Printer {
 		return length;
 	}
 
-	public static void printCode(byte []code, PrintStream out) {
+	public static void printCode(byte[] code, PrintStream out) {
 		int p = 0;
 		while (p < code.length) {
 			print(code[p++], out);

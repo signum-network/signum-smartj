@@ -65,9 +65,13 @@ public class Compiler {
 	int lastFreeVar;
 	int lastTxReceived;
 	int lastTxTimestamp;
+	int lastTxSender;
+	int lastTxAmount;
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
 	int localStart;
 	boolean useLocal;
+	int creator;
+	boolean useCreator;
 
 	/** If we have public methods other than txReceived */
 	boolean hasPublicMethods;
@@ -155,19 +159,19 @@ public class Compiler {
 	 * @return the compiled code byte array
 	 */
 	public byte[] getCode() {
-		byte []ret = new byte[code.position()];
-        System.arraycopy(code.array(), 0, ret, 0, ret.length);
+		byte[] ret = new byte[code.position()];
+		System.arraycopy(code.array(), 0, ret, 0, ret.length);
 		return ret;
 	}
 
 	/**
 	 * @return the number of pages occupied by this contract
 	 */
-	public int getCodeNPages(){
-		return code.position()/PAGE_SIZE + 1;
+	public int getCodeNPages() {
+		return code.position() / PAGE_SIZE + 1;
 	}
 
-	public String getClassName(){
+	public String getClassName() {
 		return className;
 	}
 
@@ -180,6 +184,7 @@ public class Compiler {
 		errors.clear();
 		lastFreeVar = 0;
 		useLocal = false;
+		useCreator = false;
 
 		for (FieldNode f : cn.fields) {
 			// System.out.println("field name:" + f.name);
@@ -231,6 +236,10 @@ public class Compiler {
 		lastTxTimestamp = lastFreeVar++;
 		lastTxReceived = lastFreeVar++;
 
+		// Variables reserved for the last tx information
+		lastTxAmount = lastFreeVar++;
+		lastTxSender = lastFreeVar++;
+
 		// Temporary variables come last (used for pushing and poping values from user
 		// stack)
 		tmpVar1 = lastFreeVar++;
@@ -238,6 +247,7 @@ public class Compiler {
 		tmpVar3 = lastFreeVar++;
 		tmpVar4 = lastFreeVar++;
 
+		creator = lastFreeVar++;
 		localStart = lastFreeVar++;
 	}
 
@@ -252,6 +262,13 @@ public class Compiler {
 			code.put(OpCode.e_op_code_SET_VAL);
 			code.putInt(localStart);
 			code.putLong(lastFreeVar);
+		}
+		if (useCreator) {
+			code.put(OpCode.e_op_code_EXT_FUN);
+			code.putShort(OpCode.B_To_Address_Of_Creator);
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_B1);
+			code.putInt(creator);
 		}
 
 		// add the jump for the constructor
@@ -281,8 +298,8 @@ public class Compiler {
 		boolean hasFinish = finishMethod != null && finishMethod.code.position() > 0;
 		code.put(OpCode.e_op_code_BNZ_DAT);
 		code.putInt(lastTxReceived);
-		code.put((byte) (7 + (hasFinish ? 5 : 0)) );
-		if(hasFinish){
+		code.put((byte) (7 + (hasFinish ? 5 : 0)));
+		if (hasFinish) {
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(finishMethod.address);
 		}
@@ -292,6 +309,16 @@ public class Compiler {
 		code.put(OpCode.e_op_code_EXT_FUN_RET);
 		code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 		code.putInt(lastTxTimestamp);
+		// Get the sender of last transaction
+		code.put(OpCode.e_op_code_EXT_FUN);
+		code.putShort(OpCode.B_To_Address_Of_Tx_In_A);
+		code.put(OpCode.e_op_code_EXT_FUN_RET);
+		code.putShort(OpCode.Get_B1);
+		code.putInt(lastTxSender);
+		// Get the amount of last transaction
+		code.put(OpCode.e_op_code_EXT_FUN_RET);
+		code.putShort(OpCode.Get_Amount_For_Tx_In_A);
+		code.putInt(lastTxAmount);
 
 		if (hasPublicMethods) {
 			// external method calls here
@@ -321,7 +348,7 @@ public class Compiler {
 
 				code.put(OpCode.e_op_code_BNZ_DAT);
 				code.putInt(tmpVar1);
-				code.put((byte) (12 + m.nargs * 7));
+				code.put((byte) (16 + m.nargs * 7));
 
 				// load the arguments on the local vars
 				for (int i = 0; i < m.nargs; i++) {
@@ -333,14 +360,19 @@ public class Compiler {
 				// call the method
 				code.put(OpCode.e_op_code_JMP_SUB);
 				code.putInt(m.address);
-				// end this run
-				code.put(OpCode.e_op_code_FIN_IMD);
+				// end this run (check for the next transaction)
+				code.put(OpCode.e_op_code_JMP_ADR);
+				code.putInt(afterPCSAddress);
 			}
 		}
 
 		// call the txReceived method
-		code.put(OpCode.e_op_code_JMP_SUB);
-		code.putInt(methods.get(TX_RECEIVED_METHOD).address);
+		Method txReceivedMethod = methods.get(TX_RECEIVED_METHOD);
+		if (txReceivedMethod.code.position() > 2) {
+			// add method only if it is not empty (just the return command)
+			code.put(OpCode.e_op_code_JMP_SUB);
+			code.putInt(methods.get(TX_RECEIVED_METHOD).address);
+		}
 
 		// restart for a possible new transaction
 		code.put(OpCode.e_op_code_JMP_ADR);
@@ -399,6 +431,11 @@ public class Compiler {
 		for (Method m : methods.values()) {
 			if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
 				continue; // empty constructor
+
+			if (m.code.position() > code.capacity() - code.position()) {
+				addError(m.node.instructions.get(0), "Maximum AT code size exceeded");
+				return;
+			}
 			code.put(m.code.array(), 0, m.code.position());
 		}
 	}
@@ -849,6 +886,12 @@ public class Compiler {
 						if (mi.name.equals("getCurrentTx")) {
 							stack.pollLast(); // remove the "this" from stack
 							pushVar(m, lastTxReceived);
+						} else if (mi.name.equals("getCurrentTxSender")) {
+							stack.pollLast(); // remove the "this" from stack
+							pushVar(m, lastTxSender);
+						} else if (mi.name.equals("getCurrentTxAmount")) {
+							stack.pollLast(); // remove the "this" from stack
+							pushVar(m, lastTxAmount);
 						} else if (mi.name.equals("getCurrentBalance")) {
 							stack.pollLast(); // remove the "this" from stack
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
@@ -888,13 +931,8 @@ public class Compiler {
 						} else if (mi.name.equals("getCreator")) {
 							stack.pollLast(); // remove the "this" from stack
 
-							code.put(OpCode.e_op_code_EXT_FUN);
-							code.putShort(OpCode.B_To_Address_Of_Creator);
-
-							code.put(OpCode.e_op_code_EXT_FUN_RET);
-							code.putShort(OpCode.Get_B1);
-							code.putInt(tmpVar1);
-							pushVar(m, tmpVar1);
+							useCreator = true;
+							pushVar(m, creator);
 						} else if (mi.name.equals("getCreationTimestamp")) {
 							stack.pollLast(); // remove the "this" from stack
 
@@ -1010,11 +1048,11 @@ public class Compiler {
 							}
 
 							// update the local variable start position to not conflict with this one
-							if (m.node.maxLocals > 0) {
+							if (m.node.maxLocals > 1) {
 								useLocal = true;
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
-								code.putLong(m.node.maxLocals);
+								code.putLong(m.node.maxLocals - 1);
 								code.put(OpCode.e_op_code_ADD_DAT);
 								code.putInt(localStart);
 								code.putInt(tmpVar1);
