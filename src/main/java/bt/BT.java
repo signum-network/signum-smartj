@@ -171,6 +171,11 @@ public class BT {
      */
     public static void forgeBlock(String pass, int millis) {
         Long deadline = bns.submitNonce(pass, "0", null).blockingGet();
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
