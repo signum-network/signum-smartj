@@ -170,7 +170,7 @@ public class BT {
      * Just for testing purposes.
      */
     public static void forgeBlock(String pass, int millis) {
-        Long deadline = bns.submitNonce(pass, "0", null).blockingGet();
+        bns.submitNonce(pass, "0", null).blockingGet();
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
@@ -193,7 +193,7 @@ public class BT {
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
 
-        TransactionBroadcast transactionBroadcast = registerContract(PASSPHRASE, compiledContract, name,
+        registerContract(PASSPHRASE, compiledContract, name,
                 contract.getSimpleName(), activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
         forgeBlock();
@@ -207,7 +207,7 @@ public class BT {
     public static AT registerContract(Compiler compiledContract, String name, BurstValue activationFee)
             throws Exception {
 
-        TransactionBroadcast transactionBroadcast = registerContract(PASSPHRASE, compiledContract, name,
+        registerContract(PASSPHRASE, compiledContract, name,
                 name, activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
         forgeBlock();
