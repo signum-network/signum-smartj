@@ -9,7 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 
 import bt.compiler.Compiler;
-import org.bouncycastle.util.encoders.Hex;
+import burst.kit.crypto.BurstCrypto;
 
 /**
  * The BlockTalk smart contract abstract class.
@@ -315,7 +315,7 @@ public abstract class Contract {
 				// noinspection unchecked
 				byte[] code = compile(theClass);
 				if(code!=null)
-					System.out.println("Compiled AT bytecode: " + Hex.toHexString(code));
+					System.out.println("Compiled AT bytecode: " + BurstCrypto.getInstance().toHexString(code));
 				return code;
 			} else {
 				throw new RuntimeException("Error: " + theClass + " is not a subclass of bt.Contract");

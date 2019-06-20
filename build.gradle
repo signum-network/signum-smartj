@@ -28,7 +28,8 @@ repositories {
 dependencies {
     implementation 'org.ow2.asm:asm-tree:7.1'
 
-    implementation 'com.github.burst-apps-team:burstkit4j:v0.9-beta6'
+    compile 'com.github.burst-apps-team:burstkit4j:v0.11.2'
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.9'
 
     implementation 'com.github.jiconfont:jiconfont-swing:1.0.0'
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'

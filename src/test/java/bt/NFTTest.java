@@ -1,12 +1,12 @@
 package bt;
 
+import burst.kit.entity.response.AT;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.sample.NFT2;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.ATResponse;
 
 import static org.junit.Assert.*;
 
@@ -28,7 +28,7 @@ public class NFTTest extends BT {
     }
 
     @BeforeClass
-    public void setup() {
+    public static void setup() {
         // forge a fitst block to get some balance
         forgeBlock();
     }
@@ -45,14 +45,14 @@ public class NFTTest extends BT {
                 BurstValue.fromBurst(0.1), 1000).blockingGet();
         BT.forgeBlock();
 
-        ATResponse contract = BT.findContract(creator, name);
-        System.out.println(contract.getAt().getID());
+        AT contract = BT.findContract(creator, name);
+        System.out.println(contract.getId().getID());
 
         long startBid = 1000 * Contract.ONE_BURST;
         int timeout = 40;
 
         // put the contract for auction
-        BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("putForAuction"), BurstValue.fromPlanck(NFT2.ACTIVATION_FEE),
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("putForAuction"), BurstValue.fromPlanck(NFT2.ACTIVATION_FEE),
                 BurstValue.fromBurst(0.1), 1000, startBid, timeout).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
@@ -65,10 +65,10 @@ public class NFTTest extends BT {
 
         // convert back to a timeout in minutes
         timeoutChain = timeoutChain >> 32; // only the block part
-        timeoutChain -= contract.getCreationBlock()+2; // timeout was set 2 blocks after creation
+        timeoutChain -= contract.getCreationHeight()+2; // timeout was set 2 blocks after creation
         timeoutChain *= 4; // blocks to minutes
 
-        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), ownerChain);
         assertEquals(timeout, timeoutChain);
         assertEquals(NFT2.STATUS_FOR_AUCTION, statusChain);
         assertEquals(0, highestBidderChain);
@@ -80,7 +80,7 @@ public class NFTTest extends BT {
         BT.forgeBlock(BT.PASSPHRASE3, 100);
 
         // send a bid short on amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(startBid)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
@@ -89,10 +89,10 @@ public class NFTTest extends BT {
         // no changes are expected
         assertEquals(0, highestBidderChain);
         assertEquals(startBid, highestBidChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), ownerChain);
 
         // send a higher bid
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromPlanck(startBid*2 + NFT2.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(startBid*2 + NFT2.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         long debug = BT.getContractFieldValue(contract, comp.getField("debug").getAddress());
@@ -100,23 +100,20 @@ public class NFTTest extends BT {
         highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         // there should be updates here
-        assertEquals(bidder.getBurstID().getSignedLongId(), highestBidderChain);
+        assertEquals(bidder.getSignedLongId(), highestBidderChain);
         assertEquals(startBid*2, highestBidChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
+        assertEquals(creator.getSignedLongId(), ownerChain);
         
         // send an even higher bid from another address
-        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromPlanck(startBid*3 + NFT2.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromPlanck(startBid*3 + NFT2.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
         highestBidChain = BT.getContractFieldValue(contract, comp.getField("highestBid").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         // there should be updates here
-        assertEquals(bidder2.getBurstID().getSignedLongId(), highestBidderChain);
+        assertEquals(bidder2.getSignedLongId(), highestBidderChain);
         assertEquals(startBid*3, highestBidChain);
-        assertEquals(creator.getBurstID().getSignedLongId(), ownerChain);
-
-
-
+        assertEquals(creator.getSignedLongId(), ownerChain);
     }
 }

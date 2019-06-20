@@ -1,5 +1,8 @@
 package bt;
 
+import burst.kit.crypto.BurstCrypto;
+import burst.kit.entity.response.AT;
+import burst.kit.entity.response.Account;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
@@ -8,11 +11,8 @@ import bt.sample.ForwardMin;
 import bt.sample.OddsGame;
 import bt.sample.TXCounter;
 import bt.sample.TipThanks;
-import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.ATResponse;
-import burst.kit.entity.response.AccountResponse;
 
 import static org.junit.Assert.*;
 
@@ -39,7 +39,7 @@ public class CompilerTest extends BT {
     }
 
     @BeforeClass
-    public void setup() {
+    public static void setup() {
         // forge a fitst block to get some balance
         forgeBlock();
     }
@@ -58,22 +58,22 @@ public class CompilerTest extends BT {
         BurstValue actvFee = BurstValue.fromBurst(10);
         BurstValue amount = BurstValue.fromBurst(100);
 
-        ATResponse at = registerContract(OddsGame.class, actvFee);
+        AT at = registerContract(OddsGame.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
         // Fill the contract with 3 times the max payment value
-        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck(OddsGame.MAX_PAYMENT * 3));
+        sendAmount(PASSPHRASE, at.getId(), BurstValue.fromPlanck(OddsGame.MAX_PAYMENT * 3));
         forgeBlock();
 
         // 1 bet each
-        sendAmount(PASSPHRASE, at.getAt(), amount);
-        sendAmount(PASSPHRASE2, at.getAt(), amount);
-        sendAmount(PASSPHRASE3, at.getAt(), amount);
+        sendAmount(PASSPHRASE, at.getId(), amount);
+        sendAmount(PASSPHRASE2, at.getId(), amount);
+        sendAmount(PASSPHRASE3, at.getId(), amount);
         forgeBlock();
         forgeBlock();
 
         // send some just to run the code
-        sendAmount(PASSPHRASE2, at.getAt(), amount);
+        sendAmount(PASSPHRASE2, at.getId(), amount);
         forgeBlock();
         forgeBlock();
     }
@@ -86,20 +86,20 @@ public class CompilerTest extends BT {
         sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1));
         forgeBlock();
 
-        AccountResponse bmfAccount = bns.getAccount(address).blockingGet();
-        BurstValue balance = bmfAccount.getUnconfirmedBalanceNQT();
+        Account bmfAccount = bns.getAccount(address).blockingGet();
+        BurstValue balance = bmfAccount.getUnconfirmedBalance();
         BurstValue actvFee = BurstValue.fromBurst(1);
         BurstValue amount = BurstValue.fromBurst(10);
 
-        ATResponse at = registerContract(Forward.class, actvFee);
+        AT at = registerContract(Forward.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
-        sendAmount(PASSPHRASE, at.getAt(), amount);
+        sendAmount(PASSPHRASE, at.getId(), amount);
         forgeBlock();
         forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
-        BurstValue newBalance = bmfAccount.getUnconfirmedBalanceNQT();
+        BurstValue newBalance = bmfAccount.getUnconfirmedBalance();
         double result = newBalance.doubleValue() - balance.doubleValue() - actvFee.doubleValue();
 
         assertTrue("Value not forwarded", result > actvFee.doubleValue());
@@ -113,28 +113,28 @@ public class CompilerTest extends BT {
         sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1));
         forgeBlock();
 
-        AccountResponse bmfAccount = bns.getAccount(address).blockingGet();
-        BurstValue balance = bmfAccount.getUnconfirmedBalanceNQT();
+        Account bmfAccount = bns.getAccount(address).blockingGet();
+        BurstValue balance = bmfAccount.getUnconfirmedBalance();
         BurstValue actvFee = BurstValue.fromBurst(1);
         double amount = ForwardMin.MIN_AMOUNT * 0.8;
 
-        ATResponse at = registerContract(ForwardMin.class, actvFee);
+        AT at = registerContract(ForwardMin.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
-        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        sendAmount(PASSPHRASE, at.getId(), BurstValue.fromPlanck((long) amount));
         forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
-        BurstValue newBalance = bmfAccount.getUnconfirmedBalanceNQT();
+        BurstValue newBalance = bmfAccount.getUnconfirmedBalance();
         double result = newBalance.doubleValue() - balance.doubleValue();
         assertTrue("Value forwarded while it should not", result < amount);
 
-        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        sendAmount(PASSPHRASE, at.getId(), BurstValue.fromPlanck((long) amount));
         forgeBlock();
         forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
-        newBalance = bmfAccount.getUnconfirmedBalanceNQT();
+        newBalance = bmfAccount.getUnconfirmedBalance();
         result = newBalance.doubleValue() - balance.doubleValue();
         assertTrue("Value not forwarded as it should", result * Contract.ONE_BURST > amount);
     }
@@ -147,28 +147,28 @@ public class CompilerTest extends BT {
         sendAmount(PASSPHRASE, address, BurstValue.fromBurst(100));
         forgeBlock();
 
-        AccountResponse benefAccout = bns.getAccount(address).blockingGet();
-        BurstValue balance = benefAccout.getUnconfirmedBalanceNQT();
+        Account benefAccout = bns.getAccount(address).blockingGet();
+        BurstValue balance = benefAccout.getUnconfirmedBalance();
         BurstValue actvFee = BurstValue.fromBurst(1);
         double amount = TipThanks.MIN_AMOUNT * 0.8;
 
-        ATResponse at = registerContract(TipThanks.class, actvFee);
+        AT at = registerContract(TipThanks.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
-        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        sendAmount(PASSPHRASE, at.getId(), BurstValue.fromPlanck((long) amount));
         forgeBlock();
 
         benefAccout = bns.getAccount(address).blockingGet();
-        BurstValue newBalance = benefAccout.getUnconfirmedBalanceNQT();
+        BurstValue newBalance = benefAccout.getUnconfirmedBalance();
         double result = newBalance.doubleValue() - balance.doubleValue();
         assertTrue("Value forwarded while it should not", result < amount);
 
-        sendAmount(PASSPHRASE, at.getAt(), BurstValue.fromPlanck((long) amount));
+        sendAmount(PASSPHRASE, at.getId(), BurstValue.fromPlanck((long) amount));
         forgeBlock();
         forgeBlock();
 
         benefAccout = bns.getAccount(address).blockingGet();
-        newBalance = benefAccout.getUnconfirmedBalanceNQT();
+        newBalance = benefAccout.getUnconfirmedBalance();
         result = newBalance.doubleValue() - balance.doubleValue();
         assertTrue("Value not forwarded as it should", result * Contract.ONE_BURST > amount);
     }
@@ -185,10 +185,10 @@ public class CompilerTest extends BT {
 				1000).blockingGet();
 		BT.forgeBlock();
 
-		ATResponse contract = BT.findContract(creator, name);
+		AT contract = BT.findContract(creator, name);
 
         BurstValue valueSent = BurstValue.fromBurst(10);
-		BT.sendAmount(BT.PASSPHRASE, contract.getAt(), valueSent).blockingGet();
+		BT.sendAmount(BT.PASSPHRASE, contract.getId(), valueSent).blockingGet();
 		BT.forgeBlock();
 		BT.forgeBlock();
 
@@ -196,7 +196,7 @@ public class CompilerTest extends BT {
             BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress()));
 
 		long value = 512;
-		BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("setValue"), BurstValue.fromBurst(1),
+		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("setValue"), BurstValue.fromBurst(1),
 				BurstValue.fromBurst(0.1), 1000, value).blockingGet();
 		BT.forgeBlock();
 		BT.forgeBlock();
@@ -213,11 +213,11 @@ public class CompilerTest extends BT {
         long ntx, nblocks, address;
 
         Compiler compiled = BT.compileContract(TXCounter.class);
-        ATResponse contract = BT.registerContract(compiled, TXCounter.class.getSimpleName() + System.currentTimeMillis(),
+        AT contract = BT.registerContract(compiled, TXCounter.class.getSimpleName() + System.currentTimeMillis(),
             BurstValue.fromBurst(10));
-        System.out.println(contract.getAt().getBurstID().getSignedLongId());
+        System.out.println(contract.getId().getSignedLongId());
         
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(20)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -226,9 +226,9 @@ public class CompilerTest extends BT {
         assertEquals(1, ntx);
         assertEquals(1, nblocks);
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getAt(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getAt(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE3, contract.getAt(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -238,6 +238,6 @@ public class CompilerTest extends BT {
         
         assertEquals(4, ntx);
         assertEquals(2, nblocks);
-        assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getBurstID().getSignedLongId(), address);
+        assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
     }
 }

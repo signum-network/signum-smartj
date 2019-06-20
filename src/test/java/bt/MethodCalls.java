@@ -2,10 +2,10 @@ package bt;
 
 import bt.Contract;
 import bt.compiler.Compiler;
-import burst.kit.burst.BurstCrypto;
+import burst.kit.crypto.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.ATResponse;
+import burst.kit.entity.response.AT;
 
 public class MethodCalls extends Contract {
 
@@ -34,10 +34,10 @@ public class MethodCalls extends Contract {
 				.blockingGet();
 		BT.forgeBlock();
 
-		ATResponse contract = BT.findContract(creator, name);
-		System.out.println(contract.getAt().getFullAddress());
+		AT contract = BT.findContract(creator, name);
+		System.out.println(contract.getId().getFullAddress());
 
-		BT.callMethod(BT.PASSPHRASE, contract.getAt(), comp.getMethod("method2"), BurstValue.fromBurst(1),
+		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), BurstValue.fromBurst(1),
 			BurstValue.fromBurst(0.1), 1000).blockingGet();
 		BT.forgeBlock();
 		BT.forgeBlock();

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 import bt.*;
 
-import org.bouncycastle.jcajce.provider.digest.SHA256;
+import burst.kit.crypto.BurstCrypto;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -32,7 +32,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import burst.kit.burst.BurstCrypto;
 import burst.kit.entity.BurstID;
 
 /**
@@ -1351,10 +1350,10 @@ public class Compiler {
 	}
 
 	public static long getMethodSignature(Method m) {
-		MessageDigest sha256 = new SHA256.Digest(); // TODO use burstkit4j, need to update
-		return BurstCrypto.getInstance()
-				.hashToId(sha256.digest((m.node.name + m.node.desc).getBytes(StandardCharsets.UTF_8)))
-				.getSignedLongId();
+		BurstCrypto burstCrypto = BurstCrypto.getInstance();
+		MessageDigest sha256 = burstCrypto.getSha256();
+		return burstCrypto.hashToId(sha256.digest((m.node.name + m.node.desc).getBytes(StandardCharsets.UTF_8)))
+				.getSignedLongId(); // TODO replace
 	}
 
 	public static String getMethodSignatureString(Method m) {
