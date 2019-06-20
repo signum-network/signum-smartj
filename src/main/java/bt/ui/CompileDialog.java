@@ -150,7 +150,7 @@ class CompileDialog extends JDialog implements ActionListener {
             String codeForm = new String(baos.toByteArray(), StandardCharsets.UTF_8);
 
             BurstValue fee = BT.getMinRegisteringFee(comp);
-            feeField.setText(fee.toFormattedString());
+            feeField.setText(fee.toUnformattedString());
 
             codeArea.setText(code);
             codeAreaForm.setText(codeForm);
