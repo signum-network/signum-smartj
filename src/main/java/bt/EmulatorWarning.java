@@ -6,9 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Compile-time Annotation for throwing a javac warning message for Emulator only methods
- *
- * @author jjos
+ * If a method is annotated with this, it is only available in the emulator and will not work in an actual smart contract.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.LOCAL_VARIABLE, ElementType.METHOD, ElementType.PACKAGE, ElementType.PARAMETER, ElementType.TYPE})

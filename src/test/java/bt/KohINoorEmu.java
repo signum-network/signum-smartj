@@ -1,6 +1,8 @@
 package bt;
 
 import bt.compiler.Compiler;
+import bt.compiler.CompilerVersion;
+import bt.compiler.TargetCompilerVersion;
 import bt.sample.KohINoor;
 import bt.ui.EmulatorWindow;
 

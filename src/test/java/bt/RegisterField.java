@@ -1,5 +1,7 @@
 package bt;
 
+import bt.compiler.CompilerVersion;
+import bt.compiler.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**
