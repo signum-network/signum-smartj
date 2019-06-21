@@ -53,12 +53,10 @@ public class KohINoorTest extends BT {
         BT.forgeBlock();
         BT.forgeBlock();
 
-        long creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         long ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         long priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
 
         assertEquals(creator.getSignedLongId(), ownerChain);
-        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
@@ -71,12 +69,10 @@ public class KohINoorTest extends BT {
         BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price / 2)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         // no changes are expected
         assertEquals(creator.getSignedLongId(), ownerChain);
-        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
@@ -84,13 +80,11 @@ public class KohINoorTest extends BT {
         BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         // check the changes
         price += 10 * price / 100;
         assertEquals(bidder.getSignedLongId(), ownerChain);
-        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
@@ -98,13 +92,11 @@ public class KohINoorTest extends BT {
         BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         // check the changes
         price += 10 * price / 100;
         assertEquals(bidder2.getSignedLongId(), ownerChain);
-        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
@@ -114,7 +106,6 @@ public class KohINoorTest extends BT {
         BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
-        creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
@@ -122,7 +113,6 @@ public class KohINoorTest extends BT {
         // check the changes
         price += 10 * price / 100;
         //assertEquals(bidder.getSignedLongId(), ownerChain);
-        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
 
 
@@ -146,7 +136,6 @@ public class KohINoorTest extends BT {
         forgeBlock();
         forgeBlock();
 
-        creatorChain = BT.getContractFieldValue(contract, comp.getField("creator").getAddress());
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
         priceChain = BT.getContractFieldValue(contract, comp.getField("price").getAddress());
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
@@ -161,7 +150,6 @@ public class KohINoorTest extends BT {
 
         // check the changes
         price += 10 * price / 100;
-        assertEquals(creator.getSignedLongId(), creatorChain);
         assertEquals(price, priceChain);
     }
 }

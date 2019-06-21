@@ -1268,9 +1268,9 @@ public class Compiler {
 							addError(ld, "Invalid constant: " + ld.cst);
 						}
 						code.put(OpCode.e_op_code_SET_VAL);
-						code.putInt(tmpVar1);
+						code.putInt(tmpVar2);
 						code.putLong(value);
-						pushVar(m, tmpVar1);
+						pushVar(m, tmpVar2);
 					}
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
