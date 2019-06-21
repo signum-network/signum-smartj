@@ -170,7 +170,7 @@ public abstract class Contract {
 	 * @return the first part of the previous block hash
 	 */
 	protected long getPrevBlockHash1() {
-		return Emulator.getInstance().getPrevBlock().hash[0];
+		return Emulator.getInstance().getPrevBlock().hash.getValue1();
 	}
 
 	/**
