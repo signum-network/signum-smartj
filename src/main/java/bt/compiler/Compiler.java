@@ -515,18 +515,25 @@ public class Compiler {
 	 * Push the variable on the given address to the stack.
 	 */
 	StackVar pushVar(Method m, int address) {
+		/* TODO: we can try to optimize this later, recalling that no code can go
+			between a pending push and its respective pop
 		if (pendingPush != null) {
 			// is a tmp var, not a field, push to AT stack
 			m.code.put(OpCode.e_op_code_PSH_DAT);
 			m.code.putInt(pendingPush.address);
 			pendingPush = null;
 		}
+		*/
 
 		StackVar v = new StackVar(address >= tmpVar1 ? STACK_PUSH : STACK_FIELD, address);
 		stack.add(v);
 
 		if (v.type == STACK_PUSH) {
-			pendingPush = v;
+			// pendingPush = v;
+			// is a tmp var, not a field, push to AT stack
+			m.code.put(OpCode.e_op_code_PSH_DAT);
+			m.code.putInt(v.address);
+			// pendingPush = null;
 		}
 		return v;
 	}
@@ -982,7 +989,7 @@ public class Compiler {
 							// Load the 4 register values
 							for (int i = 0; i < 4; i++) {
 								code.put(OpCode.e_op_code_EXT_FUN_RET);
-								code.putShort((short) (OpCode.Get_A1 + 1));
+								code.putShort((short) (OpCode.Get_A1 + i));
 								code.putInt(tmpVar1);
 								pushVar(m, tmpVar1);
 							}
