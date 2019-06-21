@@ -10,7 +10,7 @@ import bt.ui.EmulatorWindow;
  * 
  * An Auction smart contract that will allow people to send funds which
  * will be refunded back to them (minus the activation fee) if someone
- * else sends more. Minimum bid should be higher than 100 BURST.
+ * else sends more. Minimum bid should be higher than the INITIAL_PRICE.
  *
  * Inspired by http://ciyam.org/at/at_auction.html
  * 
@@ -18,6 +18,11 @@ import bt.ui.EmulatorWindow;
  */
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class Auction extends Contract {
+
+	public static final String BENEFICIARY = "BURST-TSLQ-QLR9-6HRD-HCY22";
+	public static final long INITIAL_PRICE = 1000*ONE_BURST;
+	public static final int TIMEOUT_MIN = 40; // 40 minutes == 10 blocks
+
 	
 	Address beneficiary;
 	long highestBid;
@@ -31,10 +36,10 @@ public class Auction extends Contract {
 	 * reaches the contract.
 	 */
 	public Auction(){
-		beneficiary = parseAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
-		timeout = getBlockTimestamp().addMinutes(40); // 40 minutes == 10 blocks from now
+		beneficiary = parseAddress(BENEFICIARY);
+		timeout = getBlockTimestamp().addMinutes(TIMEOUT_MIN);
 		finished = false;
-		highestBid = 100*ONE_BURST; // Start value, we will not accept less than this
+		highestBid = INITIAL_PRICE; // Start value, we will not accept less than this
 		highestBidder = null;
 	}
 	
@@ -61,7 +66,7 @@ public class Auction extends Contract {
 	public void txReceived(){
 		if(expired()){
 			// Send back this last funds or they will be lost
-			returnThisTx();
+			refund();
 			return;
 		}
 
@@ -71,26 +76,28 @@ public class Auction extends Contract {
 			if(highestBidder != null) {
 				sendAmount(highestBid, highestBidder);
 			}
-			highestBidder = getCurrentTx().getSenderAddress();
+			highestBidder = getCurrentTxSender();
 			highestBid = newBid;
 		}
 		else {
 			// just send back
-			returnThisTx();
+			refund();
 		}
 	}
 	
-	private void returnThisTx() {
-		if(getCurrentTx().getAmount()>0)
-			sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
+	/**
+	 * Refunds the last received transaction
+	 */
+	private void refund() {
+		sendAmount(getCurrentTxAmount(), getCurrentTxSender());
 	}
 
 	public static void main(String[] args) throws Exception {
 		// some initialization code to make things easier to debug
 		Emulator emu = Emulator.getInstance();
 
-		Address creator = Emulator.getInstance().getAddress("BURST-TSLQ-QLR9-6HRD-HCY22");
-		emu.airDrop(creator, 1000*Contract.ONE_BURST);		
+		Address creator = Emulator.getInstance().getAddress(BENEFICIARY);
+		emu.airDrop(creator, 1000*Contract.ONE_BURST);
 		Address auction = Emulator.getInstance().getAddress("AUCTION");
 		emu.createConctract(creator, auction, Auction.class, Contract.ONE_BURST);
 
