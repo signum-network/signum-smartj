@@ -30,7 +30,7 @@ public class CompilerTest extends BT {
         CompilerTest t = new CompilerTest();
         t.setup();
 
-        // t.testForward();
+        t.testForward();
         // t.testForwardMin();
         // t.testTipThanks();
         // t.testOdds();
@@ -40,7 +40,7 @@ public class CompilerTest extends BT {
 
     @BeforeClass
     public static void setup() {
-        // forge a fitst block to get some balance
+        // forge a first block to get some balance
         forgeBlock();
     }
 
@@ -80,10 +80,10 @@ public class CompilerTest extends BT {
 
     @Test
     public void testForward() throws Exception {
-        BurstAddress address = BurstAddress.fromEither(Forward.ADDRESS);
+        BurstAddress address = BurstAddress.fromRs(Forward.ADDRESS);
 
         // send some burst to make sure the account exist
-        sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1));
+        sendAmount(PASSPHRASE, address, BurstValue.fromPlanck(1)).blockingGet();
         forgeBlock();
 
         Account bmfAccount = bns.getAccount(address).blockingGet();
@@ -223,8 +223,10 @@ public class CompilerTest extends BT {
 
         ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
         nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
+        address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
         assertEquals(1, ntx);
         assertEquals(1, nblocks);
+        assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
 
         BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1)).blockingGet();
         BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1)).blockingGet();
@@ -238,6 +240,5 @@ public class CompilerTest extends BT {
         
         assertEquals(4, ntx);
         assertEquals(2, nblocks);
-        assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
     }
 }

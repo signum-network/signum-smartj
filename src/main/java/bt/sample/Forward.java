@@ -29,7 +29,7 @@ public class Forward extends Contract {
 	 * Any new transaction received will be handled by this function.
 	 */
 	public void txReceived(){
-		sendAmount(getCurrentTx().getAmount(), bmf);
+		sendAmount(getCurrentTxAmount(), bmf);
 	}
 
 	public static void main(String[] args) {
