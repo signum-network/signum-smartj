@@ -167,6 +167,13 @@ public abstract class Contract {
 	}
 
 	/**
+	 * @return the first part of the previous block hash
+	 */
+	protected long getPrevBlockHash1() {
+		return Emulator.getInstance().getPrevBlock().hash[0];
+	}
+
+	/**
 	 * @return the timestamp of the previous block
 	 */
 	protected Timestamp getPrevBlockTimestamp() {

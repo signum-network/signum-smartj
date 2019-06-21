@@ -993,7 +993,17 @@ public class Compiler {
 								code.putInt(tmpVar1);
 								pushVar(m, tmpVar1);
 							}
+						} else if (mi.name.equals("getPrevBlockHash1")) {
+							stack.pollLast(); // remove the "this" from stack
 
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Put_Last_Block_Hash_In_A);
+
+							// Load the first value
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort((short) (OpCode.Get_A1));
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getPrevBlockTimestamp")) {
 							stack.pollLast(); // remove the "this" from stack
 
