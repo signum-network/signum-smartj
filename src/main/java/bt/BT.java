@@ -32,6 +32,8 @@ public class BT {
     public static final String NODE_LOCAL_TESTNET = "http://localhost:6876";
     public static final String NODE_AT_TESTNET = "http://at-testnet.burst-alliance.org:6876";
     public static final String NODE_TESTNET = "http://testnet.getburst.net:6876";
+    // public static final String NODE_TESTNET_MEGASH =
+    // "https://test-burst.megash.it:443";
 
     public static final String NODE_BURST_TEAM = "https://wallet1.burst-team.us:2083";
     public static final String NODE_BURST_ALLIANCE = "https://wallet.burst-alliance.org:8125";
@@ -60,7 +62,7 @@ public class BT {
     /**
      * @return the BURST address fot the given passphrase
      */
-    public static BurstAddress getBurstAddressFromPassphrase(String passphrase){
+    public static BurstAddress getBurstAddressFromPassphrase(String passphrase) {
         return bc.getBurstAddressFromPassphrase(passphrase);
     }
 
@@ -85,8 +87,8 @@ public class BT {
     /**
      * Call a method on the given contract address.
      */
-    public static Single<TransactionBroadcast> callMethod(String passFrom, BurstAddress contractAddress,
-            Method method, BurstValue value, BurstValue fee, int deadline, Object... args) {
+    public static Single<TransactionBroadcast> callMethod(String passFrom, BurstAddress contractAddress, Method method,
+            BurstValue value, BurstValue fee, int deadline, Object... args) {
 
         ByteBuffer b = ByteBuffer.allocate(32);
         b.order(ByteOrder.LITTLE_ENDIAN);
@@ -126,7 +128,8 @@ public class BT {
         return sendAmount(passFrom, receiver, value, BurstValue.fromBurst(0.1));
     }
 
-    public static Single<TransactionBroadcast> sendAmount(String passFrom, BurstAddress receiver, BurstValue value, BurstValue fee) {
+    public static Single<TransactionBroadcast> sendAmount(String passFrom, BurstAddress receiver, BurstValue value,
+            BurstValue fee) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
         return bns.generateTransaction(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440)
@@ -136,24 +139,26 @@ public class BT {
                 });
     }
 
-    public static Single<TransactionBroadcast> sendMessage(String passFrom, BurstAddress receiver, BurstValue value, BurstValue fee, int deadline, String msg) {
+    public static Single<TransactionBroadcast> sendMessage(String passFrom, BurstAddress receiver, BurstValue value,
+            BurstValue fee, int deadline, String msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
         return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg)
                 .flatMap(unsignedTransactionBytes -> {
-            byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
-            return bns.broadcastTransaction(signedTransactionBytes);
-        });
+                    byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
+                    return bns.broadcastTransaction(signedTransactionBytes);
+                });
     }
 
-    public static Single<TransactionBroadcast> sendMessage(String passFrom, BurstAddress receiver, BurstValue value, BurstValue fee, int deadline, byte[] msg) {
+    public static Single<TransactionBroadcast> sendMessage(String passFrom, BurstAddress receiver, BurstValue value,
+            BurstValue fee, int deadline, byte[] msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
         return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg)
                 .flatMap(unsignedTransactionBytes -> {
-            byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
-            return bns.broadcastTransaction(signedTransactionBytes);
-        });
+                    byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
+                    return bns.broadcastTransaction(signedTransactionBytes);
+                });
     }
 
     /**
@@ -181,7 +186,7 @@ public class BT {
     /**
      * @return the minimum fee to register the given contract
      */
-    public static BurstValue getMinRegisteringFee(Compiler compiledContract){
+    public static BurstValue getMinRegisteringFee(Compiler compiledContract) {
         return BurstValue.fromBurst(3 + compiledContract.getCodeNPages());
     }
 
@@ -193,8 +198,7 @@ public class BT {
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
 
-        registerContract(PASSPHRASE, compiledContract, name,
-                contract.getSimpleName(), activationFee,
+        registerContract(PASSPHRASE, compiledContract, name, contract.getSimpleName(), activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
         forgeBlock();
 
@@ -207,8 +211,7 @@ public class BT {
     public static AT registerContract(Compiler compiledContract, String name, BurstValue activationFee)
             throws Exception {
 
-        registerContract(PASSPHRASE, compiledContract, name,
-                name, activationFee,
+        registerContract(PASSPHRASE, compiledContract, name, name, activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
         forgeBlock();
 
@@ -231,11 +234,38 @@ public class BT {
      * @throws Exception
      */
     public static Single<TransactionBroadcast> registerContract(String passphrase, Compiler compiledContract,
-                                                                String name, String description, BurstValue activationFee, BurstValue fee, int deadline) {
-        byte []code = compiledContract.getCode();
+            String name, String description, BurstValue activationFee, BurstValue fee, int deadline) {
+        return registerContract(passphrase, compiledContract, name, description, null, activationFee, fee, deadline);
+    }
+
+    /**
+     * Register the given contract with the given activation fee and paying the
+     * given fee.
+     * 
+     * @param passphrase
+     * @param compiledContract
+     * @param name
+     * @param description
+     * @param activationFee
+     * @param fee
+     * @param deadline         in blocks
+     * 
+     * @return the response
+     * @throws Exception
+     */
+    public static Single<TransactionBroadcast> registerContract(String passphrase, Compiler compiledContract,
+            String name, String description, long[] data, BurstValue activationFee, BurstValue fee, int deadline) {
+        byte[] code = compiledContract.getCode();
         byte[] pubkey = bc.getPublicKey(passphrase);
-        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, new byte[0], code, new byte[0], 1, 1, 1, activationFee)
-                .flatMap(unsignedTransactionBytes -> {
+
+        ByteBuffer dataBuffer = ByteBuffer.allocate(data==null ? 0 : data.length*8);
+        dataBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        for (int i = 0; data!=null && i < data.length; i++) {
+            dataBuffer.putLong(data[i]);
+        }
+
+        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, new byte[0], code, dataBuffer.array(),
+                1, 1, 1, activationFee).flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
                 });
@@ -260,11 +290,11 @@ public class BT {
     /**
      * Returns the current long value of a given field address.
      * 
-     * If the update param is true, the node is consulted (in blocking way)
-     * to get the current value of the field.
+     * If the update param is true, the node is consulted (in blocking way) to get
+     * the current value of the field.
      * 
      * @param contract a smart contract response
-     * @param address the field address, check {@link Field#getAddress()}
+     * @param address  the field address, check {@link Field#getAddress()}
      * @return the current long value of a given field
      */
     public static long getContractFieldValue(AT contract, int address) {
