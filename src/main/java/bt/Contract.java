@@ -251,11 +251,15 @@ public abstract class Contract {
 	}
 
 	/**
+	 * Sleeps until the next block.
+	 */
+	protected void sleepOneBlock(){
+		sleep(null);
+	}
+
+	/**
 	 * Sleep until the given timestamp.
-	 * 
-	 * If the timestamp is actually in the past or null, it will sleep until the
-	 * next block.
-	 * 
+	 *  
 	 * @param ts
 	 */
 	protected void sleep(Timestamp ts) {

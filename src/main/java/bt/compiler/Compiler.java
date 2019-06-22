@@ -1012,6 +1012,9 @@ public class Compiler {
 							code.putInt(tmpVar1);
 
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("sleepOneBlock")) {
+							stack.pollLast(); // remove the "this" from stack
+							code.put(OpCode.e_op_code_SLP_IMD);
 						} else if (mi.name.equals("sleep")) {
 							arg1 = popVar(m, tmpVar1, false);
 							stack.pollLast(); // remove the "this" from stack
