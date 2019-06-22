@@ -356,6 +356,10 @@ public class Printer {
 				p += print(code, p, 4, out);
 				out.println(" address");
 				break;
+			case OpCode.e_op_code_SLP_IMD:
+				p += printOp(code, p, 1, out);
+				out.println("\tSLP_IMD");
+				break;
 
 			case OpCode.e_op_code_FIN_IMD:
 				p += printOp(code, p, 1, out);
@@ -368,7 +372,6 @@ public class Printer {
 			case OpCode.e_op_code_FIZ_DAT:
 			case OpCode.e_op_code_STZ_DAT:
 			case OpCode.e_op_code_STP_IMD:
-			case OpCode.e_op_code_SLP_IMD:
 			case OpCode.e_op_code_ERR_ADR:
 
 			default:
