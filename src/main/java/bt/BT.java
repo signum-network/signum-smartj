@@ -235,7 +235,7 @@ public class BT {
      */
     public static Single<TransactionBroadcast> registerContract(String passphrase, Compiler compiledContract,
             String name, String description, BurstValue activationFee, BurstValue fee, int deadline) {
-        return registerContract(passphrase, compiledContract, name, description, null, activationFee, fee, deadline);
+        return registerContract(passphrase, compiledContract.getCode(), name, description, null, activationFee, fee, deadline);
     }
 
     /**
@@ -253,9 +253,8 @@ public class BT {
      * @return the response
      * @throws Exception
      */
-    public static Single<TransactionBroadcast> registerContract(String passphrase, Compiler compiledContract,
+    public static Single<TransactionBroadcast> registerContract(String passphrase, byte[] code,
             String name, String description, long[] data, BurstValue activationFee, BurstValue fee, int deadline) {
-        byte[] code = compiledContract.getCode();
         byte[] pubkey = bc.getPublicKey(passphrase);
 
         ByteBuffer dataBuffer = ByteBuffer.allocate(data==null ? 0 : data.length*8);
@@ -285,6 +284,16 @@ public class BT {
                 return ati;
         }
         return null;
+    }
+
+    /**
+     * Return all contracts registered by the given addres
+     * 
+     * @param address
+     * @return
+     */
+    public static AT[] getContracts(BurstAddress address) {
+        return bns.getAccountATs(address).blockingGet();
     }
 
     /**
