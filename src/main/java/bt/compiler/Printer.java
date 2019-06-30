@@ -510,6 +510,20 @@ public class Printer {
 												// minutes***
 			return "Add_Minutes_To_Timestamp";
 
+		case OpCode.MD5_A_To_B: // = 0x0200; // EXT_FUN take an MD5 hash of A1..2 and put this is B1..2
+			return "MD5_A_To_B";
+		case OpCode.Check_MD5_A_With_B: // = 0x0201; // EXT_FUN_RET @addr to bool if MD5 hash of A1..2 matches B1..2
+			return "Check_MD5_A_With_B";
+		case OpCode.HASH160_A_To_B: // = 0x0202; // EXT_FUN take a RIPEMD160 hash of A1..3 and put this in B1..3
+			return "HASH160_A_To_B";
+		case OpCode.Check_HASH160_A_With_B: // = 0x0203; // EXT_FUN_RET @addr to bool if RIPEMD160 hash of A1..3 matches
+										// B1..3
+			return "Check_HASH160_A_With_B";
+		case OpCode.SHA256_A_To_B: // = 0x0204; // EXT_FUN take a SHA256 hash of A and put this in B
+			return "SHA256_A_To_B";
+		case OpCode.Check_SHA256_A_With_B: // = 0x0205; // EXT_FUN_RET @addr to bool if SHA256 hash of A matches B
+			return "Check_SHA256_A_With_B";
+
 		default:
 			return "UNKNOWN FUNCTION";
 		}
