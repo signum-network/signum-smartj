@@ -1043,6 +1043,27 @@ public class Compiler {
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Send_All_To_Address_In_B);
+						} else if (mi.name.equals("performSHA256_64")){
+							arg2 = popVar(m, tmpVar1, false); // input2
+							arg1 = popVar(m, tmpVar2, false); // input1
+							stack.pollLast(); // remove the 'this'
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Clear_A);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(arg1.address); // address
+							code.putShort(OpCode.Set_A2);
+							code.putInt(arg2.address); // address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.SHA256_A_To_B);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Get_B1);
+							code.putInt(tmpVar1); // resulting hash
+							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("sendMessage")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);

@@ -94,6 +94,13 @@ final class OpCode {
   static final short Get_B2   = 0x0105; // EXT_FUN_RET       sets @addr to B2
   static final short Get_B3   = 0x0106; // EXT_FUN_RET       sets @addr to B3
   static final short Get_B4   = 0x0107; // EXT_FUN_RET       sets @addr to B4
+
+  static final short MD5_A_To_B               = 0x0200; //  EXT_FUN           take an MD5 hash of A1..2 and put this is B1..2
+  static final short Check_MD5_A_With_B       = 0x0201; //  EXT_FUN_RET       @addr to bool if MD5 hash of A1..2 matches B1..2
+  static final short HASH160_A_To_B           = 0x0202; //  EXT_FUN           take a RIPEMD160 hash of A1..3 and put this in B1..3
+  static final short Check_HASH160_A_With_B   = 0x0203; //  EXT_FUN_RET       @addr to bool if RIPEMD160 hash of A1..3 matches B1..3
+  static final short SHA256_A_To_B            = 0x0204; //  EXT_FUN           take a SHA256 hash of A and put this in B
+  static final short Check_SHA256_A_With_B    = 0x0205; //  EXT_FUN_RET       @addr to bool if SHA256 hash of A matches B
   
   static final short Get_Block_Timestamp       = 0x0300; // EXT_FUN_RET       sets @addr to the timestamp of the current block
   static final short Get_Creation_Timestamp    = 0x0301; // EXT_FUN_RET       sets @addr to the timestamp of the AT creation block
