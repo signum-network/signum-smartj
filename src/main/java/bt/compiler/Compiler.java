@@ -1054,6 +1054,7 @@ public class Compiler {
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
 							code.putInt(arg1.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A2);
 							code.putInt(arg2.address); // address
 
