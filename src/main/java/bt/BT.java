@@ -30,10 +30,13 @@ public class BT {
     public static final String PASSPHRASE3 = "block talk! easy to use smart contracts for burst";
 
     public static final String NODE_LOCAL_TESTNET = "http://localhost:6876";
+    public static final String NODE_LOCAL_TESTNET_GRPC = "grpc://localhost:6878";
     public static final String NODE_AT_TESTNET = "http://at-testnet.burst-alliance.org:6876";
+    public static final String NODE_AT_TESTNET_GRPC = "grpc://at-testnet.burst-alliance.org:6878";
     public static final String NODE_TESTNET = "http://testnet.getburst.net:6876";
-    // public static final String NODE_TESTNET_MEGASH =
-    // "https://test-burst.megash.it:443";
+    public static final String NODE_TESTNET_GRPC = "grpc://testnet.getburst.net:6878";
+    public static final String NODE_TESTNET_MEGASH = "https://test-burst.megash.it";
+    public static final String NODE_TESTNET_MEGASH_GRPC = "grpc://test-burst.megash.it:6878";
 
     public static final String NODE_BURST_TEAM = "https://wallet1.burst-team.us:2083";
     public static final String NODE_BURST_ALLIANCE = "https://wallet.burst-alliance.org:8125";
@@ -263,8 +266,9 @@ public class BT {
             dataBuffer.putLong(data[i]);
         }
 
-        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, new byte[0], code, dataBuffer.array(),
-                1, 1, 1, activationFee).flatMap(unsignedTransactionBytes -> {
+        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, code, dataBuffer.array(), 1, 1, 1, activationFee);
+        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes)
+                .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
                 });
