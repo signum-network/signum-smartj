@@ -174,6 +174,7 @@ class CompileDialog extends JDialog implements ActionListener {
             String passphrase = String.valueOf(passField.getPassword());
             String name = nameField.getText();
             String description = descField.getText();
+            BT.setNodeAddress(nodeField.getItemAt(nodeField.getSelectedIndex()));
 
             BurstValue fee = BurstValue.fromBurst(feeField.getText());
             BurstValue actFee = BurstValue.fromBurst(actFeeField.getText());
