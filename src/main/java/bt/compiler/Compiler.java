@@ -370,19 +370,21 @@ public class Compiler {
 
 		// call the txReceived method
 		Method txReceivedMethod = methods.get(TX_RECEIVED_METHOD);
-		if (txReceivedMethod.code.position() > 2) {
+		if (txReceivedMethod.code.position() > 1) {
 			// add method only if it is not empty (just the return command)
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(methods.get(TX_RECEIVED_METHOD).address);
-		}
 
-		// restart for a possible new transaction
-		code.put(OpCode.e_op_code_JMP_ADR);
-		code.putInt(afterPCSAddress);
+			// restart for a possible new transaction
+			code.put(OpCode.e_op_code_JMP_ADR);
+			code.putInt(afterPCSAddress);
+		}
 	}
 
 	public void link() {
-		code = ByteBuffer.allocate(MAX_SIZE);
+		// we allow here a larger size, there will be an error when registering
+		// if we pass the actuall limit 
+		code = ByteBuffer.allocate(2*MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
 		initialCode();
@@ -515,15 +517,13 @@ public class Compiler {
 	 * Push the variable on the given address to the stack.
 	 */
 	StackVar pushVar(Method m, int address) {
-		/* TODO: we can try to optimize this later, recalling that no code can go
-			between a pending push and its respective pop
-		if (pendingPush != null) {
-			// is a tmp var, not a field, push to AT stack
-			m.code.put(OpCode.e_op_code_PSH_DAT);
-			m.code.putInt(pendingPush.address);
-			pendingPush = null;
-		}
-		*/
+		/*
+		 * TODO: we can try to optimize this later, recalling that no code can go
+		 * between a pending push and its respective pop if (pendingPush != null) { //
+		 * is a tmp var, not a field, push to AT stack
+		 * m.code.put(OpCode.e_op_code_PSH_DAT); m.code.putInt(pendingPush.address);
+		 * pendingPush = null; }
+		 */
 
 		StackVar v = new StackVar(address >= tmpVar1 ? STACK_PUSH : STACK_FIELD, address);
 		stack.add(v);
@@ -1043,7 +1043,7 @@ public class Compiler {
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Send_All_To_Address_In_B);
-						} else if (mi.name.equals("performSHA256_64")){
+						} else if (mi.name.equals("performSHA256_64")) {
 							arg2 = popVar(m, tmpVar1, false); // input2
 							arg1 = popVar(m, tmpVar2, false); // input1
 							stack.pollLast(); // remove the 'this'
