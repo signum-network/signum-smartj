@@ -9,6 +9,7 @@ import bt.compiler.Compiler;
 import bt.sample.Forward;
 import bt.sample.ForwardMin;
 import bt.sample.OddsGame;
+import bt.sample.Sha256_64;
 import bt.sample.TXCounter;
 import bt.sample.TipThanks;
 import burst.kit.entity.BurstAddress;
@@ -30,12 +31,13 @@ public class CompilerTest extends BT {
         CompilerTest t = new CompilerTest();
         t.setup();
 
-        t.testForward();
+        // t.testForward();
         // t.testForwardMin();
         // t.testTipThanks();
         // t.testOdds();
         // t.testLocalVar();
-        t.testCounter();
+        // t.testCounter();
+        t.testSha256_64();
     }
 
     @BeforeClass
@@ -240,5 +242,28 @@ public class CompilerTest extends BT {
         
         assertEquals(4, ntx);
         assertEquals(2, nblocks);
+    }
+
+    public void testSha256_64() throws Exception {
+        BT.forgeBlock();
+
+        long sha_chain, sha;
+
+        Compiler compiled = BT.compileContract(Sha256_64.class);
+        AT contract = BT.registerContract(compiled, "sha" + System.currentTimeMillis(),
+            BurstValue.fromBurst(10));
+        System.out.println(contract.getId().getSignedLongId());
+        
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        Register input = new Register();
+        input.value[0] = 1;
+        input.value[1] = 2;
+        sha = Contract.performSHA256_(input).getValue1();
+
+        sha_chain = BT.getContractFieldValue(contract, compiled.getField("sha256_64").getAddress());
+        assertEquals(sha_chain, sha);
     }
 }

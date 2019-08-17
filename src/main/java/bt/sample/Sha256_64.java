@@ -19,7 +19,7 @@ public class Sha256_64 extends Contract {
 	 * Any new transaction received will be handled by this function.
 	 */
 	public void txReceived(){
-		sha256_64 = this.performSHA256_64(getPrevBlockHash1(), getCurrentTxTimestamp().getValue());
+		sha256_64 = this.performSHA256_64(1, 2);
 	}
 
 	public static void main(String[] args) {

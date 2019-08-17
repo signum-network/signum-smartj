@@ -383,8 +383,8 @@ public class Compiler {
 
 	public void link() {
 		// we allow here a larger size, there will be an error when registering
-		// if we pass the actuall limit 
-		code = ByteBuffer.allocate(2*MAX_SIZE);
+		// if we pass the actuall limit
+		code = ByteBuffer.allocate(2 * MAX_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
 		initialCode();
@@ -1061,7 +1061,7 @@ public class Compiler {
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.SHA256_A_To_B);
 
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_B1);
 							code.putInt(tmpVar1); // resulting hash
 							pushVar(m, tmpVar1);
@@ -1426,6 +1426,14 @@ public class Compiler {
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}
+				break;
+
+			case POP:
+				// discard the top value on the stack
+			case POP2:
+				// discard the top two values on the stack (or one value, if it is a double or
+				// long)
+				popVar(m, tmpVar1, false);
 				break;
 
 			default:

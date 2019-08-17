@@ -222,10 +222,8 @@ public abstract class Contract {
 		return tx.getMessage();
 	}
 
-	/**
-	 * @return a SHA256 hash of the given input
-	 */
-	protected Register performSHA256(Register input) {
+	@EmulatorWarning
+	protected static Register performSHA256_(Register input) {
 		Register ret = new Register();
 
 		ByteBuffer b = ByteBuffer.allocate(32);
@@ -251,30 +249,24 @@ public abstract class Contract {
 	}
 
 	/**
+	 * @return a SHA256 hash of the given input
+	 */
+	protected Register performSHA256(Register input) {
+		return performSHA256_(input);
+	}
+
+	/**
 	 * A utility function returning only the first 64 bits of a SHA256 for two long inputs.
 	 * 
 	 * @return the first 64 bits SHA256 hash of the given input
 	 */
 	protected long performSHA256_64(long input1, long input2) {
-		ByteBuffer b = ByteBuffer.allocate(32);
-		b.order(ByteOrder.LITTLE_ENDIAN);
+		Register input = new Register();
+		input.value[0] = input1;
+		input.value[1] = input2;
 
-		b.putLong(input1);
-		b.putLong(input2);
-		b.putLong(0L);
-		b.putLong(0L);
-
-		try {
-			MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-			ByteBuffer shab = ByteBuffer.wrap(sha256.digest(b.array()));
-			shab.order(ByteOrder.LITTLE_ENDIAN);
-
-			return shab.getLong(0);
-		} catch (NoSuchAlgorithmException e) {
-			// not expected to reach that point
-			e.printStackTrace();
-		}
-		return 0;
+		Register ret = performSHA256_(input);
+		return ret.getValue1();
 	}
 
 	/**
