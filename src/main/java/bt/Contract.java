@@ -139,7 +139,7 @@ public abstract class Contract {
 	}
 
 	/**
-	 * @return the current transaction sender address
+	 * @return the current transaction timestamp
 	 */
 	protected Timestamp getCurrentTxTimestamp() {
 		return getCurrentTx().getTimestamp();
