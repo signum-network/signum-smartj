@@ -135,7 +135,7 @@ public class BT {
             BurstValue fee) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransaction(receiver, pubKeyFrom, value, BurstValue.fromBurst(0.1), 1440)
+        return bns.generateTransaction(receiver, pubKeyFrom, value, fee, 1440)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
