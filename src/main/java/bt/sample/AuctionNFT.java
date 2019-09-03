@@ -24,6 +24,8 @@ import bt.ui.EmulatorWindow;
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class AuctionNFT extends Contract {
 
+    public static final long MIN_BALANCE = ONE_BURST * 3;
+
     boolean isOpen;
     Address beneficiary;
     long highestBid;
@@ -51,13 +53,15 @@ public class AuctionNFT extends Contract {
         if (getBlockTimestamp().ge(timeout)) {
             isOpen = false;
             if (highestBidder != null) {
-                // if we have a bidder
+                // we have a bidder
                 fee = highestBid / 100; // 1% fee
                 sendAmount(fee, getCreator());
-                beneficiary = highestBidder;
 
-                // send the funds (best auction) to the beneficiary
-                sendAmount(getCurrentBalance(), beneficiary);
+                // send the balance to the current beneficiary
+                sendAmount(getCurrentBalance() - MIN_BALANCE, beneficiary);
+
+                // set the new beneficiary
+                beneficiary = highestBidder;
             }
         }
         return !isOpen;
