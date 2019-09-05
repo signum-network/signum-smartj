@@ -834,7 +834,12 @@ public class Compiler {
 			case LRETURN:
 			case ARETURN:
 				// remove the return value from the stack
-				stack.pollLast();
+				arg1 = stack.pollLast();
+				if (arg1.type != STACK_PUSH) {
+					// add the pending push
+					m.code.put(OpCode.e_op_code_PSH_DAT);
+					m.code.putInt(arg1.address);
+				}
 			case RETURN:
 				// Recalling that every method call will use JMP_SUB
 				System.out.println("return");
