@@ -514,6 +514,17 @@ public class Compiler {
 	}
 
 	/**
+	 * @param name
+	 * @return the field address for the given name, -1 if not found
+	 */
+	public int getFieldAddress(String name) {
+		Field f = fields.get(name);
+		if(f!=null)
+			return f.address;
+		return -1;
+	}
+
+	/**
 	 * Push the variable on the given address to the stack.
 	 */
 	StackVar pushVar(Method m, int address) {
@@ -1158,7 +1169,7 @@ public class Compiler {
 							code.putInt(0); // address, to be resolved latter
 
 							// update the local variable start position back
-							if (m.node.maxLocals > 0) {
+							if (m.node.maxLocals > 1) {
 								useLocal = true;
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
