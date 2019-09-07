@@ -19,8 +19,6 @@ import burst.kit.entity.BurstValue;
 
 import static org.junit.Assert.*;
 
-import org.junit.BeforeClass;
-
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
  * tests to work.
@@ -31,23 +29,17 @@ public class CompilerTest extends BT {
 
     public static void main(String[] args) throws Exception {
         CompilerTest t = new CompilerTest();
-        t.setup();
-
         // t.testForward();
         // t.testForwardMin();
         // t.testTipThanks();
         // t.testOdds();
         // t.testLocalVar();
+        // t.testMethodCall();
+        // t.testMethodCallArgs();
         // t.testCounter();
         // t.testSha256_64();
-        // t.testAuctionNFT();
-        t.testAuction();
-    }
-
-    @BeforeClass
-    public static void setup() {
-        // forge a first block to get some balance
-        forgeBlock();
+        // t.testAuction();
+        t.testAuctionNFT();
     }
 
     @Test
@@ -212,6 +204,91 @@ public class CompilerTest extends BT {
         assertEquals(value * 2, valueChain);
     }
 
+    @Test
+    public void testMethodCall() throws Exception {
+        BT.forgeBlock();
+        Compiler comp = BT.compileContract(MethodCall.class);
+
+        String name = MethodCall.class.getSimpleName() + System.currentTimeMillis();
+
+        AT contract = BT.registerContract(comp, name, BurstValue.fromBurst(10));
+
+        // variable not initialized yet
+        assertEquals(0, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method1"),
+            BurstValue.fromBurst(10),
+            BurstValue.fromBurst(0.1), 1000).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        assertEquals(1, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"),
+            BurstValue.fromBurst(10),
+            BurstValue.fromBurst(0.1), 1000).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        assertEquals(2, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+    }
+
+    @Test
+    public void testMethodCallArgs() throws Exception {
+        BT.forgeBlock();
+        Compiler comp = BT.compileContract(MethodCallArgs.class);
+
+        String name = MethodCallArgs.class.getSimpleName() + System.currentTimeMillis();
+
+        AT contract = BT.registerContract(comp, name, BurstValue.fromBurst(30));
+        System.out.println(contract.getId().getID());
+
+        // variable not initialized yet
+        assertEquals(0, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method1"),
+            BurstValue.fromBurst(30),
+            BurstValue.fromBurst(0.1), 1000,
+            100).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        assertEquals(1, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+        assertEquals(100, BT.getContractFieldValue(contract, comp.getFieldAddress("arg1")));
+        assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
+        assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
+
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"),
+            BurstValue.fromBurst(30),
+            BurstValue.fromBurst(0.1), 1000,
+            100, 200).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        assertEquals(2, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+        assertEquals(100, BT.getContractFieldValue(contract, comp.getFieldAddress("arg1")));
+        assertEquals(200, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
+        assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
+
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method3"),
+            BurstValue.fromBurst(30),
+            BurstValue.fromBurst(0.1), 1000,
+            100, 200, 300).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        assertEquals(3, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+        assertEquals(100, BT.getContractFieldValue(contract, comp.getFieldAddress("arg1")));
+        assertEquals(200, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
+        assertEquals(300, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
+
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method4"),
+            BurstValue.fromBurst(30),
+            BurstValue.fromBurst(0.1), 1000,
+            1000, 2000, 3000).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        assertEquals(4, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
+        assertEquals(1000, BT.getContractFieldValue(contract, comp.getFieldAddress("arg1")));
+        assertEquals(2000, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
+        assertEquals(3000, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
+    }
+
     public void testCounter() throws Exception {
         BT.forgeBlock();
 
@@ -344,8 +421,8 @@ public class CompilerTest extends BT {
 
         Compiler compiled = BT.compileContract(AuctionNFT.class);
         AT contract = BT.registerContract(compiled, AuctionNFT.class.getSimpleName() + System.currentTimeMillis(),
-                BurstValue.fromBurst(30));
-        System.out.println(contract.getId().getSignedLongId());
+                BurstValue.fromPlanck(AuctionNFT.ACTIVATION_FEE));
+        System.out.println(contract.getId().getID());
 
         BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(30)).blockingGet();
         BT.forgeBlock();
@@ -358,26 +435,25 @@ public class CompilerTest extends BT {
 
         assertTrue("should not be open", isOpen == 0);
 
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("clearDebug"), BurstValue.fromBurst(30),
-                BurstValue.fromBurst(0.1), 1000).blockingGet();
-        BT.forgeBlock();
-        BT.forgeBlock();
-
         long minbid = 100 * Contract.ONE_BURST;
 
         // open the contract for auction
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("open"), BurstValue.fromBurst(30),
-                BurstValue.fromBurst(0.1), 1000, 20, minbid // , contract.getCreator().getSignedLongId() // timeout,
-                                                            // minBid, beneficiary
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("open"),
+            BurstValue.fromPlanck(AuctionNFT.ACTIVATION_FEE),
+            BurstValue.fromBurst(0.1), 1000,
+            20, // timeout in minutes
+            minbid, // minBid
+            contract.getCreator().getSignedLongId() // beneficiary
         ).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
         isOpen = BT.getContractFieldValue(contract, compiled.getField("isOpen").getAddress());
         long minbid_chain = BT.getContractFieldValue(contract, compiled.getField("highestBid").getAddress());
+        long benef_chain = BT.getContractFieldValue(contract, compiled.getField("beneficiary").getAddress());
 
         assertTrue("should now be open", isOpen == 1);
         assertEquals(minbid, minbid_chain);
+        assertEquals(contract.getCreator().getSignedLongId(), benef_chain);
     }
-
 }

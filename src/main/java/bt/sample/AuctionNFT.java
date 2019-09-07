@@ -13,7 +13,9 @@ import bt.ui.EmulatorWindow;
  * 
  * This smart contract is initially closed and the beneficiary (the current owner)
  * is the creator. Then one can call the {@link #open(Address, long, long)} method.
- * When the auction times out the current beneficiary receive the highest bid amount
+ * 
+ * After the auction times-out any new transaction received will trigger the auction
+ * closing logic. When closing, the current beneficiary receive the highest bid amount
  * and the highest bidder becomes the new beneficiary. This new beneficiary can
  * choose to open the auction again with a new timeout and new minimum bid value.
  *
@@ -25,6 +27,7 @@ import bt.ui.EmulatorWindow;
 public class AuctionNFT extends Contract {
 
     public static final long MIN_BALANCE = ONE_BURST * 3;
+    public static final long ACTIVATION_FEE = ONE_BURST * 30;
 
     boolean isOpen;
     Address beneficiary;
@@ -96,11 +99,11 @@ public class AuctionNFT extends Contract {
             return;
         }
 
-        newBid = getCurrentTxAmount();
+        newBid = getCurrentTxAmount() + ACTIVATION_FEE;
         if (newBid > highestBid) {
             // we have a new higher bid, return the previous one
             if (highestBidder != null) {
-                sendAmount(highestBid, highestBidder);
+                sendAmount(highestBid - ACTIVATION_FEE, highestBidder);
             }
             highestBidder = getCurrentTxSender();
             highestBid = newBid;
