@@ -12,6 +12,9 @@ import bt.ui.EmulatorWindow;
  * will be refunded back to them (minus the activation fee) if someone
  * else sends more. Minimum bid should be higher than the INITIAL_PRICE.
  * 
+ * After the auction timed-out a final transaction (likely to come from
+ * the beneficiary) is needed to trigger the payment and close the auction.
+ * 
  * This auction contract cannot be reused, once closed or timedout the
  * auction is never open again.
  *
