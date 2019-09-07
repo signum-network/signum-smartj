@@ -98,7 +98,7 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(feeField = new HintTextField("Fee in BURST", null));
         feeField.setText("7.0");
         config.add(actFeeField = new HintTextField("Activation fee in BURST", null));
-        actFeeField.setText("10.0");
+        actFeeField.setText("30.0");
 
         left.add(config, BorderLayout.CENTER);
 
