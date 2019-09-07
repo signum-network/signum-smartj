@@ -26,7 +26,7 @@ import bt.ui.EmulatorWindow;
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class AuctionNFT extends Contract {
 
-    public static final long MIN_BALANCE = ONE_BURST * 3;
+    public static final long MIN_BALANCE = ONE_BURST * 4;
     public static final long ACTIVATION_FEE = ONE_BURST * 30;
 
     boolean isOpen;
