@@ -7,27 +7,28 @@ import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
 import burst.kit.entity.response.AT;
 
-public class MethodCalls extends Contract {
+public class MethodCall extends Contract {
+
+	long methodCalled;
 
 	public void method1() {
-		sendMessage("method1", getCurrentTx().getSenderAddress());
+		methodCalled = 1;
 	}
 
 	public void method2() {
-		sendMessage("method2", getCurrentTx().getSenderAddress());
+		methodCalled = 2;
 	}
 
 	@Override
 	public void txReceived() {
-		sendMessage("txReceived", getCurrentTx().getSenderAddress());
-		sendMessage(getCurrentTx().getMessage(), getCurrentTx().getSenderAddress());
+		methodCalled = 0;
 	}
 
 	public static void main(String[] args) throws Exception {
 		BT.forgeBlock();
-		Compiler comp = BT.compileContract(MethodCalls.class);
+		Compiler comp = BT.compileContract(MethodCall.class);
 
-		String name = MethodCalls.class.getSimpleName() + System.currentTimeMillis();
+		String name = MethodCall.class.getSimpleName() + System.currentTimeMillis();
 		BurstAddress creator = BurstCrypto.getInstance().getBurstAddressFromPassphrase(BT.PASSPHRASE);
 
 		BT.registerContract(BT.PASSPHRASE, comp, name, name, BurstValue.fromBurst(1), BurstValue.fromBurst(0.1), 1000)
