@@ -17,9 +17,9 @@ public class MultiSigLock extends Contract {
     public static final int ACTIVATION_FEE = 30; // expected activation fee in BURST
 
     // will be much easier when we have support for arrays
-    Address owner1, owner2, owner3, owner4, owner5, owner6;
-    Address receiver1, receiver2, receiver3, receiver4, receiver5, receiver6;
-    long amount1, amount2, amount3, amount4, amount5, amount6;
+    Address owner1, owner2, owner3, owner4, owner5;
+    Address receiver1, receiver2, receiver3, receiver4, receiver5;
+    long amount1, amount2, amount3, amount4, amount5;
 
     long minSignatures;
 
@@ -33,7 +33,6 @@ public class MultiSigLock extends Contract {
         owner3 = parseAddress("BURST-RRLA-B3Y7-L4EU-E8PRZ");
         owner4 = null;
         owner5 = null;
-        owner6 = null;
 
         minSignatures = 2;
     }
@@ -50,38 +49,37 @@ public class MultiSigLock extends Contract {
         if (getCurrentTxSender() == owner1) {
             receiver1 = receiver;
             amount1 = amount;
-        } else if (getCurrentTxSender() == owner2) {
+        }
+        if (getCurrentTxSender() == owner2) {
             receiver2 = receiver;
             amount2 = amount;
-        } else if (getCurrentTxSender() == owner3) {
+        }
+        if (getCurrentTxSender() == owner3) {
             receiver3 = receiver;
             amount3 = amount;
-        } else if (getCurrentTxSender() == owner4) {
+        }
+        if (getCurrentTxSender() == owner4) {
             receiver4 = receiver;
             amount4 = amount;
-        } else if (getCurrentTxSender() == owner5) {
+        }
+        if (getCurrentTxSender() == owner5) {
             receiver5 = receiver;
             amount5 = amount;
-        } else if (getCurrentTxSender() == owner6) {
-            receiver6 = receiver;
-            amount6 = amount;
-        } else
-            return; // coming from someone else
+        }
 
         long nsigs = 0;
         if (receiver == receiver1 && amount == amount1){
             nsigs++;
         }
-        else if (receiver == receiver2 && amount == amount2)
+        if (receiver == receiver2 && amount == amount2)
             nsigs++;
-        else if (receiver == receiver3 && amount == amount3)
+        if (receiver == receiver3 && amount == amount3)
             nsigs++;
-        else if (receiver == receiver4 && amount == amount4)
+        if (receiver == receiver4 && amount == amount4)
             nsigs++;
-        else if (receiver == receiver5 && amount == amount5)
+        if (receiver == receiver5 && amount == amount5)
             nsigs++;
-        else if (receiver == receiver6 && amount == amount6)
-            nsigs++;
+        
         if (nsigs < minSignatures)
             return; // not enough signatures
 
@@ -94,7 +92,6 @@ public class MultiSigLock extends Contract {
             receiver3 = null;
             receiver4 = null;
             receiver5 = null;
-            receiver6 = null;
         }
     }
 
