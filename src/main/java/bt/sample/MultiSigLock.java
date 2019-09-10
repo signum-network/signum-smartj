@@ -6,8 +6,8 @@ import bt.compiler.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**
- * A funds locking smart contract allowing to move funds after a number of
- * a given number of signatures.
+ * A funds locking smart contract allowing to move funds after a number of a
+ * given number of signatures.
  * 
  * @author jjos
  */
@@ -21,7 +21,7 @@ public class MultiSigLock extends Contract {
     Address receiver1, receiver2, receiver3, receiver4, receiver5;
     long amount1, amount2, amount3, amount4, amount5;
 
-    long minSignatures;
+    long minSignatures, nSignatures;
 
     /**
      * Constructor, when in blockchain the constructor is called when the first TX
@@ -40,8 +40,8 @@ public class MultiSigLock extends Contract {
     /**
      * Sign for sending the given amout to the given receiver address.
      * 
-     * A transfer will actually be accomplished only when the minimum number
-     * of signatures sending the same amount to the same address are received.
+     * A transfer will actually be accomplished only when the minimum number of
+     * signatures sending the same amount to the same address are received.
      * 
      */
     public void sign(long amount, Address receiver) {
@@ -67,23 +67,22 @@ public class MultiSigLock extends Contract {
             amount5 = amount;
         }
 
-        long nsigs = 0;
-        if (receiver == receiver1 && amount == amount1){
-            nsigs++;
-        }
+        nSignatures = 0;
+        if (receiver == receiver1 && amount == amount1)
+            nSignatures++;
         if (receiver == receiver2 && amount == amount2)
-            nsigs++;
+            nSignatures++;
         if (receiver == receiver3 && amount == amount3)
-            nsigs++;
+            nSignatures++;
         if (receiver == receiver4 && amount == amount4)
-            nsigs++;
+            nSignatures++;
         if (receiver == receiver5 && amount == amount5)
-            nsigs++;
-        
-        if (nsigs < minSignatures)
+            nSignatures++;
+
+        if (nSignatures < minSignatures)
             return; // not enough signatures
 
-        if (nsigs >= minSignatures) {
+        if (nSignatures >= minSignatures && receiver != null) {
             // make the transfer
             sendAmount(amount, receiver);
             // clear the signatures for the next transfer
