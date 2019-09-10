@@ -6,8 +6,16 @@ import bt.compiler.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**
- * A funds locking smart contract allowing to move funds after a number of a
- * given number of signatures.
+ * A funds locking smart contract allowing to move funds after a pre-defined
+ * number of signatures.
+ * 
+ * Each of the hardcoded owners has the ability to *sign* (or *vote*) for a
+ * funds transfer for a given address. When the minium number of signatures is
+ * reached (and all signees agree in terms of the amount) the transfer takes
+ * place and the signatures (or votes) are erased.
+ * 
+ * This contract can be reused many times and can also be recharged with more
+ * balance by just sending more transactions to it.
  * 
  * @author jjos
  */
@@ -16,7 +24,7 @@ public class MultiSigLock extends Contract {
 
     public static final int ACTIVATION_FEE = 30; // expected activation fee in BURST
 
-    // will be much easier when we have support for arrays
+    // will be much easier when we have BlockTalk support for arrays
     Address owner1, owner2, owner3, owner4, owner5;
     Address receiver1, receiver2, receiver3, receiver4, receiver5;
     long amount1, amount2, amount3, amount4, amount5;
