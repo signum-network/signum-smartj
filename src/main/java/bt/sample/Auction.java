@@ -29,7 +29,7 @@ public class Auction extends Contract {
 	public static final long INITIAL_PRICE = 1000*ONE_BURST;
 	public static final int TIMEOUT_MIN = 40; // 40 minutes == 10 blocks
 
-	public static final int ACTIVATION_FEE = 30; // expected activation fee in BURST
+	public static final int ACTIVATION_FEE = 22; // expected activation fee in BURST
 	
 	boolean isOpen;
 	Address beneficiary;
@@ -64,8 +64,9 @@ public class Auction extends Contract {
 			isOpen = false;
 			fee = getCurrentBalance()/100;
 			sendAmount(fee, getCreator());
-			// send the funds (best auction) to the beneficiary
-			sendBalance(beneficiary);
+			// send the funds (best auction) to the beneficiary, minus the current TX
+			// amount that will be refunded
+			sendAmount(getCurrentBalance() - getCurrentTxAmount(), beneficiary);
 		}
 		return !isOpen;
 	}

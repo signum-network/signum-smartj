@@ -60,8 +60,10 @@ public class AuctionNFT extends Contract {
                 fee = highestBid / 100; // 1% fee
                 sendAmount(fee, getCreator());
 
-                // send the balance to the current beneficiary
-                sendAmount(getCurrentBalance() - MIN_BALANCE, beneficiary);
+                // send the balance to the current beneficiary, minus the current TX
+                // amount (that will be refunded and a min balance to ensure the
+                // contract can run a few more lines of code)
+                sendAmount(getCurrentBalance() - getCurrentTxAmount() - MIN_BALANCE, beneficiary);
 
                 // set the new beneficiary
                 beneficiary = highestBidder;
