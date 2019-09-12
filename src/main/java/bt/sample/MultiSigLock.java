@@ -94,6 +94,7 @@ public class MultiSigLock extends Contract {
             // make the transfer
             sendAmount(amount, receiver);
             // clear the signatures for the next transfer
+            nSignatures = 0;
             receiver1 = null;
             receiver2 = null;
             receiver3 = null;
