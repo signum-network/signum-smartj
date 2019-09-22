@@ -374,11 +374,10 @@ public class Compiler {
 			// add method only if it is not empty (just the return command)
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(methods.get(TX_RECEIVED_METHOD).address);
-
-			// restart for a possible new transaction
-			code.put(OpCode.e_op_code_JMP_ADR);
-			code.putInt(afterPCSAddress);
 		}
+		// restart for a possible new transaction
+		code.put(OpCode.e_op_code_JMP_ADR);
+		code.putInt(afterPCSAddress);
 	}
 
 	public void link() {
@@ -393,8 +392,8 @@ public class Compiler {
 		// determine the address of each method
 		int address = startMethodsPosition; // position of the first method
 		for (Method m : methods.values()) {
-			if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
-				continue; // empty constructor
+			if (m.code.position() < 2)
+				continue; // empty method
 			m.address = address;
 			address += m.code.position();
 		}
@@ -433,8 +432,8 @@ public class Compiler {
 
 		// add methods
 		for (Method m : methods.values()) {
-			if (m.node.name.equals(INIT_METHOD) && m.code.position() < 2)
-				continue; // empty constructor
+			if (m.code.position() < 2)
+				continue; // empty method
 
 			if (m.code.position() > code.capacity() - code.position()) {
 				String methodList = "";
