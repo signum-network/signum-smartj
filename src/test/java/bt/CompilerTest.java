@@ -10,6 +10,7 @@ import bt.sample.Auction;
 import bt.sample.AuctionNFT;
 import bt.sample.Forward;
 import bt.sample.ForwardMin;
+import bt.sample.MultiSigLock;
 import bt.sample.OddsGame;
 import bt.sample.Sha256_64;
 import bt.sample.TXCounter;
@@ -39,7 +40,8 @@ public class CompilerTest extends BT {
         // t.testCounter();
         // t.testSha256_64();
         // t.testAuction();
-        t.testAuctionNFT();
+        // t.testAuctionNFT();
+        t.testMultiSigLock();
     }
 
     @Test
@@ -487,5 +489,99 @@ public class CompilerTest extends BT {
 
         balance = BT.getContractBalance(contract);
         assertTrue(balance.longValue() < 30 * Contract.ONE_BURST);
+    }
+
+
+    public void testMultiSigLock() throws Exception {
+        BT.forgeBlock();
+
+        Compiler compiled = BT.compileContract(MultiSigLock.class);
+        AT contract = BT.registerContract(compiled, MultiSigLock.class.getSimpleName() + System.currentTimeMillis(),
+                BurstValue.fromPlanck(MultiSigLock.ACTIVATION_FEE));
+        System.out.println(contract.getId().getID());
+
+        long initialBalance = 1000*Contract.ONE_BURST;
+
+        // initialize the contract and put some balance
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(),
+                BurstValue.fromPlanck(initialBalance + MultiSigLock.ACTIVATION_FEE)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        BurstAddress owner1 = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE);
+        BurstAddress owner2 = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE2);
+        BurstAddress owner3 = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE3);
+
+        // check for the owners
+        long owner1Chain =  BT.getContractFieldValue(contract, compiled.getField("owner1").getAddress());
+        long owner2Chain =  BT.getContractFieldValue(contract, compiled.getField("owner2").getAddress());
+        long owner3Chain =  BT.getContractFieldValue(contract, compiled.getField("owner3").getAddress());
+        long nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
+
+        assertEquals(owner1.getSignedLongId(), owner1Chain);
+        assertEquals(owner2.getSignedLongId(), owner2Chain);
+        assertEquals(owner3.getSignedLongId(), owner3Chain);
+        assertEquals(0, nSignatures);
+
+        long amount = initialBalance/2;
+        long beneficiary = owner1.getSignedLongId();
+
+        // sign a transaction
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("sign"),
+                BurstValue.fromPlanck(MultiSigLock.ACTIVATION_FEE), BurstValue.fromBurst(0.1), 1000,
+                beneficiary, amount
+        ).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
+        long receiver1 = BT.getContractFieldValue(contract, compiled.getField("receiver1").getAddress());
+        assertEquals(1, nSignatures);
+        assertEquals(beneficiary, receiver1);
+
+        // sign again with the same wallet, should keep a single signature valid
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("sign"),
+                BurstValue.fromPlanck(MultiSigLock.ACTIVATION_FEE), BurstValue.fromBurst(0.1), 1000,
+                beneficiary, amount
+        ).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
+        assertEquals(1, nSignatures);
+
+        // add a second sign
+        BT.callMethod(BT.PASSPHRASE2, contract.getId(), compiled.getMethod("sign"),
+                BurstValue.fromPlanck(MultiSigLock.ACTIVATION_FEE), BurstValue.fromBurst(0.1), 1000,
+                beneficiary, amount
+        ).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
+        long receiver2 = BT.getContractFieldValue(contract, compiled.getField("receiver2").getAddress());
+        assertEquals(2, nSignatures);
+        assertEquals(beneficiary, receiver2);
+
+        // add a third sign, but incompatible
+        BT.callMethod(BT.PASSPHRASE3, contract.getId(), compiled.getMethod("sign"),
+                BurstValue.fromPlanck(MultiSigLock.ACTIVATION_FEE), BurstValue.fromBurst(0.1), 1000,
+                beneficiary, amount*2
+        ).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
+        assertEquals(1, nSignatures);
+
+        // add a third sign to complete the transfer
+        BT.callMethod(BT.PASSPHRASE3, contract.getId(), compiled.getMethod("sign"),
+                BurstValue.fromPlanck(MultiSigLock.ACTIVATION_FEE), BurstValue.fromBurst(0.1), 1000,
+                beneficiary, amount
+        ).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
+        assertEquals(0, nSignatures);
+
+        long balance = BT.getContractBalance(contract).longValue();
+        assertTrue(balance < initialBalance);
     }
 }

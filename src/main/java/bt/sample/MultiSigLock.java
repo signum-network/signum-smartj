@@ -22,7 +22,7 @@ import bt.ui.EmulatorWindow;
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class MultiSigLock extends Contract {
 
-    public static final int ACTIVATION_FEE = 30; // expected activation fee in BURST
+    public static final long ACTIVATION_FEE = 30*ONE_BURST; // expected activation fee in BURST
 
     // will be much easier when we have BlockTalk support for arrays
     Address owner1, owner2, owner3, owner4, owner5;
@@ -36,13 +36,13 @@ public class MultiSigLock extends Contract {
      * reaches the contract.
      */
     public MultiSigLock() {
-        owner1 = parseAddress("BURST-438E-UEV4-DCLK-AADEE");
-        owner2 = parseAddress("BURST-4HKK-2RAC-EC53-5JAJD");
-        owner3 = parseAddress("BURST-RRLA-B3Y7-L4EU-E8PRZ");
+        owner1 = parseAddress("BURST-TMSU-YBH5-RVC7-6J6WJ");
+        owner2 = parseAddress("BURST-GFP4-TVNR-S7TY-E5KAY");
+        owner3 = parseAddress("BURST-SCE6-9VGS-MCVB-7HCU3");
         owner4 = null;
         owner5 = null;
 
-        minSignatures = 2;
+        minSignatures = 3;
     }
 
     /**
@@ -52,7 +52,7 @@ public class MultiSigLock extends Contract {
      * signatures sending the same amount to the same address are received.
      * 
      */
-    public void sign(long amount, Address receiver) {
+    public void sign(Address receiver, long amount) {
         // Identify the sender, must be one of the owners
         if (getCurrentTxSender() == owner1) {
             receiver1 = receiver;
