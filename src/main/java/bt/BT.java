@@ -190,7 +190,7 @@ public class BT {
      * @return the minimum fee to register the given contract
      */
     public static BurstValue getMinRegisteringFee(Compiler compiledContract) {
-        return BurstValue.fromBurst(3 + compiledContract.getCodeNPages());
+        return BurstValue.fromBurst(2 + compiledContract.getDataPages() + compiledContract.getCodeNPages());
     }
 
     /**
@@ -238,7 +238,7 @@ public class BT {
      */
     public static Single<TransactionBroadcast> registerContract(String passphrase, Compiler compiledContract,
             String name, String description, BurstValue activationFee, BurstValue fee, int deadline) {
-        return registerContract(passphrase, compiledContract.getCode(), name, description, null, activationFee, fee, deadline);
+        return registerContract(passphrase, compiledContract.getCode(), compiledContract.getDataPages(), name, description, null, activationFee, fee, deadline);
     }
 
     /**
@@ -256,7 +256,7 @@ public class BT {
      * @return the response
      * @throws Exception
      */
-    public static Single<TransactionBroadcast> registerContract(String passphrase, byte[] code,
+    public static Single<TransactionBroadcast> registerContract(String passphrase, byte[] code, int dPages,
             String name, String description, long[] data, BurstValue activationFee, BurstValue fee, int deadline) {
         byte[] pubkey = bc.getPublicKey(passphrase);
 
@@ -266,7 +266,7 @@ public class BT {
             dataBuffer.putLong(data[i]);
         }
 
-        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, code, dataBuffer.array(), 1, 1, 1, activationFee);
+        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, code, dataBuffer.array(), dPages, 1, 1, activationFee);
         return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);

@@ -113,6 +113,17 @@ public class Transaction {
 	}
 
 	/**
+	 * Return the first 8 bytes of the message attached to a transaction.
+	 * 
+	 * Only unencrypted messages are received.
+	 * 
+	 * @return the first 8 bytes in the message
+	 */
+	public long getMessage1() {
+		return msg.value[0];
+	}
+
+	/**
 	 * @return the message in this transaction
 	 */
 	@EmulatorWarning

@@ -45,6 +45,7 @@ public class Compiler {
 
 	public static final String INIT_METHOD = "<init>";
 	public static final String MAIN_METHOD = "main";
+	public static final String STARTED_METHOD = "blockStarted";
 	public static final String FINISHED_METHOD = "blockFinished";
 	public static final String TX_RECEIVED_METHOD = "txReceived";
 	public static final int PAGE_SIZE = 256;
@@ -77,6 +78,7 @@ public class Compiler {
 
 	/** If we have public methods other than txReceived */
 	boolean hasPublicMethods;
+	boolean hasTxReceived;
 
 	public class Error {
 		AbstractInsnNode node;
@@ -171,6 +173,13 @@ public class Compiler {
 	 */
 	public int getCodeNPages() {
 		return code.position() / PAGE_SIZE + 1;
+	}
+
+	public int getDataPages() {
+		// check if this is actually enough
+		int nvars = localStart + 3;
+		int npages = nvars/32 + 1;
+		return npages;
 	}
 
 	public String getClassName() {
@@ -283,44 +292,59 @@ public class Compiler {
 
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
+		// Check if we have a blockStarted method and put it here
+		Method startedMethod = getMethod(STARTED_METHOD);
+		boolean hasStarted = startedMethod != null && startedMethod.code.position() > 1;
+		if (hasStarted) {
+			code.put(OpCode.e_op_code_JMP_SUB);
+			code.putInt(startedMethod.address);
+		}
+
+		// Point to restart for a new transaction
 		int afterPCSAddress = code.position();
 
-		// put the last transaction received in A (after the last timestamp)
-		code.put(OpCode.e_op_code_EXT_FUN_DAT);
-		code.putShort(OpCode.A_To_Tx_After_Timestamp);
-		code.putInt(lastTxTimestamp);
+		if (hasPublicMethods || hasTxReceived) {
+			// put the last transaction received in A (after the last timestamp)
+			code.put(OpCode.e_op_code_EXT_FUN_DAT);
+			code.putShort(OpCode.A_To_Tx_After_Timestamp);
+			code.putInt(lastTxTimestamp);
 
-		// get the value from A1
-		code.put(OpCode.e_op_code_EXT_FUN_RET);
-		code.putShort(OpCode.Get_A1);
-		code.putInt(lastTxReceived);
+			// get the value from A1
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_A1);
+			code.putInt(lastTxReceived);
+		}
 
 		// if zero we will FINISH (after the blockFinish method), otherwise continue
 		Method finishMethod = getMethod(FINISHED_METHOD);
-		boolean hasFinish = finishMethod != null && finishMethod.code.position() > 0;
-		code.put(OpCode.e_op_code_BNZ_DAT);
-		code.putInt(lastTxReceived);
-		code.put((byte) (7 + (hasFinish ? 5 : 0)));
+		boolean hasFinish = finishMethod != null && finishMethod.code.position() > 1;
+		if (hasPublicMethods || hasTxReceived) {
+			code.put(OpCode.e_op_code_BNZ_DAT);
+			code.putInt(lastTxReceived);
+			code.put((byte) (7 + (hasFinish ? 5 : 0)));
+		}
 		if (hasFinish) {
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(finishMethod.address);
 		}
 		code.put(OpCode.e_op_code_FIN_IMD);
 
-		// Store the timestamp of the last transaction
-		code.put(OpCode.e_op_code_EXT_FUN_RET);
-		code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
-		code.putInt(lastTxTimestamp);
-		// Get the sender of last transaction
-		code.put(OpCode.e_op_code_EXT_FUN);
-		code.putShort(OpCode.B_To_Address_Of_Tx_In_A);
-		code.put(OpCode.e_op_code_EXT_FUN_RET);
-		code.putShort(OpCode.Get_B1);
-		code.putInt(lastTxSender);
-		// Get the amount of last transaction
-		code.put(OpCode.e_op_code_EXT_FUN_RET);
-		code.putShort(OpCode.Get_Amount_For_Tx_In_A);
-		code.putInt(lastTxAmount);
+		if (hasPublicMethods || hasTxReceived) {
+			// Store the timestamp of the last transaction
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
+			code.putInt(lastTxTimestamp);
+			// Get the sender of last transaction
+			code.put(OpCode.e_op_code_EXT_FUN);
+			code.putShort(OpCode.B_To_Address_Of_Tx_In_A);
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_B1);
+			code.putInt(lastTxSender);
+			// Get the amount of last transaction
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_Amount_For_Tx_In_A);
+			code.putInt(lastTxAmount);
+		}
 
 		if (hasPublicMethods) {
 			// external method calls here
@@ -375,9 +399,12 @@ public class Compiler {
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(methods.get(TX_RECEIVED_METHOD).address);
 		}
-		// restart for a possible new transaction
-		code.put(OpCode.e_op_code_JMP_ADR);
-		code.putInt(afterPCSAddress);
+
+		if (hasPublicMethods || hasTxReceived) {
+			// restart for a possible new transaction
+			code.put(OpCode.e_op_code_JMP_ADR);
+			code.putInt(afterPCSAddress);
+		}
 	}
 
 	public void link() {
@@ -449,11 +476,12 @@ public class Compiler {
 
 	private void readMethods() {
 		hasPublicMethods = false;
+		hasTxReceived = false;
 
 		// First list all methods available
 		for (MethodNode mnode : cn.methods) {
 			if (mnode.name.equals(MAIN_METHOD))
-				continue; // skyp the main function (should be for deubgging only)
+				continue; // skip the main function (should be for deubgging only)
 
 			Method m = new Method();
 			m.node = mnode;
@@ -478,6 +506,9 @@ public class Compiler {
 				System.out.print(" hash: " + m.hash);
 			System.out.println();
 			parseMethod(m);
+
+			if (m.node.name.equals(TX_RECEIVED_METHOD) && m.code.position() > 1)
+				hasTxReceived = true;
 		}
 	}
 
@@ -518,7 +549,7 @@ public class Compiler {
 	 */
 	public int getFieldAddress(String name) {
 		Field f = fields.get(name);
-		if(f!=null)
+		if (f != null)
 			return f.address;
 		return -1;
 	}
@@ -1239,6 +1270,21 @@ public class Compiler {
 								code.putInt(tmpVar1); // the message contents
 								pushVar(m, tmpVar1);
 							}
+						} else if (mi.name.equals("getMessage1")) {
+							arg1 = popVar(m, tmpVar1, false); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(arg1.address); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
+
+							// we push only the first long to the stack
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort((short) (OpCode.Get_B1));
+							code.putInt(tmpVar1); // the message contents
+							pushVar(m, tmpVar1);
 						} else {
 							addError(insn, UNEXPECTED_ERROR);
 						}

@@ -112,6 +112,19 @@ public abstract class Contract {
 	}
 
 	/**
+	 * Function to be called before processing the transactions of the current
+	 * block.
+	 * 
+	 * Users should overload this function if there is some action to be taken
+	 * before processing the first {@link #txReceived()} for the current block.
+	 * 
+	 * Use this function carefully, since #{@link #getCurrentTx()} and similar
+	 * functions are still unavalable inside this function.
+	 */
+	protected void blockStarted() {
+	}
+
+	/**
 	 * Function to be called when all transactions on the current block were
 	 * processed.
 	 * 
@@ -256,7 +269,8 @@ public abstract class Contract {
 	}
 
 	/**
-	 * A utility function returning only the first 64 bits of a SHA256 for two long inputs.
+	 * A utility function returning only the first 64 bits of a SHA256 for two long
+	 * inputs.
 	 * 
 	 * @return the first 64 bits SHA256 hash of the given input
 	 */
@@ -272,13 +286,13 @@ public abstract class Contract {
 	/**
 	 * Sleeps until the next block.
 	 */
-	protected void sleepOneBlock(){
+	protected void sleepOneBlock() {
 		sleep(null);
 	}
 
 	/**
 	 * Sleep until the given timestamp.
-	 *  
+	 * 
 	 * @param ts
 	 */
 	protected void sleep(Timestamp ts) {
