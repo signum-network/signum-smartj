@@ -221,20 +221,6 @@ public abstract class Contract {
 		return address.balance;
 	}
 
-	/**
-	 * Return the the message encoded in 4 long's.
-	 * 
-	 * Care should be taken, since if the message is longer than 4 longs in size,
-	 * the message is not forwarded to the AT and this will result in a register
-	 * with all values zero.
-	 * 
-	 * @param tx
-	 * @return the message for the given transaction
-	 */
-	protected Register getMessage(Transaction tx) {
-		return tx.getMessage();
-	}
-
 	@EmulatorWarning
 	protected static Register performSHA256_(Register input) {
 		Register ret = new Register();

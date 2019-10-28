@@ -70,7 +70,7 @@ public class Compiler {
 	int lastTxTimestamp;
 	int lastTxSender;
 	int lastTxAmount;
-	int tmpVar1, tmpVar2, tmpVar3, tmpVar4;
+	int tmpVar1, tmpVar2, tmpVar3, tmpVar4, tmpVar5, tmpVar6;
 	int localStart;
 	boolean useLocal;
 	int creator;
@@ -257,6 +257,8 @@ public class Compiler {
 		tmpVar2 = lastFreeVar++;
 		tmpVar3 = lastFreeVar++;
 		tmpVar4 = lastFreeVar++;
+		tmpVar5 = lastFreeVar++;
+		tmpVar6 = lastFreeVar++;
 
 		creator = lastFreeVar++;
 		localStart = lastFreeVar++;
@@ -642,7 +644,7 @@ public class Compiler {
 			}
 		}
 
-		StackVar arg1, arg2;
+		StackVar arg1, arg2, arg3, arg4;
 
 		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		while (ite.hasNext()) {
@@ -1111,6 +1113,35 @@ public class Compiler {
 							code.putShort(OpCode.Get_B1);
 							code.putInt(tmpVar1); // resulting hash
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("performSHA256")) {
+							arg4 = popVar(m, tmpVar1, false); // input4
+							arg3 = popVar(m, tmpVar2, false); // input3
+							arg2 = popVar(m, tmpVar3, false); // input2
+							arg1 = popVar(m, tmpVar4, false); // input1
+							stack.pollLast(); // remove the 'this'
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(arg1.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A2);
+							code.putInt(arg2.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A3);
+							code.putInt(arg3.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A4);
+							code.putInt(arg4.address); // address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.SHA256_A_To_B);
+
+							for (int i = 0; i < 4; i++) {
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort((short)(OpCode.Get_B1 + i));
+								code.putInt(tmpVar1); // resulting hash
+								pushVar(m, tmpVar1);
+							}
 						} else if (mi.name.equals("sendMessage")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
@@ -1313,11 +1344,51 @@ public class Compiler {
 						StackVar values[] = new StackVar[4];
 						// we should pop the 4 values from stack
 						for (int i = values.length - 1; i >= 0; i--) {
-							values[i] = popVar(m, tmpVar1 + i, false);
+							values[i] = popVar(m, tmpVar1 + i, true);
 						}
 						if (mi.name.startsWith("getValue")) {
 							int pos = Integer.parseInt(mi.name.substring(mi.name.length() - 1)) - 1;
 							pushVar(m, values[pos].address);
+						}
+						if (mi.name.equals("equals")) {
+							code.put(OpCode.e_op_code_CLR_DAT);
+							code.putInt(tmpVar5);
+
+							// we have another register on stack
+							for (int i = values.length - 1; i >= 0; i--) {
+								StackVar other = popVar(m, tmpVar6, false);
+
+								code.put(OpCode.e_op_code_SUB_DAT);
+								code.putInt(values[i].address);
+								code.putInt(other.address);
+	
+								code.put(OpCode.e_op_code_BNZ_DAT);
+								code.putInt(values[i].address);
+								code.put((byte) 0x0b); // offset
+	
+								code.put(OpCode.e_op_code_INC_DAT);
+								code.putInt(tmpVar5);
+							}
+							// tmpVar 5 must be equal 4
+							code.put(OpCode.e_op_code_SET_VAL);
+							code.putInt(tmpVar1);
+							code.putLong(4L);
+
+							code.put(OpCode.e_op_code_SUB_DAT);
+							code.putInt(tmpVar5);
+							code.putInt(tmpVar1);
+
+							code.put(OpCode.e_op_code_CLR_DAT);
+							code.putInt(tmpVar2);
+
+							code.put(OpCode.e_op_code_BNZ_DAT);
+							code.putInt(tmpVar5);
+							code.put((byte) 0x0b); // offset
+
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar2);
+
+							pushVar(m, tmpVar2);
 						} else
 							addError(insn, "Method not implemented: " + mi.name);
 					} else {

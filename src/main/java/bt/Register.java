@@ -49,6 +49,14 @@ public class Register {
 		return value[3];
 	}
 
+	public boolean equals(Register other) {
+		for (int i = 0; i < value.length; i++) {
+			if(value[i] != other.value[i])
+				return false;
+		}
+		return true;
+	}
+
 	@EmulatorWarning
 	public Method getMethod(){
 		return method;
