@@ -10,8 +10,11 @@ import bt.ui.EmulatorWindow;
  * 
  * This small sample can be extended to implement cross-chain atomic swaps.
  * 
- * This contract should be initialized with a hashlock, timelock, and
- * benefitiary.
+ * This contract should be initialized with a hashlock and beneficiary.
+ * 
+ * If the beneficiary sends the correct key the funds are unlocked. If the
+ * creator send a transaction and the timelock as passed, the funds are
+ * withdraw.
  * 
  * @author jjos
  */
@@ -19,7 +22,7 @@ import bt.ui.EmulatorWindow;
 public class HashedTimeLock extends Contract {
 
 	/** Expected activation fee in BURST */
-	public static final long ACTIVATION_FEE = 30*ONE_BURST;
+	public static final long ACTIVATION_FEE = 30 * ONE_BURST;
 
 	/** Timeout in minutes */
 	public static final int TIMEOUT = 12;
@@ -31,9 +34,14 @@ public class HashedTimeLock extends Contract {
 	Register key, hashedKey;
 
 	/**
-	 * This constructor is called the first time the contract receives a transaction.
+	 * This constructor is called the first time the contract receives a
+	 * transaction.
+	 * 
+	 * The contract creator should send a transaction with the amount to be
+	 * locked. After this transaction is received the timelock is set with
+	 * the configured TIMEOUT.
 	 */
-	public HashedTimeLock(){
+	public HashedTimeLock() {
 		timelock = getBlockTimestamp().addMinutes(TIMEOUT);
 	}
 
@@ -41,7 +49,7 @@ public class HashedTimeLock extends Contract {
 	 * Any new transaction received will be handled by this function.
 	 * 
 	 * The benefitiary should send a message with the key to unlock the funds. The
-	 * creator can withdraw the funds if the timeout has passed.
+	 * creator can withdraw the funds if the timelock has expired.
 	 * 
 	 */
 	public void txReceived() {
