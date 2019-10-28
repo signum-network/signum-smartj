@@ -19,13 +19,23 @@ import bt.ui.EmulatorWindow;
 public class HashedTimeLock extends Contract {
 
 	/** Expected activation fee in BURST */
-	public static final int ACTIVATION_FEE = 22;
+	public static final long ACTIVATION_FEE = 30*ONE_BURST;
+
+	/** Timeout in minutes */
+	public static final int TIMEOUT = 12;
 
 	Register hashlock;
-	Timestamp timelock;
 	Address beneficiary;
 
+	Timestamp timelock;
 	Register key, hashedKey;
+
+	/**
+	 * This constructor is called the first time the contract receives a transaction.
+	 */
+	public HashedTimeLock(){
+		timelock = getBlockTimestamp().addMinutes(TIMEOUT);
+	}
 
 	/**
 	 * Any new transaction received will be handled by this function.

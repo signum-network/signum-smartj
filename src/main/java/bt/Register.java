@@ -17,35 +17,46 @@ public class Register {
 	Object[] args;
 
 	@EmulatorWarning
-	public static Register newMethodCall(Method m, Object[] args){
+	public static Register newMethodCall(Method m, Object[] args) {
 		Register r = new Register();
 		r.method = m;
 		r.args = args;
 		return r;
 	}
 
+	@EmulatorWarning
+	public static Register newInstance(long value1, long value2, long value3, long value4) {
+		Register r = new Register();
+		r.value[0] = value1;
+		r.value[1] = value2;
+		r.value[2] = value3;
+		r.value[3] = value4;
+
+		return r;
+	}
+
 	/**
 	 * @return the first long value
 	 */
-	public long getValue1(){
+	public long getValue1() {
 		return value[0];
 	}
 	/**
 	 * @return the second long value
 	 */
-	public long getValue2(){
+	public long getValue2() {
 		return value[1];
 	}
 	/**
 	 * @return the third long value
 	 */
-	public long getValue3(){
+	public long getValue3() {
 		return value[2];
 	}
 	/**
 	 * @return the fourth long value
 	 */
-	public long getValue4(){
+	public long getValue4() {
 		return value[3];
 	}
 
@@ -58,11 +69,11 @@ public class Register {
 	}
 
 	@EmulatorWarning
-	public Method getMethod(){
+	public Method getMethod() {
 		return method;
 	}
 	@EmulatorWarning
-	public Object[] getMethodArgs(){
+	public Object[] getMethodArgs() {
 		return args;
 	}
 

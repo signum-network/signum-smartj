@@ -222,7 +222,7 @@ public abstract class Contract {
 	}
 
 	@EmulatorWarning
-	protected static Register performSHA256_(Register input) {
+	public static Register performSHA256_(Register input) {
 		Register ret = new Register();
 
 		ByteBuffer b = ByteBuffer.allocate(32);

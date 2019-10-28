@@ -3,6 +3,7 @@ package bt;
 import burst.kit.crypto.BurstCrypto;
 import burst.kit.entity.response.AT;
 import burst.kit.entity.response.Account;
+
 import org.junit.Test;
 
 import bt.compiler.Compiler;
@@ -10,6 +11,7 @@ import bt.sample.Auction;
 import bt.sample.AuctionNFT;
 import bt.sample.Forward;
 import bt.sample.ForwardMin;
+import bt.sample.HashedTimeLock;
 import bt.sample.MultiSigLock;
 import bt.sample.OddsGame;
 import bt.sample.Sha256_64;
@@ -19,6 +21,9 @@ import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
 
 import static org.junit.Assert.*;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
@@ -41,7 +46,9 @@ public class CompilerTest extends BT {
         // t.testSha256_64();
         // t.testAuction();
         // t.testAuctionNFT();
-        t.testMultiSigLock();
+        // t.testMultiSigLock();
+        // t.testHashTimelockRefund();
+        t.testHashTimelockPay();
     }
 
     @Test
@@ -583,5 +590,112 @@ public class CompilerTest extends BT {
 
         long balance = BT.getContractBalance(contract).longValue();
         assertTrue(balance < initialBalance);
+    }
+
+    public void testHashTimelockRefund() throws Exception {
+        BT.forgeBlock();
+
+        Compiler compiled = BT.compileContract(HashedTimeLock.class);
+
+        BurstAddress beneficiary = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE2);
+        Register key = Register.newInstance(1, 2, 3, 4);
+        Register hahsedkey = Contract.performSHA256_(key);
+
+        long []data = {
+                hahsedkey.getValue1(), hahsedkey.getValue2(), hahsedkey.getValue3(), hahsedkey.getValue4(),
+                beneficiary.getSignedLongId()
+        };
+
+        String name = HashedTimeLock.class.getSimpleName() + System.currentTimeMillis();
+        BT.registerContract(BT.PASSPHRASE, compiled.getCode(), compiled.getDataPages(),
+                name, "test", data,
+                BurstValue.fromPlanck(HashedTimeLock.ACTIVATION_FEE), BT.getMinRegisteringFee(compiled),
+                1000).blockingGet();
+        BT.forgeBlock(BT.PASSPHRASE2);
+        BT.forgeBlock(BT.PASSPHRASE2);
+
+        AT contract = BT.findContract(BT.getBurstAddressFromPassphrase(BT.PASSPHRASE), name);
+        System.out.println(contract.getId().getID());
+
+        // Initialize the contract with a given amount, this also initializes the timeout
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(1000)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        // Get the funds back after the timeout
+        BT.forgeBlock();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromPlanck(HashedTimeLock.ACTIVATION_FEE)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        long balance = BT.getContractBalance(contract).longValue();
+        assertEquals(0, balance);
+    }
+
+    public void testHashTimelockPay() throws Exception {
+        BT.forgeBlock();
+
+        Compiler compiled = BT.compileContract(HashedTimeLock.class);
+
+        BurstAddress beneficiary = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE2);
+        Register key = Register.newInstance(1, 2, 3, 4);
+        Register hahsedkey = Contract.performSHA256_(key);
+
+        long []data = {
+                hahsedkey.getValue1(), hahsedkey.getValue2(), hahsedkey.getValue3(), hahsedkey.getValue4(),
+                beneficiary.getSignedLongId()
+        };
+
+        String name = HashedTimeLock.class.getSimpleName() + System.currentTimeMillis();
+        BT.registerContract(BT.PASSPHRASE, compiled.getCode(), compiled.getDataPages(),
+                name, "test", data,
+                BurstValue.fromPlanck(HashedTimeLock.ACTIVATION_FEE), BT.getMinRegisteringFee(compiled),
+                1000).blockingGet();
+        BT.forgeBlock(BT.PASSPHRASE2);
+        BT.forgeBlock(BT.PASSPHRASE2);
+
+        AT contract = BT.findContract(BT.getBurstAddressFromPassphrase(BT.PASSPHRASE), name);
+        System.out.println(contract.getId().getID());
+
+        // Initialize the contract with a given amount, this also initializes the timeout
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(1000)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        // Request the payment without the key, should not pay
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(HashedTimeLock.ACTIVATION_FEE)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        long balance = BT.getContractBalance(contract).longValue();
+        assertTrue(balance>0);
+
+        // Request the payment with the correct key, should pay
+        ByteBuffer b = ByteBuffer.allocate(32);
+        b.order(ByteOrder.LITTLE_ENDIAN);
+        b.putLong(key.getValue1());
+        b.putLong(key.getValue2());
+        b.putLong(key.getValue3());
+        b.putLong(key.getValue4());
+
+        BT.sendMessage(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(HashedTimeLock.ACTIVATION_FEE),
+                BurstValue.fromBurst(0.1), 1000, b.array()).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        long hash1 = BT.getContractFieldValue(contract, compiled.getFieldAddress("hashedKey"));
+        long hash2 = BT.getContractFieldValue(contract, compiled.getFieldAddress("hashedKey") + 1);
+        long hash3 = BT.getContractFieldValue(contract, compiled.getFieldAddress("hashedKey") + 2);
+        long hash4 = BT.getContractFieldValue(contract, compiled.getFieldAddress("hashedKey") + 3);
+
+        assertEquals(hahsedkey.getValue1(), hash1);
+        assertEquals(hahsedkey.getValue2(), hash2);
+        assertEquals(hahsedkey.getValue3(), hash3);
+        assertEquals(hahsedkey.getValue4(), hash4);
+
+        balance = BT.getContractBalance(contract).longValue();
+        assertEquals(0, balance);
     }
 }

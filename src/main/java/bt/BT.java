@@ -172,6 +172,13 @@ public class BT {
     }
 
     /**
+     * Forge block by mock mining for the given passphrase, just for testing purposes.
+     */
+    public static void forgeBlock(String pass) {
+        forgeBlock(pass, 1000);
+    }
+
+    /**
      * Forge block by mock mining for the given passphrase followed by a sleep with
      * given milliseconds.
      * 
