@@ -7,7 +7,8 @@ import bt.ui.EmulatorWindow;
 
 /**
  * A contract that simply send a "Hello, World" message back.
- * 
+ * Contracts creation fee: 4 Burst.
+ * Contracts execution fee: 18.3 Burst. 
  * @author jjos
  *
  */
