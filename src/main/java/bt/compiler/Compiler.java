@@ -178,7 +178,7 @@ public class Compiler {
 	public int getDataPages() {
 		// check if this is actually enough
 		int nvars = localStart + 3;
-		int npages = nvars/32 + 1;
+		int npages = nvars / 32 + 1;
 		return npages;
 	}
 
@@ -818,6 +818,8 @@ public class Compiler {
 			case LREM:
 			case IAND:
 			case LAND:
+			case IOR:
+			case LOR:
 				// we should have two arguments on the stack
 				arg2 = popVar(m, tmpVar2, false);
 				arg1 = popVar(m, tmpVar1, true);
@@ -847,6 +849,11 @@ public class Compiler {
 				case LAND:
 					System.out.println("AND");
 					code.put(OpCode.e_op_code_AND_DAT);
+					break;
+				case IOR:
+				case LOR:
+					System.out.println("OR");
+					code.put(OpCode.e_op_code_BOR_DAT);
 					break;
 				default:
 					System.out.println("add");
@@ -1138,7 +1145,7 @@ public class Compiler {
 
 							for (int i = 0; i < 4; i++) {
 								code.put(OpCode.e_op_code_EXT_FUN_RET);
-								code.putShort((short)(OpCode.Get_B1 + i));
+								code.putShort((short) (OpCode.Get_B1 + i));
 								code.putInt(tmpVar1); // resulting hash
 								pushVar(m, tmpVar1);
 							}
@@ -1361,11 +1368,11 @@ public class Compiler {
 								code.put(OpCode.e_op_code_SUB_DAT);
 								code.putInt(values[i].address);
 								code.putInt(other.address);
-	
+
 								code.put(OpCode.e_op_code_BNZ_DAT);
 								code.putInt(values[i].address);
 								code.put((byte) 0x0b); // offset
-	
+
 								code.put(OpCode.e_op_code_INC_DAT);
 								code.putInt(tmpVar5);
 							}
