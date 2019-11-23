@@ -1238,10 +1238,9 @@ public class Compiler {
 
 							// update the local variable start position back
 							if (m.node.maxLocals > 1) {
-								useLocal = true;
 								code.put(OpCode.e_op_code_SET_VAL);
 								code.putInt(tmpVar1);
-								code.putLong(m.node.maxLocals);
+								code.putLong(m.node.maxLocals - 1);
 								code.put(OpCode.e_op_code_SUB_DAT);
 								code.putInt(localStart);
 								code.putInt(tmpVar1);
