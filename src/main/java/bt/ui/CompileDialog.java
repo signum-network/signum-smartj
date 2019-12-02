@@ -18,6 +18,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.border.TitledBorder;
 
@@ -25,7 +26,9 @@ import bt.BT;
 import bt.Contract;
 import bt.compiler.Compiler;
 import bt.compiler.Printer;
+import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
+import burst.kit.entity.response.AT;
 import burst.kit.entity.response.TransactionBroadcast;
 import burst.kit.entity.response.http.BRSError;
 
@@ -52,7 +55,7 @@ class CompileDialog extends JDialog implements ActionListener {
 
     private Class<? extends Contract> atClass;
 
-    private JButton closeButton, publishButton;
+    private JButton closeButton, publishButton, listContractsButton;
 
     CompileDialog(Window parent, Class<? extends Contract> atClass) {
         super(parent, "Compile/Publish Contract", ModalityType.APPLICATION_MODAL);
@@ -104,6 +107,9 @@ class CompileDialog extends JDialog implements ActionListener {
 
         config.add(publishButton = new JButton("Publish"));
         publishButton.addActionListener(this);
+
+        config.add(listContractsButton = new JButton("List My Contracts"));
+        listContractsButton.addActionListener(this);
 
         JPanel codePanelForm = new JPanel(new BorderLayout());
         codePanelForm.setBorder(new TitledBorder("AT FORMATTED BYTECODE"));
@@ -187,20 +193,56 @@ class CompileDialog extends JDialog implements ActionListener {
         }
     }
 
+    private void listContracts() {
+        try {
+            String passphrase = String.valueOf(passField.getPassword());
+
+            if (passphrase == null || passphrase.length() == 0) {
+                JOptionPane.showMessageDialog(getParent(), "Passphrase is empty", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            BT.setNodeAddress(nodeField.getItemAt(nodeField.getSelectedIndex()));
+            BurstAddress address = BT.getBurstAddressFromPassphrase(passphrase);
+
+            AT ats[] = BT.getContracts(address);
+
+            String rowData [][] = new String[ats.length][3];
+            for (int i = 0; i < ats.length; i++) {
+                AT at = ats[i];
+                rowData[i][0] = at.getName();
+                rowData[i][1] = at.getId().getFullAddress();
+                rowData[i][2] = Integer.toString(at.getCreationHeight());
+            }
+            String [] columnNames = {"Name", "Address", "Creation Block"};
+            JTable table = new JTable(rowData, columnNames);
+            table.getColumnModel().getColumn(0).setPreferredWidth(30);
+            table.getColumnModel().getColumn(1).setPreferredWidth(120);
+            table.getColumnModel().getColumn(2).setPreferredWidth(30);
+            JScrollPane scroll = new JScrollPane(table);
+
+            JOptionPane.showMessageDialog(getParent(), scroll, "Your Contracts", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception e) {
+            handleError(e);
+        }
+    }
+
     private void onTransactionSent(TransactionBroadcast transactionBroadcast) {
         setCursor(Cursor.getDefaultCursor());
         closeButton.setEnabled(true);
         publishButton.setEnabled(true);
+        listContractsButton.setEnabled(true);
 
-        JOptionPane.showMessageDialog(getParent(),
-                "Transaction ID: " + transactionBroadcast.getTransactionId(), "Success",
-                JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(getParent(), "Transaction ID: " + transactionBroadcast.getTransactionId(),
+                "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void handleError(Throwable t) {
         setCursor(Cursor.getDefaultCursor());
         closeButton.setEnabled(true);
         publishButton.setEnabled(true);
+        listContractsButton.setEnabled(true);
 
         String msg = t.getMessage();
         if (t instanceof BRSError) {
@@ -217,7 +259,10 @@ class CompileDialog extends JDialog implements ActionListener {
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             closeButton.setEnabled(false);
             publishButton.setEnabled(false);
+            listContractsButton.setEnabled(false);
             publishAT();
+        } else if (e.getSource() == listContractsButton) {
+            listContracts();
         }
     }
 }
