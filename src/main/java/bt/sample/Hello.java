@@ -7,8 +7,11 @@ import bt.ui.EmulatorWindow;
 
 /**
  * A contract that simply send a "Hello, World" message back.
- * Contracts creation fee: 4 Burst.
- * Contracts execution fee: 18.3 Burst. 
+ * 
+ * Contract publishing fee currently is 4 BURST for this contract and its
+ * execution fee is 15.1 BURST (activation fee should be this later value or
+ * more).
+ * 
  * @author jjos
  *
  */
@@ -20,17 +23,16 @@ public class Hello extends Contract {
 	 */
 	@Override
 	public void txReceived() {
-		sendMessage("Hello, World", getCurrentTx().getSenderAddress());
+		sendMessage("Hello, World", getCurrentTxSender());
 	}
 
 	/**
-	 * A main function for debugging purposes only, this method is not
+	 * A main function for debugging or publishing purposes only, this method is not
 	 * compiled into bytecode.
 	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		new EmulatorWindow(Hello.class);
-		compile();
 	}
 }
