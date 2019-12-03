@@ -86,29 +86,31 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(nodeField = new JComboBox<>());
         nodeField.setToolTipText("BURST node address");
         nodeField.setEditable(true);
-        nodeField.addItem(BT.NODE_AT_TESTNET);
         nodeField.addItem(BT.NODE_TESTNET);
+        nodeField.addItem(BT.NODE_AT_TESTNET);
         nodeField.addItem(BT.NODE_LOCAL_TESTNET);
         nodeField.addItem(BT.NODE_BURSTCOIN_RO);
         nodeField.addItem(BT.NODE_BURST_ALLIANCE);
         nodeField.addItem(BT.NODE_BURST_TEAM);
         nodeField.addItem(BT.NODE_BURSTCOIN_RO2);
 
-        config.add(passField = new JPasswordField());
-        passField.setToolTipText("Passphrase, never sent over the wire");
         config.add(deadlineField = new HintTextField("Deadline in minutes", null));
         deadlineField.setText("1440"); // 4 days
         config.add(feeField = new HintTextField("Fee in BURST", null));
         feeField.setText("7.0");
         config.add(actFeeField = new HintTextField("Activation fee in BURST", null));
         actFeeField.setText("30.0");
+        config.add(passField = new JPasswordField());
+        passField.setToolTipText("Passphrase, never sent over the wire");
 
         left.add(config, BorderLayout.CENTER);
 
         config.add(publishButton = new JButton("Publish"));
+        publishButton.setToolTipText("Publish your contract on the selected network");
         publishButton.addActionListener(this);
 
         config.add(listContractsButton = new JButton("List My Contracts"));
+        listContractsButton.setToolTipText("List all contracts you published");
         listContractsButton.addActionListener(this);
 
         JPanel codePanelForm = new JPanel(new BorderLayout());
