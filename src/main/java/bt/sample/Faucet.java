@@ -3,6 +3,7 @@ package bt.sample;
 import bt.*;
 import bt.compiler.CompilerVersion;
 import bt.compiler.TargetCompilerVersion;
+import bt.ui.EmulatorWindow;
 
 /**
  * A faucet smart contract sending back 30 BURST for every transaction received.
@@ -20,5 +21,13 @@ public class Faucet extends Contract {
 	 */
 	public void txReceived() {
 		sendAmount(30 * ONE_BURST, getCurrentTxSender());
+	}
+
+
+	/**
+	 * Main function for testing or publishing the contract on chain.
+	 */
+	public static void main(String[] args) {
+		new EmulatorWindow(Faucet.class);
 	}
 }
