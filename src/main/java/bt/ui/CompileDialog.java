@@ -83,6 +83,16 @@ class CompileDialog extends JDialog implements ActionListener {
         nameField.setText(atClass.getSimpleName());
         config.add(descField = new HintTextField("Contract description", null));
         descField.setText(atClass.getSimpleName() + ", created with BlockTalk");
+
+        config.add(deadlineField = new HintTextField("Deadline in minutes", null));
+        deadlineField.setText("1440"); // 4 days
+        config.add(feeField = new HintTextField("Fee in BURST", null));
+        feeField.setText("7.0");
+        config.add(actFeeField = new HintTextField("Activation fee in BURST", null));
+        actFeeField.setText("30.0");
+        config.add(passField = new JPasswordField());
+        passField.setToolTipText("Passphrase, never sent over the wire");
+
         config.add(nodeField = new JComboBox<>());
         nodeField.setToolTipText("BURST node address");
         nodeField.setEditable(true);
@@ -93,15 +103,6 @@ class CompileDialog extends JDialog implements ActionListener {
         nodeField.addItem(BT.NODE_BURST_ALLIANCE);
         nodeField.addItem(BT.NODE_BURST_TEAM);
         nodeField.addItem(BT.NODE_BURSTCOIN_RO2);
-
-        config.add(deadlineField = new HintTextField("Deadline in minutes", null));
-        deadlineField.setText("1440"); // 4 days
-        config.add(feeField = new HintTextField("Fee in BURST", null));
-        feeField.setText("7.0");
-        config.add(actFeeField = new HintTextField("Activation fee in BURST", null));
-        actFeeField.setText("30.0");
-        config.add(passField = new JPasswordField());
-        passField.setToolTipText("Passphrase, never sent over the wire");
 
         left.add(config, BorderLayout.CENTER);
 
