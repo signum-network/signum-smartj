@@ -10,7 +10,7 @@
 | Unsupported | BlockTalk does not support this instruction and/or related features
 
 | OpCode | Supported? | Reason (if unsupported) |
-| - | - | - | - |
+| - | - | - |
 | aaload | Not Implemented |  |
 | aastore | Not Implemented |  |
 | aconst_null | Supported |  |
