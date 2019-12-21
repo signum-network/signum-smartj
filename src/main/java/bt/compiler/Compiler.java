@@ -8,11 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -651,6 +647,7 @@ public class Compiler {
 			AbstractInsnNode insn = ite.next();
 
 			int opcode = insn.getOpcode();
+			checkNotUnsupported(opcode);
 
 			if (opcode == -1) {
 				// This is a label or line number information
@@ -1646,6 +1643,20 @@ public class Compiler {
 				method.localArgTotal += argSize;
 			}
 			method.nargs++;
+		}
+	}
+
+	private static final List<Integer> unsupportedOpcodes = Arrays.asList(
+			ATHROW,
+			CHECKCAST,
+			INSTANCEOF,
+			MONITORENTER,
+			MONITOREXIT
+	);
+
+	private void checkNotUnsupported(int opcode) {
+		if (unsupportedOpcodes.contains(opcode)) {
+			throw new UnsupportedOperationException("OpCode " + opcode + " not supported");
 		}
 	}
 }

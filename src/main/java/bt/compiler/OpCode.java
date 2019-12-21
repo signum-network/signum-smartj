@@ -20,7 +20,7 @@ final class OpCode {
   static final byte e_op_code_DIV_DAT = 0x09;
   static final byte e_op_code_BOR_DAT = 0x0a;
   static final byte e_op_code_AND_DAT = 0x0b;
-  static final byte e_op_code_XOR_DAT = 0x0c; // Unused
+  static final byte e_op_code_XOR_DAT = 0x0c;
   static final byte e_op_code_NOT_DAT = 0x0d; // Unused
   static final byte e_op_code_SET_IND = 0x0e;
   static final byte e_op_code_SET_IDX = 0x0f; // Unused
