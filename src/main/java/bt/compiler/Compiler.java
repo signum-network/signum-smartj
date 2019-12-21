@@ -678,6 +678,8 @@ public class Compiler {
 			}
 
 			switch (opcode) {
+			case NOP:
+				break;
 			case ILOAD:
 			case LLOAD:
 			case ALOAD:
@@ -771,6 +773,7 @@ public class Compiler {
 				pushVar(m, arg1.address);
 				break;
 
+			case ICONST_M1:
 			case ICONST_1:
 			case ICONST_2:
 			case ICONST_3:
@@ -817,6 +820,8 @@ public class Compiler {
 			case LAND:
 			case IOR:
 			case LOR:
+			case IXOR:
+			case LXOR:
 				// we should have two arguments on the stack
 				arg2 = popVar(m, tmpVar2, false);
 				arg1 = popVar(m, tmpVar1, true);
@@ -851,6 +856,11 @@ public class Compiler {
 				case LOR:
 					System.out.println("OR");
 					code.put(OpCode.e_op_code_BOR_DAT);
+					break;
+				case IXOR:
+				case LXOR:
+					System.out.println("XOR");
+					code.put(OpCode.e_op_code_XOR_DAT);
 					break;
 				default:
 					System.out.println("add");
@@ -1572,7 +1582,7 @@ public class Compiler {
 				break;
 
 			default:
-				addError(insn, "Unsupported opcode: " + opcode);
+				addError(insn, "OpCode Not Implemented: " + opcode);
 				break;
 			}
 		}
