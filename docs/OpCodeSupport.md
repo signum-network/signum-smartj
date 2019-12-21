@@ -198,8 +198,8 @@
 | lsub | Supported |  |
 | lushr | Not Implemented |  |
 | lxor | Supported |  |
-| monitorenter | Unsupported | ATs are a single thread. Multithreading is not supported. |
-| monitorexit | Unsupported | ATs are a single thread. Multithreading is not supported. |
+| monitorenter | Unsupported | ATs only have a single thread. Multithreading is not supported. |
+| monitorexit | Unsupported | ATs only have a single thread. Multithreading is not supported. |
 | multianewarray | Not Implemented |  |
 | new | Not Implemented |  |
 | newarray | Not Implemented |  |
