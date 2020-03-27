@@ -133,7 +133,7 @@ public class Printer {
 
 		int p = 0;
 		while (p < length) {
-			if (p > 0) {
+			if (p > 0 && c!=null) {
 				// check if this is the start position of a method
 				for (Method m : c.getMethods()) {
 					if (m.address == p)
