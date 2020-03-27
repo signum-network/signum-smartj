@@ -52,7 +52,16 @@ public class BT {
      * @param nodeAddress the node address including port number
      */
     public static void setNodeAddress(String nodeAddress) {
-        bns = BurstNodeService.getInstance(nodeAddress);
+        setNodeInstance(BurstNodeService.getInstance(nodeAddress));
+    }
+
+    /**
+     * Sets the node service instance
+     * 
+     * @param node the node service instance
+     */
+    public static void setNodeInstance(BurstNodeService node) {
+        bns = node;
     }
 
     /**
