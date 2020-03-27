@@ -273,7 +273,7 @@ public class BT {
             dataBuffer.putLong(data[i]);
         }
 
-        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, code, dataBuffer.array(), dPages, 1, 1, activationFee);
+        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
         return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
