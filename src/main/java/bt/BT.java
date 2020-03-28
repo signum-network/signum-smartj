@@ -97,10 +97,9 @@ public class BT {
     }
 
     /**
-     * Call a method on the given contract address.
+     * Build the message for a method call
      */
-    public static Single<TransactionBroadcast> callMethod(String passFrom, BurstAddress contractAddress, Method method,
-            BurstValue value, BurstValue fee, int deadline, Object... args) {
+    public static byte[] callMethodMessage(Method method, Object... args) {
 
         ByteBuffer b = ByteBuffer.allocate(32);
         b.order(ByteOrder.LITTLE_ENDIAN);
@@ -133,7 +132,18 @@ public class BT {
                     "Expecting " + method.getNArgs() + " but received " + nargs + " parameters");
         }
 
-        return sendMessage(passFrom, contractAddress, value, fee, deadline, b.array());
+        return b.array();
+    }
+
+    /**
+     * Call a method on the given contract address.
+     */
+    public static Single<TransactionBroadcast> callMethod(String passFrom, BurstAddress contractAddress, Method method,
+            BurstValue value, BurstValue fee, int deadline, Object... args) {
+
+        byte[] bytes = callMethodMessage(method, args);
+
+        return sendMessage(passFrom, contractAddress, value, fee, deadline, bytes);
     }
 
     public static Single<TransactionBroadcast> sendAmount(String passFrom, BurstAddress receiver, BurstValue value) {
