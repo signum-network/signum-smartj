@@ -28,6 +28,8 @@ public class BT {
     public static final String PASSPHRASE = "block talk, easy to use smart contracts for burst";
     public static final String PASSPHRASE2 = "block talk: easy to use smart contracts for burst";
     public static final String PASSPHRASE3 = "block talk! easy to use smart contracts for burst";
+    public static final String PASSPHRASE4 = "pirmas";
+    public static final String PASSPHRASE5 = "antras";
 
     public static final String NODE_LOCAL_TESTNET = "http://localhost:6876";
     public static final String NODE_LOCAL_TESTNET_GRPC = "grpc://localhost:6878";
