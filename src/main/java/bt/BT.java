@@ -44,6 +44,8 @@ public class BT {
     public static final String NODE_BURST_ALLIANCE = "https://wallet.burst-alliance.org:8125";
     public static final String NODE_BURSTCOIN_RO = "https://wallet.burstcoin.ro:443";
     public static final String NODE_BURSTCOIN_RO2 = "https://wallet2.burstcoin.ro:443";
+    
+    public static boolean CIP20_ACTIVATED = false;
 
     static BurstNodeService bns = BurstNodeService.getInstance(NODE_LOCAL_TESTNET);
     static BurstCrypto bc = BurstCrypto.getInstance();
@@ -64,6 +66,15 @@ public class BT {
      */
     public static void setNodeInstance(BurstNodeService node) {
         bns = node;
+    }
+    
+    /**
+     * Activates CIP20 for fee estimation (default is deactivated for now)
+     * 
+     * @param on
+     */
+    public static void activateCIP20(boolean on) {
+    	CIP20_ACTIVATED = on;
     }
 
     /**
@@ -216,9 +227,19 @@ public class BT {
 
     /**
      * @return the minimum fee to register the given contract
+     * 
+     * @see BT#activateCIP20(boolean)
      */
     public static BurstValue getMinRegisteringFee(Compiler compiledContract) {
-        return BurstValue.fromBurst(2 + compiledContract.getDataPages() + compiledContract.getCodeNPages());
+    	BurstValue baseFee = BurstValue.fromPlanck(CIP20_ACTIVATED ? Contract.FEE_QUANT*10L : Contract.ONE_BURST);
+        return baseFee.multiply(2 + compiledContract.getDataPages() + compiledContract.getCodeNPages());
+    }
+    
+    /**
+     * @return the maximum number of code pages the blockchain would accept.
+     */
+    public static int getMaxMachineCodePages() {
+    	return CIP20_ACTIVATED ? 20 : 10;
     }
 
     /**
@@ -294,7 +315,7 @@ public class BT {
             dataBuffer.putLong(data[i]);
         }
 
-        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
+        byte[] creationBytes = BurstCrypto.getInstance().getATCreationBytes((short) (CIP20_ACTIVATED ? 2 : 1), code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
         return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
