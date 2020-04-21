@@ -43,18 +43,11 @@ public class Transaction {
 		this.type = type;
 		this.ts = ts;
 		msgString = msg;
-		this.msg = new Register();
 		if (msg == null) {
 			this.msgString = "";
 			return;
 		}
-		byte[] bytes = msg.getBytes();
-		int pos = 0;
-		for (int j = 0; j < this.msg.value.length; j++) {
-			for (int i = 0; i < 8 && pos < bytes.length; i++) {
-				this.msg.value[j] += ((long) bytes[pos++] & 0xffL) << (8 * i);
-			}
-		}
+		this.msg = Register.newMessage(this.msgString);
 	}
 
 	/**
