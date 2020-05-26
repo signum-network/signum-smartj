@@ -10,7 +10,7 @@ import bt.ui.EmulatorWindow;
  * 
  * This contract represents a non-fungible or unique token for Burst blockchain.
  * 
- * When created the contract is <i>owned</i> by the creator. After that the
+ * When created the contract is <i>owned</i> by the creator. After that, the
  * owner can transfer the ownership to another address. Additionally, the owner
  * can put the token for sale or for auction with a given timeout.
  *
@@ -28,7 +28,7 @@ public class NFT2 extends Contract {
 	public static final int STATUS_FOR_SALE = 1;
 	public static final int STATUS_FOR_AUCTION = 2;
 
-	public static final long ACTIVATION_FEE = ONE_BURST * 10;
+	public static final long ACTIVATION_FEE = ONE_BURST * 1;
 
 	int status;
 	Address owner;
@@ -77,16 +77,16 @@ public class NFT2 extends Contract {
 	/**
 	 * Put this token for sale for the given price.
 	 * 
-	 * Buyer needs to transfer at least the asked amount (plus activation fee).
+	 * Buyer needs to transfer at least the asked amount.
 	 * 
 	 * @param priceNQT the price in NQT==1E-8 BURST (buyer needs to transfer at least
-	 *                 this amount plus activation fee)
+	 *                 this amount)
 	 */
 	public void putForSale(long priceNQT) {
 		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
-			salePrice = priceNQT;
+			salePrice = priceNQT - ACTIVATION_FEE;
 		}
 	}
 
@@ -106,26 +106,26 @@ public class NFT2 extends Contract {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_AUCTION;
 			auctionTimeout = getBlockTimestamp().addMinutes(timeout);
-			highestBid = priceNQT;
+			highestBid = priceNQT - ACTIVATION_FEE;
 		}
 	}
 
 	/**
 	 * If this contract is for sale or for auction, this method handles the payment/bid.
 	 * 
-	 * A buyer needs to transfer the asked price (plus activation fee) to the contract.
+	 * A buyer needs to transfer the asked price to the contract.
 	 * 
 	 * If the token is for auction, a bidder need to transfer more than the current highest
 	 * bid to become the new highest bidder. Previous highest bidder is then refunded (minus
 	 * the activation fee). After the auction timeout, any transaction received will trigger
-	 * the ownershipt transfer.
+	 * the ownership transfer.
 	 * 
 	 * If the token was not for sale or the amount is not enough, the order is
 	 * refunded (minus the contract activation fee).
 	 */
 	public void txReceived() {
 		if (status == STATUS_FOR_SALE) {
-			if (getCurrentTx().getAmount() >= salePrice) {
+			if (getCurrentTxAmount() >= salePrice) {
 				// Conditions match, let's execute the sale
 				sendAmount(salePrice, owner); // pay the current owner
 				owner = getCurrentTx().getSenderAddress(); // new owner
@@ -143,15 +143,15 @@ public class NFT2 extends Contract {
 					status = STATUS_NOT_FOR_SALE;
 				}
 				// current transaction will be refunded below
-			} else if (getCurrentTx().getAmount() > highestBid) {
+			} else if (getCurrentTxAmount() > highestBid) {
 				// Conditions match, let's register the bid
 
 				// refund previous bidder, if some
 				if (highestBidder != null)
 					sendAmount(highestBid, highestBidder);
 
-				highestBidder = getCurrentTx().getSenderAddress();
-				highestBid = getCurrentTx().getAmount();
+				highestBidder = getCurrentTxSender();
+				highestBid = getCurrentTxAmount();
 				return;
 			}
 		}
@@ -164,7 +164,7 @@ public class NFT2 extends Contract {
 	 */
 	void refund() {
 		// send back funds of an invalid order
-		sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
+		sendAmount(getCurrentTxAmount(), getCurrentTxSender());
 	}
 
 	/**
@@ -173,6 +173,8 @@ public class NFT2 extends Contract {
 	 * This function is not compiled into bytecode and do not go to the blockchain.
 	 */
 	public static void main(String[] args) throws Exception {
+		BT.activateCIP20(true);
+		
 		// some initialization code to make things easier to debug
 		Emulator emu = Emulator.getInstance();
 		Address creator = Emulator.getInstance().getAddress("CREATOR");
