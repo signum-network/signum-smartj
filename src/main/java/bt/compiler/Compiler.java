@@ -1364,7 +1364,7 @@ public class Compiler {
 							int pos = Integer.parseInt(mi.name.substring(mi.name.length() - 1)) - 1;
 							pushVar(m, values[pos].address);
 						}
-						if (mi.name.equals("equals")) {
+						else if (mi.name.equals("equals")) {
 							code.put(OpCode.e_op_code_CLR_DAT);
 							code.putInt(tmpVar5);
 
