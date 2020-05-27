@@ -56,7 +56,7 @@ public class NFT2 extends Contract {
 	 * @param newOwner
 	 */
 	public void transfer(Address newOwner) {
-		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
 			// only if there is no bidder and it is the current owner
 			owner = newOwner;
 			status = STATUS_NOT_FOR_SALE;
@@ -67,7 +67,7 @@ public class NFT2 extends Contract {
 	 * Cancels an open for sale or auction and sets it as not for sale.
 	 */
 	public void setNotForSale(){
-		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_NOT_FOR_SALE;
 			salePrice = 0;
@@ -83,7 +83,7 @@ public class NFT2 extends Contract {
 	 *                 this amount)
 	 */
 	public void putForSale(long priceNQT) {
-		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			salePrice = priceNQT - ACTIVATION_FEE;
@@ -102,7 +102,7 @@ public class NFT2 extends Contract {
 	 * @param timeout  how many minutes the sale will be available
 	 */
 	public void putForAuction(int priceNQT, int timeout) {
-		if (highestBidder==null && owner.equals(this.getCurrentTx().getSenderAddress())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_AUCTION;
 			auctionTimeout = getBlockTimestamp().addMinutes(timeout);
@@ -128,7 +128,7 @@ public class NFT2 extends Contract {
 			if (getCurrentTxAmount() >= salePrice) {
 				// Conditions match, let's execute the sale
 				sendAmount(salePrice, owner); // pay the current owner
-				owner = getCurrentTx().getSenderAddress(); // new owner
+				owner = getCurrentTxSender(); // new owner
 				status = STATUS_NOT_FOR_SALE;
 				return;
 			}
