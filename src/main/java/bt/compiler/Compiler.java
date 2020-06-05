@@ -1083,7 +1083,7 @@ public class Compiler {
 							stack.pollLast(); // remove the "this" from stack
 
 							code.put(OpCode.e_op_code_SLP_DAT);
-							code.putInt(tmpVar1);
+							code.putInt(arg1.address);
 						} else if (mi.name.equals("sendAmount")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							arg2 = popVar(m, tmpVar2, false); // amount

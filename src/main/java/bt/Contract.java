@@ -273,18 +273,19 @@ public abstract class Contract {
 	 * Sleeps until the next block.
 	 */
 	protected void sleepOneBlock() {
-		sleep(null);
+		sleep(0);
 	}
 
 	/**
-	 * Sleep until the given timestamp.
+	 * Sleeps for the given number of blocks.
 	 * 
-	 * @param ts
+	 * @param nblocks number of blocks to sleep
 	 */
-	protected void sleep(Timestamp ts) {
-		sleepUntil = ts;
-		if (sleepUntil == null)
-			sleepUntil = new Timestamp(0, 0);
+	protected void sleep(long nblocks) {
+		if(nblocks <= 0)
+			sleepUntil = null;
+		else
+			sleepUntil = new Timestamp(Emulator.getInstance().getCurrentBlock().height + nblocks, 0);
 		try {
 			semaphore.acquire();
 		} catch (InterruptedException e) {

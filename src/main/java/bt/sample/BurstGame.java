@@ -52,7 +52,7 @@ public class BurstGame extends Contract {
 		creatorAmount = balance - challengerAmount;
 
 		// sleep two blocks
-		sleep(getBlockTimestamp().addMinutes(8));
+		sleep(2);
 
 		blockHash = getPrevBlockHash().getValue1();
 		blockHash &= 0x0FFFFFFFFFFFFFFFL; // avoid negative values

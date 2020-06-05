@@ -352,9 +352,7 @@ public class Printer {
 			case OpCode.e_op_code_SLP_DAT:
 				p += printOp(code, p, 1, out);
 				out.println("\tSLP_DAT");
-				out.print(tab);
-				p += print(code, p, 4, out);
-				out.println(" address");
+				p += printAddress(code, p, out, c);
 				break;
 			case OpCode.e_op_code_SLP_IMD:
 				p += printOp(code, p, 1, out);

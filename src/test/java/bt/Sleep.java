@@ -10,7 +10,7 @@ public class Sleep extends Contract {
 
 	@Override
 	public void txReceived() {
-		sleep(null);
+		sleep(0);
 		sendBalance(getCurrentTx().getSenderAddress());
 	}
 
