@@ -377,4 +377,14 @@ public class BT {
         contract = bns.getAt(contract.getId()).blockingGet();
         return contract.getBalance();
     }
+    
+    /**
+     * Converts a smart contract timestamp to block height.
+     * 
+     * @param timestamp
+     * @return the block height
+     */
+    public static int longToHeight(long timestamp) {
+        return (int) (timestamp >> 32);
+    }
 }
