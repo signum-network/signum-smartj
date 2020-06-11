@@ -273,6 +273,7 @@ public abstract class Contract {
 	 * Sleeps until the contract receives a new transaction.
 	 */
 	protected void sleepUntilNextTx() {
+		// FIXME: on emulator we will sleep for one block
 		sleep(0);
 	}
 
