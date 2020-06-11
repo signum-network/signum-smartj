@@ -270,9 +270,9 @@ public abstract class Contract {
 	}
 
 	/**
-	 * Sleeps until the next block.
+	 * Sleeps until the contract receives a new transaction.
 	 */
-	protected void sleepOneBlock() {
+	protected void sleepUntilNextTx() {
 		sleep(0);
 	}
 
