@@ -10,6 +10,7 @@ import java.util.concurrent.Semaphore;
 
 import bt.compiler.Compiler;
 import burst.kit.crypto.BurstCrypto;
+import burst.kit.entity.BurstID;
 
 /**
  * The BlockTalk smart contract abstract class.
@@ -58,6 +59,15 @@ public abstract class Contract {
 	 */
 	protected Address parseAddress(String rs) {
 		return Emulator.getInstance().getAddress(rs);
+	}
+	
+	/**
+	 * Utility function that return the address of a given ID
+	 * @param id the signed long id
+	 * @return the address
+	 */
+	protected Address getAddress(long id) {
+		return Emulator.getInstance().getAddress(BurstCrypto.getInstance().rsEncode(BurstID.fromLong(id)));
 	}
 
 	/**

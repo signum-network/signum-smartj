@@ -1024,6 +1024,11 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							code.putLong(value);
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getAddress")) {
+							arg1 = popVar(m, tmpVar1, false); // the address
+							stack.pollLast(); // remove the "this" from stack
+							
+							pushVar(m, arg1.address);
 						} else if (mi.name.equals("getCreator")) {
 							stack.pollLast(); // remove the "this" from stack
 
