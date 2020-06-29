@@ -45,7 +45,7 @@ public class BT {
     public static final String NODE_BURSTCOIN_RO = "https://wallet.burstcoin.ro:443";
     public static final String NODE_BURSTCOIN_RO2 = "https://wallet2.burstcoin.ro:443";
     
-    public static boolean CIP20_ACTIVATED = false;
+    public static boolean CIP20_ACTIVATED = true;
 
     static BurstNodeService bns = BurstNodeService.getInstance(NODE_LOCAL_TESTNET);
     static BurstCrypto bc = BurstCrypto.getInstance();
