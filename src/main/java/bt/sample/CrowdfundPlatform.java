@@ -47,7 +47,7 @@ public class CrowdfundPlatform extends Contract {
 	public void txReceived(){
 		if(!successful){
 			// Send back funds since it failed
-			sendAmount(getCurrentTx().getAmount(), getCurrentTx().getSenderAddress());
+			sendAmount(getCurrentTxAmount(), getCurrentTxSender());
 		}
 	}
 	
