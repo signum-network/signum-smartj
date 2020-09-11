@@ -86,7 +86,7 @@ class CompileDialog extends JDialog implements ActionListener {
 
         config.add(deadlineField = new HintTextField("Deadline in minutes", null));
         deadlineField.setText("1440"); // 4 days
-        config.add(feeField = new HintTextField("Fee in BURST", null));
+        config.add(feeField = new HintTextField("Deploy fee in BURST", null));
         feeField.setText("7.0");
         config.add(actFeeField = new HintTextField("Gas fee in BURST", null));
         actFeeField.setText("0.3");
