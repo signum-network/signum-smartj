@@ -89,7 +89,7 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(feeField = new HintTextField("Deploy fee in BURST", null));
         feeField.setText("7.0");
         config.add(actFeeField = new HintTextField("Gas fee in BURST", null));
-        actFeeField.setText("0.3");
+        actFeeField.setText(BurstValue.fromPlanck(Contract.FEE_QUANT*40).toUnformattedString());
         config.add(passField = new JPasswordField());
         passField.setToolTipText("Passphrase, never sent over the wire");
 
