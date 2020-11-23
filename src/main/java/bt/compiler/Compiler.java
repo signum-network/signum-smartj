@@ -46,7 +46,6 @@ public class Compiler {
 	public static final String FINISHED_METHOD = "blockFinished";
 	public static final String TX_RECEIVED_METHOD = "txReceived";
 	public static final int PAGE_SIZE = 256;
-	public static final int MAX_SIZE = 10 * PAGE_SIZE;
 
 	private static final String UNEXPECTED_ERROR = "Unexpected error, please report at https://github.com/burst-apps-team/blocktalk/issues";
 
@@ -408,8 +407,8 @@ public class Compiler {
 
 	public void link() {
 		// we allow here a larger size, there will be an error when registering
-		// if we pass the actuall limit
-		code = ByteBuffer.allocate(2 * MAX_SIZE);
+		// if we pass the actual limit
+		code = ByteBuffer.allocate(40 * Compiler.PAGE_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
 		initialCode();
@@ -620,7 +619,7 @@ public class Compiler {
 	}
 
 	private void parseMethod(Method m) {
-		ByteBuffer code = ByteBuffer.allocate(Compiler.MAX_SIZE);
+		ByteBuffer code = ByteBuffer.allocate(40 * Compiler.PAGE_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
 		m.code = code;
