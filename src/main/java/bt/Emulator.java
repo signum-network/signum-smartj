@@ -111,6 +111,11 @@ public class Emulator {
 		t.block = currentBlock;
 		txs.add(t);
 	}
+	
+	public void airDrop(String address, long amount) {
+		Address to = getAddress(address);
+		to.balance += amount;
+	}
 
 	public void airDrop(Address to, long amount) {
 		to.balance += amount;

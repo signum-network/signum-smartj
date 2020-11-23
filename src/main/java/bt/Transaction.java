@@ -113,6 +113,8 @@ public class Transaction {
 	 * @return the first 8 bytes in the message
 	 */
 	public long getMessage1() {
+		if(msg == null)
+			return 0L;
 		return msg.value[0];
 	}
 
