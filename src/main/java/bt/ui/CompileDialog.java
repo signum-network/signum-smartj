@@ -242,6 +242,7 @@ class CompileDialog extends JDialog implements ActionListener {
     }
 
     private void handleError(Throwable t) {
+    	t.printStackTrace();
         setCursor(Cursor.getDefaultCursor());
         closeButton.setEnabled(true);
         publishButton.setEnabled(true);
