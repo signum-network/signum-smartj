@@ -120,6 +120,35 @@ public abstract class Contract {
 	protected void sendMessage(Register message, Address receiver) {
 		Emulator.getInstance().send(address, receiver, 0, message);
 	}
+	
+	/**
+	 * Send the given message to the given address.
+	 * 
+	 * The message has the isText flag set as false, the given hexadecimal value is
+	 * converted to characters when shown in BRS wallet. Message is always
+	 * unencrypted.
+	 * 
+	 * @param message  the message in form of a long number
+	 * @param receiver the address
+	 */
+	protected void sendMessage(long message, Address receiver) {
+		Emulator.getInstance().send(address, receiver, 0, Register.newInstance(message, 0, 0, 0));
+	}
+	
+	/**
+	 * Send the given message to the given address.
+	 * 
+	 * The message has the isText flag set as false, the given hexadecimal values are
+	 * converted to characters when shown in BRS wallet. Message is always
+	 * unencrypted.
+	 * 
+	 * @param message  the message in form of a long number
+	 * @param message2  the message in form of a long number
+	 * @param receiver the address
+	 */
+	protected void sendMessage(long message, long message2, Address receiver) {
+		Emulator.getInstance().send(address, receiver, 0, Register.newInstance(message, message2, 0, 0));
+	}
 
 	/**
 	 * Function to be called before processing the transactions of the current
@@ -208,6 +237,13 @@ public abstract class Contract {
 	 */
 	protected Timestamp getBlockTimestamp() {
 		return new Timestamp(Emulator.getInstance().getCurrentBlock().getHeight(), 0);
+	}
+	
+	/**
+	 * @return the timestamp of the block being processed
+	 */
+	protected long getBlockHeight() {
+		return Emulator.getInstance().getCurrentBlock().getHeight();
 	}
 
 	/**

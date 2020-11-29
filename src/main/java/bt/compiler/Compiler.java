@@ -1047,6 +1047,23 @@ public class Compiler {
 							code.putShort(OpCode.Get_Block_Timestamp);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getBlockHeight")) {
+							stack.pollLast(); // remove the "this" from stack
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Get_Block_Timestamp);
+							code.putInt(tmpVar1);
+							
+							// Get only the block height, removing the number of txs
+							code.put(OpCode.e_op_code_SET_VAL);
+							code.putInt(tmpVar2);
+							code.putLong(32L);
+
+							code.put(OpCode.e_op_code_SHR_DAT);
+							code.putInt(tmpVar1);
+							code.putInt(tmpVar2);
+							
+							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getPrevBlockHash")) {
 							stack.pollLast(); // remove the "this" from stack
 
@@ -1188,7 +1205,34 @@ public class Compiler {
 									code.putShort((short) (OpCode.Set_A1 + a));
 									code.putInt(tmpVar1);
 								}
-							} else {
+							}
+							else if (mi.desc.equals("(JLbt/Address;)V")) {
+								// single long argument
+								StackVar msg = popVar(m, tmpVar1, false);
+								
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_A);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A1));
+								code.putInt(msg.address);
+							}
+							else if (mi.desc.equals("(JJLbt/Address;)V")) {
+								// two long arguments
+								StackVar msg = popVar(m, tmpVar1, false);
+								StackVar msg2 = popVar(m, tmpVar2, false);
+								
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_A);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A1));
+								code.putInt(msg.address);
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A2));
+								code.putInt(msg2.address);
+							}
+							else {
 								// We should have received a Register, it is on stack
 								for (int i = 3; i >= 0; i--) {
 									StackVar reg = popVar(m, tmpVar1, false);
@@ -1204,7 +1248,6 @@ public class Compiler {
 							stack.pollLast(); // remove the 'this'
 						} else {
 							// check for user defined methods
-							stack.pollLast(); // remove the 'this'
 							Method mcall = methods.get(mi.name);
 							if (mcall == null) {
 								addError(mi, "Method not found: " + mi.name);
@@ -1242,6 +1285,7 @@ public class Compiler {
 									code.putInt(tmpVar2);
 								}
 							}
+							stack.pollLast(); // remove the 'this'
 
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
