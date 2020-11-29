@@ -35,7 +35,7 @@ public class BT {
     public static final String NODE_LOCAL_TESTNET_GRPC = "grpc://localhost:6878";
     public static final String NODE_AT_TESTNET = "http://at-testnet.burst-alliance.org:6876";
     public static final String NODE_AT_TESTNET_GRPC = "grpc://at-testnet.burst-alliance.org:6878";
-    public static final String NODE_TESTNET = "http://testnet.getburst.net:6876";
+    public static final String NODE_TESTNET = "http://testnet.burstcoin.network:6876";
     public static final String NODE_TESTNET_GRPC = "grpc://testnet.getburst.net:6878";
     public static final String NODE_TESTNET_MEGASH = "https://test-burst.megash.it";
     public static final String NODE_TESTNET_MEGASH_GRPC = "grpc://test-burst.megash.it:6878";
