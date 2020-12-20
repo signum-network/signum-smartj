@@ -17,6 +17,7 @@ public class Address {
 	String rsAddress;
 	long balance;
 	Contract contract;
+	boolean sleeping;
 	
 	/**
 	 * Should be called by the emulator only.
@@ -62,6 +63,19 @@ public class Address {
 	@EmulatorWarning
 	public Contract getContract() {
 		return contract;
+	}
+	
+	/**
+	 * @return true if it is a sleeping contract
+	 */
+	@EmulatorWarning
+	public boolean isSleeping() {
+		return sleeping;
+	}
+	
+	@EmulatorWarning
+	public void setSleeping(boolean sleeping) {
+		this.sleeping = sleeping;
 	}
 
 	@Override

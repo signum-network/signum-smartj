@@ -47,8 +47,7 @@ public abstract class Contract {
 
 	protected Contract() {
 		Emulator emu = Emulator.getInstance();
-		setInitialVars(emu.curTx.getSenderAddress(), new Timestamp(emu.getCurrentBlock().getHeight(), 0),
-				emu.curTx.getAmount());
+		setInitialVars(emu.curTx, new Timestamp(emu.getCurrentBlock().getHeight(), 0));
 	}
 
 	/**
@@ -331,13 +330,16 @@ public abstract class Contract {
 	protected void sleep(long nblocks) {
 		if(nblocks <= 0)
 			sleepUntil = null;
-		else
+		else {
 			sleepUntil = new Timestamp(Emulator.getInstance().getCurrentBlock().height + nblocks, 0);
-		try {
-			semaphore.acquire();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+			address.setSleeping(true);
+			try {
+				semaphore.acquire();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
+		address.setSleeping(false);
 		sleepUntil = null;
 	}
 
@@ -353,10 +355,21 @@ public abstract class Contract {
 	// machine when in debug mode but not exported to the
 	// AT blockchain machine code
 
-	void setInitialVars(Address creator, Timestamp creation, long activationFee) {
-		this.creator = creator;
+	void setInitialVars(Transaction tx, Timestamp creation) {
+		this.creator = tx.sender;
+		this.address = tx.receiver;
 		this.creation = creation;
-		this.activationFee = activationFee;
+		this.activationFee = tx.getAmount();
+		this.address.contract = this;
+		
+		// we acquire the semaphore in the creation process, it is released
+		// when finished by the emulator
+		try {
+			running = true;
+			semaphore.acquire();
+		} catch (InterruptedException e) {
+			running =false;
+		}
 	}
 
 	void setCurrentTx(Transaction current) {
