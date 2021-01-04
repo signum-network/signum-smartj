@@ -64,6 +64,7 @@ public class Compiler {
 	int lastFreeVar;
 	int lastTxReceived;
 	int lastTxTimestamp;
+	int blockTimestamp;
 	int lastTxSender;
 	int lastTxAmount;
 	int tmpVar1, tmpVar2, tmpVar3, tmpVar4, tmpVar5, tmpVar6;
@@ -241,6 +242,7 @@ public class Compiler {
 		// Variables are reserved the lastTxReceived so we
 		// can easily have the 'current' tx variable available
 		lastTxTimestamp = lastFreeVar++;
+		blockTimestamp = lastFreeVar++;
 		lastTxReceived = lastFreeVar++;
 
 		// Variables reserved for the last tx information
@@ -290,6 +292,7 @@ public class Compiler {
 
 		// The starting point for future calls (PCS)
 		code.put(OpCode.e_op_code_SET_PCS);
+		int afterPCSAddress = code.position();
 		// Check if we have a blockStarted method and put it here
 		Method startedMethod = getMethod(STARTED_METHOD);
 		boolean hasStarted = startedMethod != null && startedMethod.code.position() > 1;
@@ -299,13 +302,18 @@ public class Compiler {
 		}
 
 		// Point to restart for a new transaction
-		int afterPCSAddress = code.position();
+		int afterBlockStartedAddress = code.position();
 
 		if (hasPublicMethods || hasTxReceived) {
 			// put the last transaction received in A (after the last timestamp)
 			code.put(OpCode.e_op_code_EXT_FUN_DAT);
 			code.putShort(OpCode.A_To_Tx_After_Timestamp);
 			code.putInt(lastTxTimestamp);
+			
+			// get the block timestamp
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_Block_Timestamp);
+			code.putInt(blockTimestamp);
 
 			// get the value from A1
 			code.put(OpCode.e_op_code_EXT_FUN_RET);
@@ -319,11 +327,28 @@ public class Compiler {
 		if (hasPublicMethods || hasTxReceived) {
 			code.put(OpCode.e_op_code_BNZ_DAT);
 			code.putInt(lastTxReceived);
-			code.put((byte) (7 + (hasFinish ? 5 : 0)));
+			code.put((byte) (7 + (hasFinish ? 32 : 0)));
 		}
 		if (hasFinish) {
 			code.put(OpCode.e_op_code_JMP_SUB);
 			code.putInt(finishMethod.address);
+			
+			// Restart execution, just in case we run out of balance during the finish method.
+			// Otherwise, we would not process the next transaction of a new block
+			code.put(OpCode.e_op_code_EXT_FUN_RET);
+			code.putShort(OpCode.Get_Block_Timestamp);
+			code.putInt(tmpVar1);
+				
+			code.put(OpCode.e_op_code_SUB_DAT);
+			code.putInt(tmpVar1);
+			code.putInt(blockTimestamp);
+				
+			code.put(OpCode.e_op_code_BZR_DAT);
+			code.putInt(tmpVar1);
+			code.put((byte) 5);
+			// we are actually at a new block, so restart
+			code.put(OpCode.e_op_code_JMP_ADR);
+			code.putInt(afterPCSAddress);
 		}
 		code.put(OpCode.e_op_code_FIN_IMD);
 
@@ -386,7 +411,7 @@ public class Compiler {
 				code.putInt(m.address);
 				// end this run (check for the next transaction)
 				code.put(OpCode.e_op_code_JMP_ADR);
-				code.putInt(afterPCSAddress);
+				code.putInt(afterBlockStartedAddress);
 			}
 		}
 
@@ -401,7 +426,7 @@ public class Compiler {
 		if (hasPublicMethods || hasTxReceived) {
 			// restart for a possible new transaction
 			code.put(OpCode.e_op_code_JMP_ADR);
-			code.putInt(afterPCSAddress);
+			code.putInt(afterBlockStartedAddress);
 		}
 	}
 

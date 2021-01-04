@@ -16,6 +16,7 @@ import bt.sample.MultiSigLock;
 import bt.sample.OddsGame;
 import bt.sample.Sha256_64;
 import bt.sample.TXCounter;
+import bt.sample.TXCounter2;
 import bt.sample.TipThanks;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstValue;
@@ -43,12 +44,13 @@ public class CompilerTest extends BT {
         // t.testMethodCall();
         // t.testMethodCallArgs();
         // t.testCounter();
+         t.testCounter2();
         // t.testSha256_64();
         // t.testAuction();
         // t.testAuctionNFT();
         // t.testMultiSigLock();
         // t.testHashTimelockRefund();
-        t.testHashTimelockPay();
+        // t.testHashTimelockPay();
     }
 
     @Test
@@ -295,6 +297,44 @@ public class CompilerTest extends BT {
 
         Compiler compiled = BT.compileContract(TXCounter.class);
         AT contract = BT.registerContract(compiled, TXCounter.class.getSimpleName() + System.currentTimeMillis(),
+                BurstValue.fromBurst(10));
+        System.out.println(contract.getId().getSignedLongId());
+
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20)).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
+        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
+        address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
+        assertEquals(1, ntx);
+        assertEquals(1, nblocks);
+        assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
+
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1))
+                .blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1))
+                .blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1))
+                .blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+
+        ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
+        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
+        address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
+
+        assertEquals(4, ntx);
+        assertEquals(2, nblocks);
+    }
+
+    public void testCounter2() throws Exception {
+        BT.forgeBlock();
+
+        long ntx, nblocks, address;
+
+        Compiler compiled = BT.compileContract(TXCounter2.class);
+        AT contract = BT.registerContract(compiled, TXCounter2.class.getSimpleName() + System.currentTimeMillis(),
                 BurstValue.fromBurst(10));
         System.out.println(contract.getId().getSignedLongId());
 
