@@ -14,7 +14,7 @@ import bt.ui.EmulatorWindow;
 @TargetCompilerVersion(CompilerVersion.v0_0_0)
 public class TXCounter2 extends Contract {
 
-	long ntx, nblocks;
+	long ntx, nblocks, ncalls;
 	Address address;
 	
 	/**
@@ -23,14 +23,21 @@ public class TXCounter2 extends Contract {
 	@Override
 	public void txReceived(){
 		ntx++;
-		address = getCurrentTx().getSenderAddress();
+		address = getCurrentTxSender();
+	}
+	
+	public void methodCall() {
+		ntx++;
+		ncalls++;
 	}
 
 	@Override
 	protected void blockFinished() {
 		nblocks++;
-		// causes the execution to be halted
-		sendBalance(getCreator());
+		if(nblocks > 1) {
+			// causes the execution to be halted
+			sendBalance(getCreator());
+		}
 	}
 
 	public static void main(String[] args) {

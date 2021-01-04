@@ -331,12 +331,23 @@ public class CompilerTest extends BT {
     public void testCounter2() throws Exception {
         BT.forgeBlock();
 
-        long ntx, nblocks, address;
+        long ntx, ncalls, nblocks, address;
 
         Compiler compiled = BT.compileContract(TXCounter2.class);
         AT contract = BT.registerContract(compiled, TXCounter2.class.getSimpleName() + System.currentTimeMillis(),
                 BurstValue.fromBurst(10));
-        System.out.println(contract.getId().getSignedLongId());
+        System.out.println(contract.getId().getID());
+        
+        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("methodCall"), BurstValue.fromBurst(20),
+        		BurstValue.fromBurst(1), 1000).blockingGet();
+        BT.forgeBlock();
+        BT.forgeBlock();
+        ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
+        ncalls = BT.getContractFieldValue(contract, compiled.getField("ncalls").getAddress());
+        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
+        assertEquals(1, ntx);
+        assertEquals(1, ncalls);
+        assertEquals(1, nblocks);
 
         BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20)).blockingGet();
         BT.forgeBlock();
@@ -345,13 +356,13 @@ public class CompilerTest extends BT {
         ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
         nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
         address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
-        assertEquals(1, ntx);
-        assertEquals(1, nblocks);
+        assertEquals(2, ntx);
+        assertEquals(2, nblocks);
         assertEquals(BT.getBurstAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1))
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.01))
                 .blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1))
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(0.1))
                 .blockingGet();
         BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromBurst(20), BurstValue.fromBurst(1))
                 .blockingGet();
@@ -362,8 +373,8 @@ public class CompilerTest extends BT {
         nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
         address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
 
-        assertEquals(4, ntx);
-        assertEquals(2, nblocks);
+        assertEquals(5, ntx);
+        assertEquals(3, nblocks);
     }
 
     public void testSha256_64() throws Exception {
