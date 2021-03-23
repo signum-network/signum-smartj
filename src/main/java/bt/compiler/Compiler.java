@@ -1383,6 +1383,118 @@ public class Compiler {
 								code.putInt(tmpVar1); // the message contents
 								pushVar(m, tmpVar1);
 							}
+						} else if (mi.name.equals("checkMessageSHA256")) {
+							arg4 = popVar(m, tmpVar1, false); // input4
+							arg3 = popVar(m, tmpVar2, false); // input3
+							arg2 = popVar(m, tmpVar3, false); // input2
+							arg1 = popVar(m, tmpVar4, false); // input1
+
+							StackVar txArg = popVar(m, tmpVar5, false); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(txArg.address); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
+							
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Copy_A_From_B);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_B1);
+							code.putInt(arg1.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_B2);
+							code.putInt(arg2.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_B3);
+							code.putInt(arg3.address); // address
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_B4);
+							code.putInt(arg4.address); // address
+							
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.Check_SHA256_A_With_B);
+							code.putInt(tmpVar1); // the check result
+							
+							pushVar(m, tmpVar1);
+							
+						} else if (mi.name.equals("checkMessageSHA256_192")) {
+							arg4 = popVar(m, tmpVar4, false); // input4
+							arg3 = popVar(m, tmpVar3, false); // input3
+							arg2 = popVar(m, tmpVar2, false); // input2
+							arg1 = popVar(m, tmpVar1, false); // input1
+
+							StackVar txArg = popVar(m, tmpVar5, false); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(txArg.address); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
+							
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Copy_A_From_B);
+							
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.SHA256_A_To_B);
+							
+							// tmpVar1 will be zero if match
+							code.put(OpCode.e_op_code_CLR_DAT);
+							code.putInt(tmpVar1);
+
+							// check 2
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort((short) (OpCode.Get_B2));
+							code.putInt(tmpVar5);
+							code.put(OpCode.e_op_code_SUB_DAT);
+							code.putInt(tmpVar5);
+							code.putInt(arg2.address);
+							code.put(OpCode.e_op_code_BNZ_DAT);
+							code.putInt(tmpVar5);
+							code.put((byte) 0x0b); // offset
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar1);
+							
+							// check 3
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort((short) (OpCode.Get_B3));
+							code.putInt(tmpVar5);
+							code.put(OpCode.e_op_code_SUB_DAT);
+							code.putInt(tmpVar5);
+							code.putInt(arg3.address);
+							code.put(OpCode.e_op_code_BNZ_DAT);
+							code.putInt(tmpVar5);
+							code.put((byte) 0x0b); // offset
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar1);
+							
+							// check 4
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort((short) (OpCode.Get_B4));
+							code.putInt(tmpVar5);
+							code.put(OpCode.e_op_code_SUB_DAT);
+							code.putInt(tmpVar5);
+							code.putInt(arg4.address);
+							code.put(OpCode.e_op_code_BNZ_DAT);
+							code.putInt(tmpVar5);
+							code.put((byte) 0x0b); // offset
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar1);
+							
+							// tmpVar1 is zero if match, so we return 1 if match
+							code.put(OpCode.e_op_code_CLR_DAT);
+							code.putInt(tmpVar2);
+							code.put(OpCode.e_op_code_BNZ_DAT);
+							code.putInt(tmpVar1);
+							code.put((byte) 0x0b); // offset
+							code.put(OpCode.e_op_code_INC_DAT);
+							code.putInt(tmpVar2);
+							
+							pushVar(m, tmpVar2);
+							
 						} else if (mi.name.equals("getMessage1")) {
 							arg1 = popVar(m, tmpVar1, false); // the TX address
 
@@ -1396,6 +1508,21 @@ public class Compiler {
 							// we push only the first long to the stack
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort((short) (OpCode.Get_B1));
+							code.putInt(tmpVar1); // the message contents
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getMessage2")) {
+							arg1 = popVar(m, tmpVar1, false); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(arg1.address); // the TX address
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
+
+							// we push only the first long to the stack
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort((short) (OpCode.Get_B2));
 							code.putInt(tmpVar1); // the message contents
 							pushVar(m, tmpVar1);
 						} else {

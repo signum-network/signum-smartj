@@ -104,6 +104,29 @@ public class Transaction {
 	public Register getMessage() {
 		return msg;
 	}
+	
+	/**
+	 * Return the message attached to a transaction.
+	 * 
+	 * Only unencrypted messages are received.
+	 * 
+	 * @return the message in this transaction
+	 */
+	public boolean checkMessageSHA256(Register hash) {
+		return Contract.performSHA256_(msg).equals(hash);
+	}
+	
+	/**
+	 * Check if the last 192 bits of the message attached to this transaction
+	 * matches the given hash. 
+	 * 
+	 * @return true if they match
+	 */
+	public boolean checkMessageSHA256_192(Register hash) {
+		Register msgHash = Contract.performSHA256_(msg);
+		return msgHash.getValue2()== hash.getValue2() && msgHash.getValue3()== hash.getValue3()
+				&& msgHash.getValue4()== hash.getValue4();
+	}
 
 	/**
 	 * Return the first 8 bytes of the message attached to a transaction.
@@ -116,6 +139,12 @@ public class Transaction {
 		if(msg == null)
 			return 0L;
 		return msg.value[0];
+	}
+	
+	public long getMessage2() {
+		if(msg == null)
+			return 0L;
+		return msg.value[1];
 	}
 
 	/**

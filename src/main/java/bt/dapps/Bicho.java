@@ -1,4 +1,4 @@
-package bt.sample;
+package bt.dapps;
 
 import bt.Contract;
 import bt.Emulator;

@@ -22,7 +22,7 @@ import bt.ui.EmulatorWindow;
 public class HashedTimeLock extends Contract {
 
 	/** Expected activation fee in BURST */
-	public static final long ACTIVATION_FEE = 30 * ONE_BURST;
+	public static final long ACTIVATION_FEE = 1 * ONE_BURST;
 
 	/** Timeout in minutes */
 	public static final int TIMEOUT = 12;
@@ -53,15 +53,11 @@ public class HashedTimeLock extends Contract {
 	 * 
 	 */
 	public void txReceived() {
-		if (getCurrentTxSender() == beneficiary) {
-			// lets check the hash
-			key = getCurrentTx().getMessage();
-			hashedKey = performSHA256(key);
-			if (hashedKey.equals(hashlock))
-				sendAmount(getCurrentBalance(), beneficiary);
+		if (getCurrentTx().checkMessageSHA256(hashedKey)) {
+			sendBalance(beneficiary);
 		}
 
-		if (getCurrentTxSender() == getCreator() && getBlockTimestamp().ge(timelock)) {
+		if (getBlockTimestamp().ge(timelock)) {
 			// creator can claim back the balance after the timelock
 			sendAmount(getCurrentBalance(), getCreator());
 		}

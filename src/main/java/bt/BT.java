@@ -167,7 +167,7 @@ public class BT {
             BurstValue fee) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransaction(receiver, pubKeyFrom, value, fee, 1440)
+        return bns.generateTransaction(receiver, pubKeyFrom, value, fee, 1440, null)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
@@ -178,7 +178,7 @@ public class BT {
             BurstValue fee, int deadline, String msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg)
+        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg, null)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
@@ -189,7 +189,7 @@ public class BT {
             BurstValue fee, int deadline, byte[] msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg)
+        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg, null)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
