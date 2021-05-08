@@ -16,6 +16,9 @@ import java.util.regex.Pattern;
 import bt.*;
 
 import burst.kit.crypto.BurstCrypto;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -48,6 +51,8 @@ public class Compiler {
 	public static final int PAGE_SIZE = 256;
 
 	private static final String UNEXPECTED_ERROR = "Unexpected error, please report at https://github.com/burst-apps-team/blocktalk/issues";
+	
+	private static Logger logger = LogManager.getLogger();
 
 	ClassNode cn;
 	ByteBuffer code;
@@ -96,13 +101,13 @@ public class Compiler {
 		this.className = clazz.getName();
 		TargetCompilerVersion targetCompilerVersion = clazz.getAnnotation(TargetCompilerVersion.class);
 		if (targetCompilerVersion == null) {
-			System.err.println("WARNING: Target compiler version not specified");
+			logger.warn("WARNING: Target compiler version not specified");
 		} else if (targetCompilerVersion.value() != currentVersion) {
 			if (targetCompilerVersion.value().ordinal() > currentVersion.ordinal())
-				System.err.println(
+				logger.error(
 						"WARNING: Target compiler version newer than compiler version. Newer features may not compile or work.");
 			if (targetCompilerVersion.value().ordinal() < currentVersion.ordinal())
-				System.err.println(
+				logger.error(
 						"WARNING: Target compiler version older than compiler version. Contract source code may be incompatible.");
 		}
 
@@ -194,7 +199,7 @@ public class Compiler {
 		useCreator = false;
 
 		for (FieldNode f : cn.fields) {
-			// System.out.println("field name:" + f.name);
+			logger.debug("field name: {}", f.name);
 			int nvars = 0;
 
 			if (Modifier.isFinal(f.access) && Modifier.isStatic(f.access))
@@ -519,10 +524,10 @@ public class Compiler {
 
 		// Then parse
 		for (Method m : methods.values()) {
-			System.out.print("** METHOD: " + m.node.name);
-			if (m.hash != 0)
-				System.out.print(" hash: " + m.hash);
-			System.out.println();
+			logger.debug("** METHOD: {}", m.node.name);
+			if (m.hash != 0) {
+				logger.info("METHOD: {}, hash: {}", m.node.name, m.hash);
+			}
 			parseMethod(m);
 
 			if (m.node.name.equals(TX_RECEIVED_METHOD) && m.code.position() > 1)
@@ -674,7 +679,7 @@ public class Compiler {
 				if (insn instanceof LabelNode) {
 					LabelNode ln = (LabelNode) insn;
 					labels.put(ln, code.position());
-					System.out.println("label: " + ln.getLabel());
+					logger.debug("label: {}", ln.getLabel());
 				}
 				/*
 				 * else if(insn instanceof LineNumberNode) { LineNumberNode ln =
@@ -690,11 +695,10 @@ public class Compiler {
 			}
 
 			if (stack.size() > 0) {
-				System.out.print("Stack");
+				logger.debug("Stack");
 				for (StackVar var : stack) {
-					System.out.print(": " + var.toString());
+					logger.debug(": " + var.toString());
 				}
-				System.out.println();
 			}
 
 			switch (opcode) {
@@ -727,7 +731,7 @@ public class Compiler {
 						// local 0 is 'this'
 						stack.add(new StackVar(STACK_THIS, null));
 					}
-					System.out.println((opcode < ISTORE ? "load" : "store") + " local: " + vi.var);
+					logger.debug((opcode < ISTORE ? "load" : "store") + " local: " + vi.var);
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}
@@ -743,7 +747,7 @@ public class Compiler {
 					// local 0 is 'this', others are stored after 'localStart' variable
 
 					arg1 = popVar(m, tmpVar1, false);
-					System.out.println("store local: " + vi.var);
+					logger.debug("store local: " + vi.var);
 
 					// tmpVar2 have the local index, starting at localStart
 					useLocal = true;
@@ -804,7 +808,7 @@ public class Compiler {
 				code.putLong(opcode - ICONST_0);
 
 				pushVar(m, tmpVar2);
-				System.out.println("iconstant : " + (opcode - ICONST_0));
+				logger.debug("iconstant : " + (opcode - ICONST_0));
 				break;
 
 			case LCONST_1:
@@ -813,7 +817,7 @@ public class Compiler {
 				code.putLong(opcode - LCONST_0);
 
 				pushVar(m, tmpVar2);
-				System.out.println("lconstant : " + (opcode - LCONST_0));
+				logger.debug("lconstant : " + (opcode - LCONST_0));
 				break;
 
 			case ACONST_NULL:
@@ -823,7 +827,7 @@ public class Compiler {
 				code.putInt(tmpVar2);
 
 				pushVar(m, tmpVar2);
-				System.out.println("load null/zero");
+				logger.debug("load null/zero");
 				break;
 
 			case IADD:
@@ -849,41 +853,41 @@ public class Compiler {
 				switch (opcode) {
 				case ISUB:
 				case LSUB:
-					System.out.println("sub");
+					logger.debug("sub");
 					code.put(OpCode.e_op_code_SUB_DAT);
 					break;
 				case IMUL:
 				case LMUL:
-					System.out.println("mul");
+					logger.debug("mul");
 					code.put(OpCode.e_op_code_MUL_DAT);
 					break;
 				case IDIV:
 				case LDIV:
-					System.out.println("div");
+					logger.debug("div");
 					code.put(OpCode.e_op_code_DIV_DAT);
 					break;
 				case IREM:
 				case LREM:
-					System.out.println("mod");
+					logger.debug("mod");
 					code.put(OpCode.e_op_code_MOD_DAT);
 					break;
 				case IAND:
 				case LAND:
-					System.out.println("AND");
+					logger.debug("AND");
 					code.put(OpCode.e_op_code_AND_DAT);
 					break;
 				case IOR:
 				case LOR:
-					System.out.println("OR");
+					logger.debug("OR");
 					code.put(OpCode.e_op_code_BOR_DAT);
 					break;
 				case IXOR:
 				case LXOR:
-					System.out.println("XOR");
+					logger.debug("XOR");
 					code.put(OpCode.e_op_code_XOR_DAT);
 					break;
 				default:
-					System.out.println("add");
+					logger.debug("add");
 					code.put(OpCode.e_op_code_ADD_DAT);
 					break;
 				}
@@ -894,7 +898,7 @@ public class Compiler {
 				break;
 			case INEG:
 			case LNEG:
-				System.out.println("neg");
+				logger.debug("neg");
 
 				arg1 = popVar(m, tmpVar2, false);
 
@@ -919,7 +923,7 @@ public class Compiler {
 				}
 			case RETURN:
 				// Recalling that every method call will use JMP_SUB
-				System.out.println("return");
+				logger.debug("return");
 				code.put(OpCode.e_op_code_RET_SUB);
 				break;
 
@@ -936,7 +940,7 @@ public class Compiler {
 					addError(insn, UNEXPECTED_ERROR);
 				}
 
-				System.out.println("dup");
+				logger.debug("dup");
 			}
 				break;
 
@@ -949,7 +953,7 @@ public class Compiler {
 					MethodInsnNode mi = (MethodInsnNode) insn;
 					String owner = mi.owner.replace('/', '.');
 
-					System.out.println("invoke, name:" + mi.name + " owner:" + owner);
+					logger.debug("invoke, name:" + mi.name + " owner:" + owner);
 
 					if (owner.equals(Contract.class.getName())) {
 						if (mi.name.equals(INIT_METHOD)) {
@@ -1613,7 +1617,7 @@ public class Compiler {
 				if (insn instanceof FieldInsnNode) {
 					FieldInsnNode fi = (FieldInsnNode) insn;
 
-					System.out.println((opcode == GETFIELD ? "get " : "put ") + "field: " + fi.name);
+					logger.debug((opcode == GETFIELD ? "get " : "put ") + "field: " + fi.name);
 
 					Field field = fields.get(fi.name);
 					if (opcode == GETFIELD) {
@@ -1637,7 +1641,7 @@ public class Compiler {
 						// java.lang.invoke.MethodType, or java.lang.invoke.MethodHandle) onto the stack
 				if (insn instanceof LdcInsnNode) {
 					LdcInsnNode ld = (LdcInsnNode) insn;
-					System.out.println("constant: " + ld.cst);
+					logger.debug("constant: " + ld.cst);
 
 					if (ld.cst instanceof String) {
 						stack.addLast(new StackVar(STACK_CONSTANT, ld.cst));
@@ -1669,7 +1673,7 @@ public class Compiler {
 				code.putInt(arg2.address);
 				pushVar(m, arg1.address);
 
-				System.out.println("lcmp");
+				logger.debug("lcmp");
 				break;
 
 			case IFEQ:
@@ -1734,7 +1738,7 @@ public class Compiler {
 					m.jumps.add(new Method.Jump(code.position(), jmp.label));
 					code.putInt(0); // address, to be resolved later
 
-					System.out.println("ifeq: " + jmp.label.getLabel());
+					logger.debug("ifeq: " + jmp.label.getLabel());
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}
@@ -1763,7 +1767,7 @@ public class Compiler {
 					m.jumps.add(new Method.Jump(code.position(), jmp.label));
 					code.putInt(0); // to be resolved later
 
-					System.out.println("ifeq: " + jmp.label.getLabel());
+					logger.debug("ifeq: " + jmp.label.getLabel());
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}

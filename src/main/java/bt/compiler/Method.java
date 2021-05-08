@@ -50,6 +50,10 @@ public class Method {
 	public String getName(){
 		return node.name;
 	}
+	
+	public MethodNode getNode() {
+		return node;
+	}
 
 	ArrayList<Jump> jumps = new ArrayList<>();
 	ByteBuffer code;

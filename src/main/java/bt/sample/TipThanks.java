@@ -52,7 +52,6 @@ public class TipThanks extends Contract {
 	 */
 	public static void main(String[] args) {
 		new EmulatorWindow(TipThanks.class);
-		compile();
 	}
 }
 

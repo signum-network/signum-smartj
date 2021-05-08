@@ -21,7 +21,6 @@ public class ProofOfBurn extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(ProofOfBurn.class);
-		compile();
 	}
 }
 

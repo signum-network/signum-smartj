@@ -32,18 +32,13 @@ public class BT {
     public static final String PASSPHRASE5 = "talk";
 
     public static final String NODE_LOCAL_TESTNET = "http://localhost:6876";
-    public static final String NODE_LOCAL_TESTNET_GRPC = "grpc://localhost:6878";
-    public static final String NODE_AT_TESTNET = "http://at-testnet.burst-alliance.org:6876";
-    public static final String NODE_AT_TESTNET_GRPC = "grpc://at-testnet.burst-alliance.org:6878";
-    public static final String NODE_TESTNET = "http://testnet.burstcoin.network:6876";
-    public static final String NODE_TESTNET_GRPC = "grpc://testnet.getburst.net:6878";
-    public static final String NODE_TESTNET_MEGASH = "https://test-burst.megash.it";
-    public static final String NODE_TESTNET_MEGASH_GRPC = "grpc://test-burst.megash.it:6878";
+    public static final String NODE_TESTNET_RO = "https://testnetwallet.burstcoin.ro";
+    public static final String NODE_TESTNET = NODE_TESTNET_RO;
 
-    public static final String NODE_BURST_TEAM = "https://wallet1.burst-team.us:2083";
-    public static final String NODE_BURST_ALLIANCE = "https://wallet.burst-alliance.org:8125";
+    public static final String NODE_LOCAL = "http://localhost:8125";
+    public static final String NODE_SIGNUM_BR = "https://brazil.signum.network";
+    public static final String NODE_SIGNUM_EU = "https://europe.signum.network";
     public static final String NODE_BURSTCOIN_RO = "https://wallet.burstcoin.ro:443";
-    public static final String NODE_BURSTCOIN_RO2 = "https://wallet2.burstcoin.ro:443";
     
     public static boolean CIP20_ACTIVATED = true;
 

@@ -21,6 +21,5 @@ public class Refund extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(Refund.class);
-		compile();
 	}
 }

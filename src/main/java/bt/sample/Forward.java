@@ -34,7 +34,6 @@ public class Forward extends Contract {
 
 	public static void main(String[] args) {
 		new EmulatorWindow(Forward.class);
-		compile();
 	}
 }
 

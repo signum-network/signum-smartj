@@ -21,6 +21,7 @@ public class Echo extends Contract {
 	}
 
 	public static void main(String[] args) {
+		BT.activateCIP20(true);
 		new EmulatorWindow(Echo.class);
 	}
 }

@@ -10,8 +10,6 @@ import burst.kit.entity.BurstValue;
 
 import static org.junit.Assert.*;
 
-import org.junit.BeforeClass;
-
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
  * tests to work.
@@ -22,15 +20,8 @@ public class NFTTest extends BT {
 
     public static void main(String[] args) throws Exception {
         NFTTest t = new NFTTest();
-        t.setup();
 
         t.testNFT();
-    }
-
-    @BeforeClass
-    public static void setup() {
-        // forge a fitst block to get some balance
-        forgeBlock();
     }
 
     @Test

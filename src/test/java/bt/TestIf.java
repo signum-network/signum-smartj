@@ -15,6 +15,6 @@ public class TestIf extends Contract {
 	}
 
 	public static void main(String[] args) {
-		compile();
+		new EmulatorWindow(TestIf.class);
 	}
 }

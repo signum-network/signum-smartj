@@ -20,7 +20,6 @@ public class KohINoorEmu {
 		comp.compile();
 		comp.link();
 
-		System.out.println("creator:" + comp.getField("creator").getAddress());
 		System.out.println("owner:" + comp.getField("owner").getAddress());
 		System.out.println("price:" + comp.getField("price").getAddress());
 

@@ -12,8 +12,6 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 
-import org.junit.BeforeClass;
-
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
  * tests to work.
@@ -24,15 +22,8 @@ public class KohINoorTest extends BT {
 
     public static void main(String[] args) throws Exception {
         KohINoorTest t = new KohINoorTest();
-        t.setup();
 
         t.testTheOne();
-    }
-
-    @BeforeClass
-    public static void setup() {
-        // forge a fitst block to get some balance
-        forgeBlock();
     }
 
     @Test
