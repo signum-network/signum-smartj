@@ -20,7 +20,7 @@ BlockTalk consists of the following key components:
 
 [![Simple hello world contract](http://img.youtube.com/vi/XcN5WxqjjGw/0.jpg)](https://www.youtube.com/watch?v=XcN5WxqjjGw "BlockTalk sample application")
 
-This project is in **alpha** stage. Most contracts can be compiled into CIYAM bytecode.
+This project is in **beta** stage. Most contracts can be compiled into CIYAM bytecode.
 However, please carefully inspect your compiled AT contracts and
 test it exhaustively on the [testnet](https://burstwiki.org/wiki/Testnet) before production.
 
@@ -31,9 +31,9 @@ Take a look on the [samples source folder](src/main/java/bt/sample/).
 ## Using (write your own contract)
 
 ### Sample application
-The easiest way to start with BlockTalk is to clone the [blocktalk-sample](https://github.com/jjos2372/blocktalk-sample).
-This sample application is actually a [VSCode Java Application](https://code.visualstudio.com/docs/languages/java).
-Just clone or download the sample application and open its folder with VSCode.
+The easiest way to start with BlockTalk is to clone this project and import as an **existing gradle project** using
+your preferred IDE.
+Check the [samples source folder](src/main/java/bt/sample/) and modify existing contracts or create new ones. 
 
 ### Manually add BlockTalk to your gradle project
 Add the following to your gradle.build file:
