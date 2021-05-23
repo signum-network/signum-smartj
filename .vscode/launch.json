@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "Launch SimpleNFTContractTest",
+            "request": "launch",
+            "mainClass": "bt.sample.SimpleNFTContractTest",
+            "projectName": "blocktalk"
+        },
+        {
             "name": "Java",
             "type": "java",
             "request": "launch",

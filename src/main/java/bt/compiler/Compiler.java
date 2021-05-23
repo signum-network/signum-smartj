@@ -189,9 +189,9 @@ public class Compiler {
 
 	private void readFields() {
 
-		if (!cn.superName.replace('/', '.').equals(Contract.class.getName())) {
-			addError(null, "A contract should derive from " + Contract.class.getName());
-		}
+		// if (!cn.superName.replace('/', '.').equals(Contract.class.getName())) {
+		// 	addError(null, "A contract should derive from " + Contract.class.getName());
+		// }
 
 		errors.clear();
 		lastFreeVar = 0;
