@@ -5,6 +5,377 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "CodeLens (Launch) - Faucet",
+            "request": "launch",
+            "mainClass": "bt.sample.Faucet",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - AppRegistry",
+            "request": "launch",
+            "mainClass": "bt.AppRegistry",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - PaymentChannel",
+            "request": "launch",
+            "mainClass": "bt.sample.PaymentChannel",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - HashedTimeLock",
+            "request": "launch",
+            "mainClass": "bt.sample.HashedTimeLock",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - BichoTest",
+            "request": "launch",
+            "mainClass": "bt.BichoTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Arrays",
+            "request": "launch",
+            "mainClass": "bt.Arrays",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - MultiSigLock",
+            "request": "launch",
+            "mainClass": "bt.sample.MultiSigLock",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - MethodCallArgs",
+            "request": "launch",
+            "mainClass": "bt.MethodCallArgs",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - AuctionNFT",
+            "request": "launch",
+            "mainClass": "bt.sample.AuctionNFT",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - StressTest",
+            "request": "launch",
+            "mainClass": "bt.StressTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - HashLoop",
+            "request": "launch",
+            "mainClass": "bt.sample.HashLoop",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Hash",
+            "request": "launch",
+            "mainClass": "bt.sample.Hash",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Sha256_64",
+            "request": "launch",
+            "mainClass": "bt.sample.Sha256_64",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - ListContracts",
+            "request": "launch",
+            "mainClass": "bt.ListContracts",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KohINoorRegister",
+            "request": "launch",
+            "mainClass": "bt.KohINoorRegister",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - ChampionsTest",
+            "request": "launch",
+            "mainClass": "bt.ChampionsTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Champions",
+            "request": "launch",
+            "mainClass": "bt.sample.Champions",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KohINoor2",
+            "request": "launch",
+            "mainClass": "bt.sample.KohINoor2",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Exchange",
+            "request": "launch",
+            "mainClass": "bt.sample.Exchange",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - TXCounter",
+            "request": "launch",
+            "mainClass": "bt.sample.TXCounter",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KohINoorTest",
+            "request": "launch",
+            "mainClass": "bt.KohINoorTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KohINoorEmu",
+            "request": "launch",
+            "mainClass": "bt.KohINoorEmu",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KhoINoorEmu",
+            "request": "launch",
+            "mainClass": "bt.KhoINoorEmu",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - EmuKhoINoor",
+            "request": "launch",
+            "mainClass": "bt.EmuKhoINoor",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - KhoINoor",
+            "request": "launch",
+            "mainClass": "bt.sample.KhoINoor",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - TheOneTest",
+            "request": "launch",
+            "mainClass": "bt.TheOneTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - TheOne",
+            "request": "launch",
+            "mainClass": "bt.sample.TheOne",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - SingleDiamond",
+            "request": "launch",
+            "mainClass": "bt.sample.SingleDiamond",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - TestIf",
+            "request": "launch",
+            "mainClass": "bt.TestIf",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - NFTTest",
+            "request": "launch",
+            "mainClass": "bt.NFTTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - NFT2",
+            "request": "launch",
+            "mainClass": "bt.sample.NFT2",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - MethodCalls",
+            "request": "launch",
+            "mainClass": "bt.MethodCalls",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Will",
+            "request": "launch",
+            "mainClass": "bt.sample.Will",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Cast",
+            "request": "launch",
+            "mainClass": "bt.Cast",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - RegisterField",
+            "request": "launch",
+            "mainClass": "bt.RegisterField",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Echo",
+            "request": "launch",
+            "mainClass": "bt.sample.Echo",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - RegisterContract",
+            "request": "launch",
+            "mainClass": "bt.RegisterContract",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - HappyCIP20",
+            "request": "launch",
+            "mainClass": "bt.sample.HappyCIP20",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Sleep",
+            "request": "launch",
+            "mainClass": "bt.Sleep",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - OddsGame",
+            "request": "launch",
+            "mainClass": "bt.sample.OddsGame",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - TipThanks",
+            "request": "launch",
+            "mainClass": "bt.sample.TipThanks",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - LocalVar",
+            "request": "launch",
+            "mainClass": "bt.LocalVar",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - ForwardMin",
+            "request": "launch",
+            "mainClass": "bt.sample.ForwardMin",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - CompilerTest",
+            "request": "launch",
+            "mainClass": "bt.CompilerTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - CompilerTest",
+            "request": "launch",
+            "mainClass": "CompilerTest",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Forward1000",
+            "request": "launch",
+            "mainClass": "bt.sample.Forward1000",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Hello",
+            "request": "launch",
+            "mainClass": "bt.sample.Hello",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Auction",
+            "request": "launch",
+            "mainClass": "bt.sample.Auction",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Equals",
+            "request": "launch",
+            "mainClass": "Equals",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Bicho",
+            "request": "launch",
+            "mainClass": "bt.sample.Bicho",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Forward",
+            "request": "launch",
+            "mainClass": "bt.sample.Forward",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - UniqueToken",
+            "request": "launch",
+            "mainClass": "bt.sample.UniqueToken",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Refund",
+            "request": "launch",
+            "mainClass": "bt.sample.Refund",
+            "projectName": "blocktalk"
+        },
+        {
             "name": "Java",
             "type": "java",
             "request": "launch",

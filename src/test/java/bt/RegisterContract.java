@@ -1,7 +1,7 @@
 package bt;
 
-import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.AT;
+import signumj.entity.SignumValue;
+import signumj.entity.response.AT;
 
 /**
  * Simple code to register a contract.
@@ -16,7 +16,7 @@ public class RegisterContract {
 //        String NODE = BT.NODE_AT_TESTNET;
 
         Class<? extends Contract> CONTRACT = Cast.class;
-        BurstValue ACT_FEE = BurstValue.fromBurst(10);
+        SignumValue ACT_FEE = SignumValue.fromSigna(10);
 
         BT.setNodeAddress(NODE);
 

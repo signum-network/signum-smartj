@@ -1,28 +1,28 @@
-# BlockTalk: easy to use smart contracts for Burstcoin
+# Signum SmartJ: easy to use smart contracts for Signum
 [![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 [![](https://jitpack.io/v/jjos2372/blocktalk.svg)](https://jitpack.io/#jjos2372/blocktalk)
 
-[Burstcoin](https://www.burst-coin.org/) was the world's first HDD-mined
+[Signum](https://signum.network/) (previously know as Burstcoin) was the world's first HDD-mined
 cryptocurrency using an energy efficient
 and fair Proof-of-Capacity (PoC) consensus algorithm.
 
-It was also the first to implement a turing-complete [smart contract](https://www.burst-coin.org/smart-contracts)
+It was also the first to implement a turing-complete [smart contract](https://signum.network/smartcontracts.html)
 system in the form of *Automated Transactions* (AT), as specified by [CIYAM](http://ciyam.org/at/).
-However, before BlockTalk, the creation and deployment of smart contracts required writing
+However, before SmartJ, the creation and deployment of smart contracts required writing
 (assembler-like) bytecode and testing on-chain, making the development of contracts cumbersome.
 
-This project allows the user to write, debug, and deploy Burst smart contracts relying only on Java.
+This project allows the user to write, debug, and deploy Signum smart contracts relying only on Java.
 You can use a simple text editor or your preferred IDE.
-BlockTalk consists of the following key components:
+SmartJ consists of the following key components:
  - **[Contract.java](src/main/java/bt/Contract.java)**: a Java abstract class defining the basic API available for contracts
  - **Emulator**: an emulated blockchain and respective UI
- - **Compiler**: a system to convert Java bytecode into Burst AT bytecode that can run on the Burst blockchain 
+ - **Compiler**: a system to convert Java bytecode into Signum AT bytecode that can run on the Signum blockchain 
 
-[![Simple hello world contract](http://img.youtube.com/vi/XcN5WxqjjGw/0.jpg)](https://www.youtube.com/watch?v=XcN5WxqjjGw "BlockTalk sample application")
+[![Simple hello world contract](http://img.youtube.com/vi/XcN5WxqjjGw/0.jpg)](https://www.youtube.com/watch?v=XcN5WxqjjGw "Signum SmartJ sample application")
 
-This project is in **beta** stage. Most contracts can be compiled into CIYAM bytecode.
-However, please carefully inspect your compiled AT contracts and
-test it exhaustively on the [testnet](https://burstwiki.org/wiki/Testnet) before production.
+As any open source project, this is experimental technology.
+Please carefully inspect your compiled AT contracts and
+test it exhaustively on the [testnet](https://github.com/burst-apps-team/burstcoin#testnet) before production.
 
 
 ## Sample Contracts
@@ -31,22 +31,22 @@ Take a look on the [samples source folder](src/main/java/bt/sample/).
 ## Using (write your own contract)
 
 ### Sample application
-The easiest way to start with BlockTalk is to clone this project and import as an **existing gradle project** using
+The easiest way to start with SmartJ is to clone this project and import as an **existing gradle project** using
 your preferred IDE.
 Check the [samples source folder](src/main/java/bt/sample/) and modify existing contracts or create new ones. 
 
-### Manually add BlockTalk to your gradle project
+### Add Signum SmartJ to your gradle project
 Add the following to your gradle.build file:
 ```
 repositories {
 	maven { url 'https://jitpack.io' }
 }
 dependencies {
-	implementation 'com.github.jjos2372:blocktalk:-SNAPSHOT'
+	implementation 'com.github.signum-network:signum-smartj:-SNAPSHOT'
 }
 ```
 
-### Manually add BlockTalk to your maven project
+### Add Signum SmartJ to your maven project
 Add the repository to your configuration:
 ```
 <repositories>
@@ -70,4 +70,4 @@ This code is licensed under [GPLv3](LICENSE).
 
 jjos
 
-Donation address: BURST-JJQS-MMA4-GHB4-4ZNZU
+Donation address: S-JJQS-MMA4-GHB4-4ZNZU

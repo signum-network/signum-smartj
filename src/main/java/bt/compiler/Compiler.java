@@ -14,8 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import bt.*;
-
-import burst.kit.crypto.BurstCrypto;
+import signumj.crypto.SignumCrypto;
+import signumj.entity.SignumAddress;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +32,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import burst.kit.entity.BurstID;
 
 /**
  * Class to convert a {@link Contract} java bytecode to ciyam bytecode.
@@ -1035,9 +1034,7 @@ public class Compiler {
 
 							long value = 0;
 							try {
-								BurstCrypto bc = BurstCrypto.getInstance();
-								// Decode without the BURST- prefix
-								BurstID ad = bc.rsDecode(address.svalue.substring(6));
+								SignumAddress ad = SignumAddress.fromRs(address.svalue);
 								value = ad.getSignedLongId();
 							} catch (IllegalArgumentException ex) {
 								addError(mi, ex.getMessage());
@@ -1809,7 +1806,7 @@ public class Compiler {
 	}
 
 	public static long getMethodSignature(Method m) {
-		BurstCrypto burstCrypto = BurstCrypto.getInstance();
+		SignumCrypto burstCrypto = SignumCrypto.getInstance();
 		MessageDigest sha256 = burstCrypto.getSha256();
 		return burstCrypto.hashToId(sha256.digest((m.node.name + m.node.desc).getBytes(StandardCharsets.UTF_8)))
 				.getSignedLongId(); // TODO replace

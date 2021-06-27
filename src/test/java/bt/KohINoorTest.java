@@ -1,12 +1,12 @@
 package bt;
 
-import burst.kit.entity.response.AT;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.sample.KohINoor;
-import burst.kit.entity.BurstAddress;
-import burst.kit.entity.BurstValue;
+import signumj.entity.SignumAddress;
+import signumj.entity.SignumValue;
+import signumj.entity.response.AT;
 
 import static org.junit.Assert.*;
 
@@ -32,15 +32,15 @@ public class KohINoorTest extends BT {
         Compiler comp = BT.compileContract(KohINoor.class);
 
         String name = "KohINoor" + System.currentTimeMillis();
-        BurstAddress creator = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE);
+        SignumAddress creator = BT.getAddressFromPassphrase(BT.PASSPHRASE);
 
-        AT contract = BT.registerContract(comp, name, BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE));
+        AT contract = BT.registerContract(comp, name, SignumValue.fromNQT(KohINoor.ACTIVATION_FEE));
         System.out.println(contract.getId().getID());
 
         long price = KohINoor.INITIAL_PRICE;
 
         // initialize the contract
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromPlanck(KohINoor.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(KohINoor.ACTIVATION_FEE)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -51,13 +51,13 @@ public class KohINoorTest extends BT {
         assertEquals(price, priceChain);
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
-        BurstAddress bidder = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE2);
-        BurstAddress bidder2 = BT.getBurstAddressFromPassphrase(BT.PASSPHRASE3);
+        SignumAddress bidder = BT.getAddressFromPassphrase(BT.PASSPHRASE2);
+        SignumAddress bidder2 = BT.getAddressFromPassphrase(BT.PASSPHRASE3);
         BT.forgeBlock(BT.PASSPHRASE2, 100);
         BT.forgeBlock(BT.PASSPHRASE3, 100);
 
         // send a short amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price / 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price / 2)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -68,7 +68,7 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -80,7 +80,7 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount, another buyer
-        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -92,9 +92,9 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount, but three different buyers
-        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), BurstValue.fromPlanck(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -109,11 +109,11 @@ public class KohINoorTest extends BT {
 
         // test with a lot of simultaneous buyers
         ArrayList<String> buyers = new ArrayList<>();
-        BurstAddress lastBuyer = null;
+        SignumAddress lastBuyer = null;
         for (int i = 0; i < 10; i++) {
             String pass = String.valueOf(i);
-            BurstAddress buyer = BT.getBurstAddressFromPassphrase(pass);
-            BT.sendAmount(PASSPHRASE, buyer, BurstValue.fromPlanck(price*2), BurstValue.fromBurst(10)).blockingGet();
+            SignumAddress buyer = BT.getAddressFromPassphrase(pass);
+            BT.sendAmount(PASSPHRASE, buyer, SignumValue.fromNQT(price*2), SignumValue.fromSigna(10)).blockingGet();
             buyers.add(pass);
             lastBuyer = buyer;
         }
@@ -122,7 +122,7 @@ public class KohINoorTest extends BT {
 
         int i = 0;
         for (String buyer : buyers) {
-            BT.sendAmount(buyer, contract.getId(), BurstValue.fromPlanck(price), BurstValue.fromBurst(0.1)).blockingGet();
+            BT.sendAmount(buyer, contract.getId(), SignumValue.fromNQT(price), SignumValue.fromSigna(0.1)).blockingGet();
         }
         forgeBlock();
         forgeBlock();
@@ -132,7 +132,7 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         for (String buyer : buyers) {
-            BurstAddress ad = BT.getBurstAddressFromPassphrase(buyer);
+            SignumAddress ad = BT.getAddressFromPassphrase(buyer);
             if(ad.getSignedLongId() == ownerChain){
                 System.out.println("Got the token, buyer: " + buyer);
                 break;

@@ -3,8 +3,8 @@ package bt;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import burst.kit.crypto.BurstCrypto;
-import burst.kit.entity.BurstID;
+import signumj.entity.SignumAddress;
+
 
 /**
  * Emulates the blockchain for debugging/testing purposes.
@@ -64,11 +64,9 @@ public class Emulator {
 		if (ret != null)
 			return ret;
 
-		BurstCrypto bc = BurstCrypto.getInstance();
 		long id = 0L;
 		try {
-			// Decode without the BURST- prefix
-			BurstID ad = bc.rsDecode(rs.substring(6));
+			SignumAddress ad = SignumAddress.fromRs(rs);
 			id = ad.getSignedLongId();
 		} catch (Exception e) {
 			// not a valid address, do nothing on the emulator

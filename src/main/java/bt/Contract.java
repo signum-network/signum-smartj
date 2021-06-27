@@ -1,6 +1,5 @@
 package bt;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -8,9 +7,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 
-import bt.compiler.Compiler;
-import burst.kit.crypto.BurstCrypto;
-import burst.kit.entity.BurstID;
+import signumj.crypto.SignumCrypto;
+import signumj.entity.SignumID;
 
 /**
  * The BlockTalk smart contract abstract class.
@@ -66,13 +64,13 @@ public abstract class Contract {
 	 * @return the address
 	 */
 	protected Address getAddress(long id) {
-		return Emulator.getInstance().getAddress(BurstCrypto.getInstance().rsEncode(BurstID.fromLong(id)));
+		return Emulator.getInstance().getAddress(SignumCrypto.getInstance().rsEncode(SignumID.fromLong(id)));
 	}
 
 	/**
 	 * Send the entire balance to the given address.
 	 * 
-	 * Care should be execised with this function since a contract with no balance
+	 * Care should be exercised with this function since a contract with no balance
 	 * cannot continue to run!
 	 * 
 	 * @param ad the address

@@ -2,10 +2,10 @@ package bt;
 
 import bt.Contract;
 import bt.compiler.Compiler;
-import burst.kit.crypto.BurstCrypto;
-import burst.kit.entity.BurstAddress;
-import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.AT;
+import signumj.crypto.SignumCrypto;
+import signumj.entity.SignumAddress;
+import signumj.entity.SignumValue;
+import signumj.entity.response.AT;
 
 public class MethodCall extends Contract {
 
@@ -29,17 +29,17 @@ public class MethodCall extends Contract {
 		Compiler comp = BT.compileContract(MethodCall.class);
 
 		String name = MethodCall.class.getSimpleName() + System.currentTimeMillis();
-		BurstAddress creator = BurstCrypto.getInstance().getBurstAddressFromPassphrase(BT.PASSPHRASE);
+		SignumAddress creator = SignumCrypto.getInstance().getAddressFromPassphrase(BT.PASSPHRASE);
 
-		BT.registerContract(BT.PASSPHRASE, comp, name, name, BurstValue.fromBurst(1), BurstValue.fromBurst(0.1), 1000)
+		BT.registerContract(BT.PASSPHRASE, comp, name, name, SignumValue.fromSigna(1), SignumValue.fromSigna(0.1), 1000)
 				.blockingGet();
 		BT.forgeBlock();
 
 		AT contract = BT.findContract(creator, name);
 		System.out.println(contract.getId().getFullAddress());
 
-		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), BurstValue.fromBurst(1),
-			BurstValue.fromBurst(0.1), 1000).blockingGet();
+		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), SignumValue.fromSigna(1),
+			SignumValue.fromSigna(0.1), 1000).blockingGet();
 		BT.forgeBlock();
 		BT.forgeBlock();
 	}

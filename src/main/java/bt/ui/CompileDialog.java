@@ -28,11 +28,11 @@ import bt.Contract;
 import bt.compiler.Compiler;
 import bt.compiler.Method;
 import bt.compiler.Printer;
-import burst.kit.entity.BurstAddress;
-import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.AT;
-import burst.kit.entity.response.TransactionBroadcast;
-import burst.kit.entity.response.http.BRSError;
+import signumj.entity.SignumAddress;
+import signumj.entity.SignumValue;
+import signumj.entity.response.AT;
+import signumj.entity.response.TransactionBroadcast;
+import signumj.entity.response.http.BRSError;
 
 /**
  * Dialog to compile AT bytecode as well as to publish the contract on chain.
@@ -93,7 +93,7 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(feeField = new HintTextField("Deploy fee in BURST", null));
         feeField.setText("7.0");
         config.add(actFeeField = new HintTextField("Gas fee in BURST", null));
-        actFeeField.setText(BurstValue.fromPlanck(Contract.FEE_QUANT*40).toUnformattedString());
+        actFeeField.setText(SignumValue.fromNQT(Contract.FEE_QUANT*40).toUnformattedString());
         config.add(passField = new JPasswordField());
         passField.setToolTipText("Passphrase, never sent over the wire");
 
@@ -167,7 +167,7 @@ class CompileDialog extends JDialog implements ActionListener {
             Printer.print(comp.getCode(), out, comp);
             String codeForm = new String(baos.toByteArray(), StandardCharsets.UTF_8);
 
-            BurstValue fee = BT.getMinRegisteringFee(comp);
+            SignumValue fee = BT.getMinRegisteringFee(comp);
             feeField.setText(fee.toUnformattedString());
 
             codeArea.setText(code);
@@ -201,8 +201,8 @@ class CompileDialog extends JDialog implements ActionListener {
             String description = descField.getText();
             BT.setNodeAddress(nodeField.getItemAt(nodeField.getSelectedIndex()));
 
-            BurstValue fee = BurstValue.fromBurst(feeField.getText());
-            BurstValue actFee = BurstValue.fromBurst(actFeeField.getText());
+            SignumValue fee = SignumValue.fromSigna(feeField.getText());
+            SignumValue actFee = SignumValue.fromSigna(actFeeField.getText());
             int deadline = Integer.parseInt(deadlineField.getText());
 
             BT.registerContract(passphrase, comp, name, description, actFee, fee, deadline)
@@ -222,7 +222,7 @@ class CompileDialog extends JDialog implements ActionListener {
             }
 
             BT.setNodeAddress(nodeField.getItemAt(nodeField.getSelectedIndex()));
-            BurstAddress address = BT.getBurstAddressFromPassphrase(passphrase);
+            SignumAddress address = BT.getAddressFromPassphrase(passphrase);
 
             AT ats[] = BT.getContracts(address);
 
