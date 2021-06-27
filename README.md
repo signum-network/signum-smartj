@@ -1,4 +1,4 @@
-# SmartJ: easy to use smart contracts for Signum
+# SmartJ: Java smart contracts for Signum
 [![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 [![](https://jitpack.io/v/signum-network/signum-smartj.svg)](https://jitpack.io/#signum-network/signum-smartj)
 
@@ -56,8 +56,8 @@ Add the repository to your configuration:
 	</repository>
 </repositories>
 <dependency>
-	<groupId>com.github.jjos2372</groupId>
-	<artifactId>blocktalk</artifactId>
+	<groupId>com.github.signum-network</groupId>
+	<artifactId>signum-smartj</artifactId>
 	<version>-SNAPSHOT</version>
 </dependency>
 ```
