@@ -1,6 +1,6 @@
-# Signum SmartJ: easy to use smart contracts for Signum
+# SmartJ: easy to use smart contracts for Signum
 [![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
-[![](https://jitpack.io/v/jjos2372/blocktalk.svg)](https://jitpack.io/#jjos2372/blocktalk)
+[![](https://jitpack.io/v/signum-network/signum-smartj.svg)](https://jitpack.io/#signum-network/signum-smartj)
 
 [Signum](https://signum.network/) (previously know as Burstcoin) was the world's first HDD-mined
 cryptocurrency using an energy efficient
