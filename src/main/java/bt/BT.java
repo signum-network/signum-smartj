@@ -284,7 +284,7 @@ public class BT {
             String name, String description, SignumValue activationFee, SignumValue fee, int deadline) {
         return registerContract(passphrase, compiledContract.getCode(), compiledContract.getDataPages(), name, description, null, activationFee, fee, deadline);
     }
-
+    
     /**
      * Register the given contract with the given activation fee and paying the
      * given fee.
@@ -302,6 +302,26 @@ public class BT {
      */
     public static Single<TransactionBroadcast> registerContract(String passphrase, byte[] code, int dPages,
             String name, String description, long[] data, SignumValue activationFee, SignumValue fee, int deadline) {
+    	return registerContract(passphrase, code, dPages, name, description, data, activationFee, fee, deadline, null);
+    }
+
+    /**
+     * Register the given contract with the given activation fee and paying the
+     * given fee.
+     * 
+     * @param passphrase
+     * @param compiledContract
+     * @param name
+     * @param description
+     * @param activationFee
+     * @param fee
+     * @param deadline         in blocks
+     * 
+     * @return the response
+     * @throws Exception
+     */
+    public static Single<TransactionBroadcast> registerContract(String passphrase, byte[] code, int dPages,
+            String name, String description, long[] data, SignumValue activationFee, SignumValue fee, int deadline, String referenceTxFullHash) {
         byte[] pubkey = bc.getPublicKey(passphrase);
 
         ByteBuffer dataBuffer = ByteBuffer.allocate(data==null ? 0 : data.length*8);
@@ -309,9 +329,17 @@ public class BT {
         for (int i = 0; data!=null && i < data.length; i++) {
             dataBuffer.putLong(data[i]);
         }
+        
+        if(code == null) {
+            return bns.generateCreateATTransaction(pubkey, fee, activationFee, deadline, name, description, code, dataBuffer.array(), dPages, 1, 1, referenceTxFullHash)
+                    .flatMap(unsignedTransactionBytes -> {
+                        byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
+                        return bns.broadcastTransaction(signedTransactionBytes);
+                    });        	
+        }
 
         byte[] creationBytes = SignumCrypto.getInstance().getATCreationBytes((short) (CIP20_ACTIVATED ? 2 : 1), code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
-        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes)
+        return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes, referenceTxFullHash)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
@@ -326,7 +354,7 @@ public class BT {
      * @return the ATResponse or null if not found
      */
     public static AT findContract(SignumAddress address, String name) {
-        AT[] ats = bns.getAccountATs(address).blockingGet();
+        AT[] ats = bns.getAccountATs(address, null).blockingGet();
         for (AT ati : ats) {
             if (ati.getName().equals(name))
                 return ati;
@@ -341,7 +369,7 @@ public class BT {
      * @return
      */
     public static AT[] getContracts(SignumAddress address) {
-        return bns.getAccountATs(address).blockingGet();
+        return bns.getAccountATs(address, null).blockingGet();
     }
 
     /**
