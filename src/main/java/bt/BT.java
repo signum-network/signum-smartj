@@ -195,28 +195,37 @@ public class BT {
      * Forge block by mock mining, just for testing purposes.
      */
     public static void forgeBlock() {
-        forgeBlock(PASSPHRASE, 1000);
+        forgeBlock(PASSPHRASE, 2000);
     }
 
     /**
      * Forge block by mock mining for the given passphrase, just for testing purposes.
      */
     public static void forgeBlock(String pass) {
-        forgeBlock(pass, 1000);
+        forgeBlock(pass, 2000);
     }
 
     /**
-     * Forge block by mock mining for the given passphrase followed by a sleep with
-     * given milliseconds.
+     * Forge block by mock mining for the given passphrase with the given millis timeout.
      * 
      * Just for testing purposes.
      */
     public static void forgeBlock(String pass, int millis) {
+    	int height = bns.getBlocks(0, 1).blockingGet()[0].getHeight();
+    	long startTimer = System.currentTimeMillis();
         bns.submitNonce(pass, "0", null).blockingGet();
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        while(true) {
+        	try {
+        		Thread.sleep(50);
+        		int newHeight = bns.getBlocks(0, 1).blockingGet()[0].getHeight();
+        		long timeElapsed = System.currentTimeMillis() - startTimer;
+        		if(newHeight > height || timeElapsed > millis) {
+        			break;
+        		}
+        	} catch (InterruptedException e) {
+        		e.printStackTrace();
+        		break;
+        	}
         }
     }
 
@@ -226,8 +235,18 @@ public class BT {
      * @see BT#activateCIP20(boolean)
      */
     public static SignumValue getMinRegisteringFee(Compiler compiledContract) {
+    	return getMinRegisteringFee(compiledContract, true);
+    }
+    
+    /**
+     * @return the minimum fee to register the given contract
+     * 
+     * @see BT#activateCIP20(boolean)
+     */
+    public static SignumValue getMinRegisteringFee(Compiler compiledContract, boolean includeCode) {
     	SignumValue baseFee = SignumValue.fromNQT(CIP20_ACTIVATED ? Contract.FEE_QUANT*10L : Contract.ONE_BURST);
-        return baseFee.multiply(2 + compiledContract.getDataPages() + compiledContract.getCodeNPages());
+        return baseFee.multiply(2 + compiledContract.getDataPages() +
+        		(includeCode ? compiledContract.getCodeNPages() : 0));
     }
     
     /**
