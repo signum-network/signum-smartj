@@ -48,9 +48,12 @@ public class SignumArt extends Contract {
 	long amountToRoyalties;
 	long amountToPlatform;
 
-	int STATUS_NOT_FOR_SALE = 0;
+	int ZERO = 0;
+	int STATUS_NOT_FOR_SALE = ZERO;
 	int STATUS_FOR_SALE = 1;
 	int STATUS_FOR_AUCTION = 2;
+	int NEW_AUCTION_BID = 3;
+	int NEW_OWNER = 4;
 	long THOUSAND = 1000;
 	
 	/** Use a contract fee of 0.3 SIGNA */
@@ -91,6 +94,7 @@ public class SignumArt extends Contract {
 		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_NOT_FOR_SALE;
+			sendMessage(status, tracker);
 		}
 	}
 
@@ -107,7 +111,7 @@ public class SignumArt extends Contract {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			currentPrice = priceNQT;
-			sendMessage(status, currentPrice, tracker);
+			sendMessage(status, owner.getId(), currentPrice, ZERO, tracker);
 		}
 	}
 
@@ -128,7 +132,7 @@ public class SignumArt extends Contract {
 			status = STATUS_FOR_AUCTION;
 			auctionTimeout = getBlockTimestamp().addMinutes(timeout);
 			currentPrice = priceNQT;
-			sendMessage(status, currentPrice, tracker);
+			sendMessage(status, owner.getId(), currentPrice, auctionTimeout.getValue(), tracker);
 		}
 	}
 
@@ -152,6 +156,7 @@ public class SignumArt extends Contract {
 				pay(); // pay the current owner
 				owner = getCurrentTxSender(); // new owner
 				status = STATUS_NOT_FOR_SALE;
+				sendMessage(NEW_OWNER, owner.getId(), getCurrentTxAmount(), ZERO, tracker);
 				return;
 			}
 		}
@@ -163,6 +168,7 @@ public class SignumArt extends Contract {
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
+					sendMessage(NEW_OWNER, owner.getId(), currentPrice, ZERO, tracker);
 				}
 				// current transaction will be refunded below
 			} else if (getCurrentTxAmount() > currentPrice) {
@@ -175,6 +181,7 @@ public class SignumArt extends Contract {
 				highestBidder = getCurrentTxSender();
 				currentPrice = getCurrentTxAmount();
 				totalBidsReceived++;
+				sendMessage(NEW_AUCTION_BID, highestBidder.getId(), currentPrice, ZERO, tracker);
 				return;
 			}
 		}
@@ -190,7 +197,7 @@ public class SignumArt extends Contract {
 		totalRoyaltiesFee += amountToRoyalties;
 		totalTimesSold++;
 		
-		sendMessage(STATUS_NOT_FOR_SALE, currentPrice, tracker);
+		sendMessage(STATUS_NOT_FOR_SALE, owner.getId(), currentPrice, ZERO, tracker);
 		sendAmount(amountToRoyalties, royaltiesOwner);
 		sendAmount(currentPrice - amountToPlatform - amountToRoyalties, owner);
 	}

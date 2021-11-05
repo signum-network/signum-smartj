@@ -996,6 +996,14 @@ public class Compiler {
 							// so do nothing
 						} else
 							addError(insn, UNEXPECTED_ERROR);
+					} else if (owner.equals(Address.class.getName())) {
+						// a call on the Address object
+						if (mi.name.equals("getId")) {
+							// it is the getId, the object itself is already on stack
+							// so do nothing
+						} else {
+							addError(insn, UNEXPECTED_ERROR);
+						}
 					} else if (owner.equals(className)) {
 						// call on the contract itself
 						if (mi.name.equals("getCurrentTx")) {
@@ -1252,6 +1260,26 @@ public class Compiler {
 								code.put(OpCode.e_op_code_EXT_FUN_DAT);
 								code.putShort((short) (OpCode.Set_A2));
 								code.putInt(msg2.address);
+							}
+							else if (mi.desc.equals("(JJJJLbt/Address;)V")) {
+								// four long arguments
+								StackVar msg = popVar(m, tmpVar1, false);
+								StackVar msg2 = popVar(m, tmpVar2, false);
+								StackVar msg3 = popVar(m, tmpVar3, false);
+								StackVar msg4 = popVar(m, tmpVar4, false);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A1));
+								code.putInt(msg.address);
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A2));
+								code.putInt(msg2.address);
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A3));
+								code.putInt(msg3.address);
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A4));
+								code.putInt(msg4.address);
 							}
 							else {
 								// We should have received a Register, it is on stack

@@ -42,9 +42,8 @@ public class Address {
 	}
 
 	/**
-	 * @return the reed solomon address
+	 * @return the account id
 	 */
-	@EmulatorWarning
 	public long getId() {
 		return id;
 	}
