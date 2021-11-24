@@ -32,7 +32,6 @@ public class SignumArt extends Contract {
 	long royaltiesFee;
 	Address royaltiesOwner;
 	
-	Address collection;
 	Address tracker;
 
 	int status;
