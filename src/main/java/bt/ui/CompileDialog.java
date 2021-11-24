@@ -199,7 +199,7 @@ class CompileDialog extends JDialog implements ActionListener {
             String passphrase = String.valueOf(passField.getPassword());
             String name = nameField.getText();
             String description = descField.getText();
-            BT.setNodeAddress(nodeField.getItemAt(nodeField.getSelectedIndex()));
+            BT.setNodeAddress(nodeField.getEditor().getItem().toString());
 
             SignumValue fee = SignumValue.fromSigna(feeField.getText());
             SignumValue actFee = SignumValue.fromSigna(actFeeField.getText());
