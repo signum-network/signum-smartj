@@ -34,26 +34,26 @@ public class SignumArt extends Contract {
 	
 	Address tracker;
 
-	int status;
+	long status;
 	long currentPrice;
 	Timestamp auctionTimeout;
 	Address highestBidder;
 	
-	int totalTimesSold;
-	int totalBidsReceived;
+	long totalTimesSold;
+	long totalBidsReceived;
 	long totalRoyaltiesFee;
 	long totalPlatformFee;
 	
 	long amountToRoyalties;
 	long amountToPlatform;
 
-	int ZERO = 0;
-	int STATUS_NOT_FOR_SALE = ZERO;
-	int STATUS_FOR_SALE = 1;
-	int STATUS_FOR_AUCTION = 2;
-	int NEW_AUCTION_BID = 3;
-	int NEW_OWNER = 4;
-	long THOUSAND = 1000;
+	private static final long ZERO = 0;
+	private static final long STATUS_NOT_FOR_SALE = ZERO;
+	private static final long STATUS_FOR_SALE = 1;
+	private static final long STATUS_FOR_AUCTION = 2;
+	private static final long NEW_AUCTION_BID = 3;
+	private static final long NEW_OWNER = 4;
+	private static final long THOUSAND = 1000;
 	
 	/** Use a contract fee of 0.3 SIGNA */
 	public static final long CONTRACT_FEES = 30000000;
