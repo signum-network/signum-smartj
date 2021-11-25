@@ -1248,8 +1248,8 @@ public class Compiler {
 							}
 							else if (mi.desc.equals("(JJLbt/Address;)V")) {
 								// two long arguments
-								StackVar msg = popVar(m, tmpVar1, false);
 								StackVar msg2 = popVar(m, tmpVar2, false);
+								StackVar msg = popVar(m, tmpVar1, false);
 								
 								code.put(OpCode.e_op_code_EXT_FUN);
 								code.putShort(OpCode.Clear_A);
@@ -1263,10 +1263,10 @@ public class Compiler {
 							}
 							else if (mi.desc.equals("(JJJJLbt/Address;)V")) {
 								// four long arguments
-								StackVar msg = popVar(m, tmpVar1, false);
-								StackVar msg2 = popVar(m, tmpVar2, false);
-								StackVar msg3 = popVar(m, tmpVar3, false);
 								StackVar msg4 = popVar(m, tmpVar4, false);
+								StackVar msg3 = popVar(m, tmpVar3, false);
+								StackVar msg2 = popVar(m, tmpVar2, false);
+								StackVar msg = popVar(m, tmpVar1, false);
 								
 								code.put(OpCode.e_op_code_EXT_FUN_DAT);
 								code.putShort((short) (OpCode.Set_A1));
