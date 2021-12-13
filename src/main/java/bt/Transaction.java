@@ -93,6 +93,13 @@ public class Transaction {
 			return amount - receiver.contract.activationFee;
 		return amount;
 	}
+	
+	/**
+	 * @return the transaction id
+	 */
+	public long getId() {
+		return super.hashCode() + sender.id + receiver.id + amount;
+	}
 
 	/**
 	 * Return the message attached to a transaction.

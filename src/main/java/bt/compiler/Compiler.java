@@ -1383,6 +1383,9 @@ public class Compiler {
 							code.putShort(OpCode.Get_Amount_For_Tx_In_A);
 							code.putInt(tmpVar1); // the amount
 							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("getId")) {
+							// it is the getId, the object itself is already on stack
+							// so do nothing
 						} else if (mi.name.equals("getTimestamp")) {
 							arg1 = popVar(m, tmpVar1, false); // the TX address
 
