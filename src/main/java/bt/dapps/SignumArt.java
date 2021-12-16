@@ -53,6 +53,7 @@ public class SignumArt extends Contract {
 	private static final long STATUS_FOR_AUCTION = 2;
 	private static final long NEW_AUCTION_BID = 3;
 	private static final long NEW_OWNER = 4;
+	private static final long TRANSFER_OWNERSHIP = 5;
 	private static final long THOUSAND = 1000;
 	
 	/** Use a contract fee of 0.3 SIGNA */
@@ -69,6 +70,7 @@ public class SignumArt extends Contract {
 		if (owner.equals(this.getCurrentTxSender())) {
 			// only the current owner can transfer
 			owner = newOwner;
+			sendMessage(TRANSFER_OWNERSHIP, owner.getId(), tracker);			
 		}
 	}
 	
