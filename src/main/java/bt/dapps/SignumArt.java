@@ -205,7 +205,8 @@ public class SignumArt extends Contract {
 	
 	protected void blockFinished(){
 		// The platform fee is the remaining balance
-		sendBalance(platformAddress);
+		if(status == STATUS_NOT_FOR_SALE)
+			sendBalance(platformAddress);
 	}
 
 	/**
