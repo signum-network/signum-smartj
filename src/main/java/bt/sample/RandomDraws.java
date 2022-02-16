@@ -12,6 +12,7 @@ public class RandomDraws extends Contract {
 	static final long HASH_MASK = 0x0FFFFFFFFFFFFFFFL;
 	String gameMessage = "";
 	long hash;
+	long hash1;
 
 	@Override
 	public void txReceived() {
@@ -19,6 +20,7 @@ public class RandomDraws extends Contract {
 		gameMessage += " -John draws " + randomNumber(100);
 		gameMessage += " -Karen draws " + randomNumber(100);
 		sendMessage(gameMessage, getCurrentTx().getSenderAddress());
+		gameMessage = "";
 	}
 
 	private long randomNumber(int max) {
@@ -30,7 +32,7 @@ public class RandomDraws extends Contract {
 	}
 
 	private void buildSeed() {
-		long hash1 = getPrevBlockHash1();
+		hash1 = getPrevBlockHash1();
 		hash = hash1;
 		for (int i = 1; i <= 10; i++) {// number of previous blocks to generate random from hash
 			hash *= 2; // shift by one bit
@@ -52,11 +54,8 @@ public class RandomDraws extends Contract {
 		emu.createConctract(creatorAdr, bjRobotAdr, RandomDraws.class, ONE_BURST);
 		emu.forgeBlock();
 		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.forgeBlock();
 		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.forgeBlock();
 		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.forgeBlock();
 		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
 		emu.forgeBlock();
 
