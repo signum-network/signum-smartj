@@ -1,0 +1,195 @@
+package bt.dapps;
+
+import bt.*;
+import bt.ui.EmulatorWindow;
+
+/**
+ * A fully  decentralized and unstoppable black jack.
+ * <p>
+ * This contract runs nearly by the same rules as casino black jack.
+ * The difference is that players has to choose when to stop before the game starts.
+ * <p>
+ * You can play as a player or a bank investor.
+ * <p>
+ * If the player win it doubles the bet.
+ * If bank wins the bet is split over the bank investors (depending on how much they invested).
+ * <p>
+ * A special random generator using 10 blocks and multiple hashes is used to
+ * make any miner manipulation unprofitable. All bets placed during the hash
+ * seed generation are moved to the next round.
+ *
+ * @author Styv182
+ */
+public class CryptoBlackJack extends Contract {
+
+	public static final long GAS_FEE = 2 * ONE_BURST;
+	Timestamp lastRunning;
+	long nextRoundBlock;
+	Address holdersContract;
+	Transaction nextTx;
+	Timestamp lastPaid;
+	Address nextPlayerToPay;
+	long stopLimit;
+
+	//Helper for drawing
+	long hash, hash1, hashBase;
+	long hashCounter;
+	long roundNumber;
+	long drawNumber;
+	long playerScore;
+	long bankScore;
+	// Number of blocks used to get the draw numbers hash
+	long HASH_BLOCKS = 9;
+
+	// time difference between rounds in minutes (24h = 1440 minutes)
+	public static final long DELTA_T = 5;
+	long DELTA_T_BLOCKS = DELTA_T / 4;
+	long DELTA_LAST = HASH_BLOCKS * 4;
+	//static numbers
+	long FIFTY_TWO = 52;
+	long ZERO = 0;
+	long ONE = 1;
+	long TWO = 2;
+	long THREE = 3;
+	long FOUR = 4;
+	long FIVE = 5;
+	long SIX = 6;
+	long SEVEN = 7;
+	long EIGHT = 8;
+	long NINE = 9;
+	long TEN = 10;
+	long HUNDRED = 100;
+	long TEN_THOUSAND = 100;
+	long FIFTY_THOUSAND = 50_000;
+	long ONE_MILLION = 1_000_000;
+	long TWENTY_SIX = 26;
+	long DISTRIBUTION_ROUNDS = 7;
+	long SIXTY_NINE = 69;
+
+	static final long HASH_MASK = 0x0FFFFFFFFFFFFFFFL;
+
+	public CryptoBlackJack() {
+		holdersContract = getCreator();
+		lastRunning = getBlockTimestamp().addMinutes(DELTA_T - DELTA_LAST);
+		nextRoundBlock = getBlockHeight() + DELTA_T_BLOCKS - HASH_BLOCKS;
+		// Infinite loop sorting at every DELTA_T blocks
+		while (true) {
+			// Avoid any delay if we need more than one block to run all the bets
+			sleep(nextRoundBlock - getBlockHeight());
+			play();
+			nextRoundBlock = nextRoundBlock + DELTA_T_BLOCKS;
+			lastRunning = lastRunning.addMinutes(DELTA_T);
+		}
+	}
+
+	private void play() {
+		// construct the winning seed based on 9 different blocks
+		hash1 = getPrevBlockHash1();
+		hash = hash1;
+		hashCounter = ONE;
+		while (hashCounter < HASH_BLOCKS) {
+			sleep(ONE);
+			hash *= TWO; // shift by one bit
+			hash += (getPrevBlockHash1() & ONE);
+			hashCounter += ONE;
+		}
+		hash = performSHA256_64(hash, hash1);
+		roundNumber += ONE;
+		hashBase = hash;
+
+		// Play game
+		while (true) {
+
+			nextTx = getTxAfterTimestamp(lastPaid);
+			if (nextTx == null || nextTx.getTimestamp().ge(lastRunning))
+				break;
+			nextPlayerToPay = nextTx.getSenderAddress();
+			stopLimit = nextTx.getMessage1();
+
+
+			// PLAY!!
+			playerScore = playerDrawCards();
+
+			if (playerScore <= 21) {
+				bankScore = playerDrawCards();
+				if (playerScore > bankScore) {
+					playerWin();
+				} else if (playerScore == bankScore) {
+					draw();
+				}
+				bankWin();
+			} else {
+				bankWin();
+			}
+		}
+	}
+
+	private long playerDrawCards() {
+		long score = 0;
+		while (score < stopLimit && score < 21) {
+			score += drawCard();
+		}
+		return score;
+	}
+
+
+	private void bankWin() {
+		//sendMessage("-Bank:" + bankScore + " -Player:" + playerScore + " -Bank win!!", nextPlayerToPay);
+	}
+
+	private void draw() {
+		//sendMessage("-Bank:" + bankScore + " -Player:" + playerScore + " -Draw!!", nextPlayerToPay);
+		sendAmount(nextTx.getAmount(), nextPlayerToPay);
+	}
+
+	private void playerWin() {
+	//	sendMessage("-Bank:" + bankScore + " -Player:" + playerScore + " -Player win!!", nextPlayerToPay);
+		sendAmount(nextTx.getAmount() * 2, nextPlayerToPay);
+	}
+
+	private long randomNumber() {
+		hash = performSHA256_64(hash, hash);
+		drawNumber = hash & HASH_MASK;
+		drawNumber = drawNumber % 13;
+		drawNumber += ONE;
+		return drawNumber;
+	}
+
+	private long drawCard() {
+		long cardValue = randomNumber();
+		return numberToCardValue(cardValue);
+	}
+
+	private long numberToCardValue(long n) {
+		return n;
+	}
+
+	public void txReceived() {
+		// Not needed, since the contract never leaves the loop on constructor.
+	}
+
+	public static void main(String[] args) throws Exception {
+		BT.activateCIP20(true);
+
+		Emulator emu = Emulator.getInstance();
+
+		Address creatorAdr = Emulator.getInstance().getAddress("CREATOR");
+		Address playerAdr = Emulator.getInstance().getAddress("CHALLENGER");
+		emu.airDrop(creatorAdr, 1000 * ONE_BURST);
+		emu.airDrop(playerAdr, 1000 * ONE_BURST);
+
+		Address bjRobotAdr = Emulator.getInstance().getAddress("BJROBOT");
+		emu.createConctract(creatorAdr, bjRobotAdr, CryptoBlackJack.class, ONE_BURST);
+		emu.forgeBlock();
+		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
+		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
+		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
+		emu.forgeBlock();
+		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
+		emu.forgeBlock();
+		emu.forgeBlock();
+		emu.forgeBlock();
+		emu.forgeBlock();
+		new EmulatorWindow(CryptoBlackJack.class);
+	}
+}
