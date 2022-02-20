@@ -6,13 +6,18 @@ import bt.ui.EmulatorWindow;
 /**
  * A fully  decentralized and unstoppable black jack.
  * <p>
- * This contract runs nearly by the same rules as casino black jack.
- * The difference is that players has to choose when to stop before the game starts.
+ * Simple Crypto Black Jack
  * <p>
- * You can play as a player or a bank investor.
+ * Aces always equals 11
+ * Players and banks stop drawing cars at 17
+ * if draw bank win
  * <p>
- * If the player win it doubles the bet.
- * If bank wins the bet is split over the bank investors (depending on how much they invested).
+ * Player can play to become the bank.
+ * To do so they need to send mon coins than the current bank, with a tx message 'bank'
+ * If they succeed, they become the bank. The previous bank money is send back the to previous owner.
+ * <p>
+ * if bank win: 1/5 of bet is send back to the bank owner, 1/5 send to the jack pot, 3/5 goes in the bank money.
+ * if player make bank go bankrup, he wins the jack pot
  * <p>
  * A special random generator using 10 blocks and multiple hashes is used to
  * make any miner manipulation unprofitable. All bets placed during the hash
@@ -29,15 +34,14 @@ public class CryptoBlackJack extends Contract {
 	Transaction nextTx;
 	Timestamp lastPaid;
 	Address nextPlayerToPay;
-	long stopLimit;
 
-	//Helper for drawing
+	//Helper for drawing cards
 	long hash, hash1, hashBase;
 	long hashCounter;
 	long roundNumber;
-	long drawNumber;
-	long playerScore;
-	long bankScore;
+	long drawCard;
+	long playerScore = 0;
+	long bankScore = 0;
 	// Number of blocks used to get the draw numbers hash
 	long HASH_BLOCKS = 9;
 
@@ -45,27 +49,17 @@ public class CryptoBlackJack extends Contract {
 	public static final long DELTA_T = 5;
 	long DELTA_T_BLOCKS = DELTA_T / 4;
 	long DELTA_LAST = HASH_BLOCKS * 4;
+
+	// bank bank
+	long jackpotMoney;
+	Address currentBankOwner;
+	long currentBankMoney;
+	long BANK_STR_LONG_VALUE = 1802396002; // "bank" String = 1802396002 in long
+
 	//static numbers
-	long FIFTY_TWO = 52;
-	long ZERO = 0;
+	long SEVENTEEN = 17;
 	long ONE = 1;
 	long TWO = 2;
-	long THREE = 3;
-	long FOUR = 4;
-	long FIVE = 5;
-	long SIX = 6;
-	long SEVEN = 7;
-	long EIGHT = 8;
-	long NINE = 9;
-	long TEN = 10;
-	long HUNDRED = 100;
-	long TEN_THOUSAND = 100;
-	long FIFTY_THOUSAND = 50_000;
-	long ONE_MILLION = 1_000_000;
-	long TWENTY_SIX = 26;
-	long DISTRIBUTION_ROUNDS = 7;
-	long SIXTY_NINE = 69;
-
 	static final long HASH_MASK = 0x0FFFFFFFFFFFFFFFL;
 
 	public CryptoBlackJack() {
@@ -76,13 +70,13 @@ public class CryptoBlackJack extends Contract {
 		while (true) {
 			// Avoid any delay if we need more than one block to run all the bets
 			sleep(nextRoundBlock - getBlockHeight());
-			play();
+			playOneRound();
 			nextRoundBlock = nextRoundBlock + DELTA_T_BLOCKS;
 			lastRunning = lastRunning.addMinutes(DELTA_T);
 		}
 	}
 
-	private void play() {
+	private void playOneRound() {
 		// construct the winning seed based on 9 different blocks
 		hash1 = getPrevBlockHash1();
 		hash = hash1;
@@ -99,34 +93,61 @@ public class CryptoBlackJack extends Contract {
 
 		// Play game
 		while (true) {
-
 			nextTx = getTxAfterTimestamp(lastPaid);
-			if (nextTx == null || nextTx.getTimestamp().ge(lastRunning))
-				break;
+			if (nextTx == null || nextTx.getTimestamp().ge(lastRunning)) break;
 			nextPlayerToPay = nextTx.getSenderAddress();
-			stopLimit = nextTx.getMessage1();
-
-
-			// PLAY!!
-			playerScore = playerDrawCards();
-
-			if (playerScore <= 21) {
-				bankScore = playerDrawCards();
-				if (playerScore > bankScore) {
-					playerWin();
-				} else if (playerScore == bankScore) {
-					draw();
-				}
-				bankWin();
+			if (currentBankOwner == null) {
+				// current player becomes the bank, keep playing
+				changingBankOwnership();
+			} else if (BANK_STR_LONG_VALUE == nextTx.getMessage1()) {
+				// change bank owner algorithm
+				changingBankOwnership();
 			} else {
-				bankWin();
+				playerPlay();
 			}
 		}
 	}
 
+	private void changingBankOwnership() {
+		if (nextTx.getAmount() > currentBankMoney) { // switch bank owner succeed
+			// sendMoney back to current owner
+			sendAmount(currentBankMoney, currentBankOwner);
+			// switch current bank
+			currentBankOwner = nextTx.getSenderAddress();
+			currentBankMoney = nextTx.getAmount();
+		} else {
+			// switch bank owner fail: give 10% to jackpot, 90% back to owner
+			jackpotMoney += nextTx.getAmount() / 10;
+			sendAmount(nextTx.getAmount() / 90, nextTx.getSenderAddress());
+		}
+	}
+
+	private void playerPlay() {
+		playerScore = playerDrawCards();
+
+		if (playerScore > 21) {
+			bankWin();
+			return;
+		}
+
+		bankScore = playerDrawCards();
+
+		if (bankScore > 21) {
+			playerWin();
+			return;
+		}
+
+		if (playerScore > bankScore) {
+			playerWin();
+			return;
+		}
+
+		bankWin();
+	}
+
 	private long playerDrawCards() {
 		long score = 0;
-		while (score < stopLimit && score < 21) {
+		while (score < SEVENTEEN && score < 21) {
 			score += drawCard();
 		}
 		return score;
@@ -134,25 +155,33 @@ public class CryptoBlackJack extends Contract {
 
 
 	private void bankWin() {
-		//sendMessage("-Bank:" + bankScore + " -Player:" + playerScore + " -Bank win!!", nextPlayerToPay);
-	}
-
-	private void draw() {
-		//sendMessage("-Bank:" + bankScore + " -Player:" + playerScore + " -Draw!!", nextPlayerToPay);
-		sendAmount(nextTx.getAmount(), nextPlayerToPay);
+		jackpotMoney += nextTx.getAmount() / 5;
+		sendAmount(nextTx.getAmount() / 5, currentBankOwner);
+		currentBankMoney += (nextTx.getAmount() / 5)*3;
 	}
 
 	private void playerWin() {
-	//	sendMessage("-Bank:" + bankScore + " -Player:" + playerScore + " -Player win!!", nextPlayerToPay);
-		sendAmount(nextTx.getAmount() * 2, nextPlayerToPay);
+		if (currentBankMoney > nextTx.getAmount() * 2) {
+			sendAmount(nextTx.getAmount() * 2, nextPlayerToPay);
+		} else {
+			bankrupt();
+		}
+
+	}
+
+	private void bankrupt() {
+		sendAmount(currentBankMoney, nextPlayerToPay);
+		sendAmount(jackpotMoney, nextPlayerToPay);
+		currentBankOwner=null;
+		currentBankMoney=0;
 	}
 
 	private long randomNumber() {
 		hash = performSHA256_64(hash, hash);
-		drawNumber = hash & HASH_MASK;
-		drawNumber = drawNumber % 13;
-		drawNumber += ONE;
-		return drawNumber;
+		drawCard = hash & HASH_MASK;
+		drawCard = drawCard % 13;
+		drawCard += ONE;
+		return drawCard;
 	}
 
 	private long drawCard() {
@@ -161,6 +190,8 @@ public class CryptoBlackJack extends Contract {
 	}
 
 	private long numberToCardValue(long n) {
+		if (n == 1) return 11; // aces
+		if (n > 10) return 10; // J, Q, K
 		return n;
 	}
 
@@ -170,26 +201,6 @@ public class CryptoBlackJack extends Contract {
 
 	public static void main(String[] args) throws Exception {
 		BT.activateCIP20(true);
-
-		Emulator emu = Emulator.getInstance();
-
-		Address creatorAdr = Emulator.getInstance().getAddress("CREATOR");
-		Address playerAdr = Emulator.getInstance().getAddress("CHALLENGER");
-		emu.airDrop(creatorAdr, 1000 * ONE_BURST);
-		emu.airDrop(playerAdr, 1000 * ONE_BURST);
-
-		Address bjRobotAdr = Emulator.getInstance().getAddress("BJROBOT");
-		emu.createConctract(creatorAdr, bjRobotAdr, CryptoBlackJack.class, ONE_BURST);
-		emu.forgeBlock();
-		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.forgeBlock();
-		emu.send(playerAdr, bjRobotAdr, 10 * ONE_BURST);
-		emu.forgeBlock();
-		emu.forgeBlock();
-		emu.forgeBlock();
-		emu.forgeBlock();
 		new EmulatorWindow(CryptoBlackJack.class);
 	}
 }
