@@ -32,8 +32,8 @@ public class BT {
     public static final String PASSPHRASE5 = "talk";
 
     public static final String NODE_LOCAL_TESTNET = "http://localhost:6876";
-    public static final String NODE_TESTNET_RO = "https://testnetwallet.burstcoin.ro";
-    public static final String NODE_TESTNET = NODE_TESTNET_RO;
+    public static final String NODE_TESTNET_SIGNUM = "https://europe3.testnet.signum.network";
+    public static final String NODE_TESTNET = NODE_TESTNET_SIGNUM;
 
     public static final String NODE_LOCAL = "http://localhost:8125";
     public static final String NODE_SIGNUM_BR = "https://brazil.signum.network";
