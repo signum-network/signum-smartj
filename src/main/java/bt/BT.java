@@ -211,13 +211,13 @@ public class BT {
      * Just for testing purposes.
      */
     public static void forgeBlock(String pass, int millis) {
-    	int height = bns.getBlocks(0, 1).blockingGet()[0].getHeight();
+    	long height = bns.getMiningInfoSingle().blockingGet().getHeight();
     	long startTimer = System.currentTimeMillis();
         bns.submitNonce(pass, "0", null).blockingGet();
         while(true) {
         	try {
         		Thread.sleep(50);
-        		int newHeight = bns.getBlocks(0, 1).blockingGet()[0].getHeight();
+        		long newHeight = bns.getMiningInfoSingle().blockingGet().getHeight();
         		long timeElapsed = System.currentTimeMillis() - startTimer;
         		if(newHeight > height || timeElapsed > millis) {
         			break;
