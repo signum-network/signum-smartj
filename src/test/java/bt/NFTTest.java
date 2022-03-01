@@ -45,7 +45,7 @@ public class NFTTest extends BT {
 
         // put the contract for auction
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("putForAuction"), SignumValue.fromNQT(NFT2.ACTIVATION_FEE),
-                SignumValue.fromSigna(0.1), 1000, startBid, timeout).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, startBid, timeout);
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -72,7 +72,7 @@ public class NFTTest extends BT {
         BT.forgeBlock(BT.PASSPHRASE3, 100);
 
         // send a bid short on amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(startBid)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(startBid));
         BT.forgeBlock();
         BT.forgeBlock();
         highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());
@@ -84,7 +84,7 @@ public class NFTTest extends BT {
         assertEquals(creator.getSignedLongId(), ownerChain);
 
         // send a higher bid
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(startBid*2 + NFT2.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(startBid*2 + NFT2.ACTIVATION_FEE));
         BT.forgeBlock();
         BT.forgeBlock();
         long debug = BT.getContractFieldValue(contract, comp.getField("debug").getAddress());
@@ -97,7 +97,7 @@ public class NFTTest extends BT {
         assertEquals(creator.getSignedLongId(), ownerChain);
         
         // send an even higher bid from another address
-        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(startBid*3 + NFT2.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(startBid*3 + NFT2.ACTIVATION_FEE));
         BT.forgeBlock();
         BT.forgeBlock();
         highestBidderChain = BT.getContractFieldValue(contract, comp.getField("highestBidder").getAddress());

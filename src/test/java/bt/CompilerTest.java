@@ -19,6 +19,7 @@ import signumj.entity.SignumAddress;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 import signumj.entity.response.Account;
+import signumj.entity.response.TransactionBroadcast;
 
 import static org.junit.Assert.*;
 
@@ -28,7 +29,7 @@ import java.nio.ByteOrder;
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
  * tests to work.
- * 
+ *
  * @author jjos
  */
 public class CompilerTest extends BT {
@@ -59,8 +60,8 @@ public class CompilerTest extends BT {
         forgeBlock(PASSPHRASE, 500);
         SignumAddress player1 = bc.getAddressFromPassphrase(PASSPHRASE2);
         SignumAddress player2 = bc.getAddressFromPassphrase(PASSPHRASE3);
-        sendAmount(PASSPHRASE, player1, SignumValue.fromSigna(1000)).blockingGet();
-        sendAmount(PASSPHRASE, player2, SignumValue.fromSigna(1000)).blockingGet();
+        sendAmount(PASSPHRASE, player1, SignumValue.fromSigna(1000));
+        sendAmount(PASSPHRASE, player2, SignumValue.fromSigna(1000));
         forgeBlock(PASSPHRASE, 500);
 
         SignumValue actvFee = SignumValue.fromSigna(10);
@@ -91,7 +92,7 @@ public class CompilerTest extends BT {
         SignumAddress address = SignumAddress.fromRs(Forward.ADDRESS);
 
         // send some burst to make sure the account exist
-        sendAmount(PASSPHRASE, address, SignumValue.fromNQT(1)).blockingGet();
+        sendAmount(PASSPHRASE, address, SignumValue.fromNQT(1));
         forgeBlock();
 
         Account bmfAccount = bns.getAccount(address).blockingGet();
@@ -190,13 +191,13 @@ public class CompilerTest extends BT {
         SignumAddress creator = SignumCrypto.getInstance().getAddressFromPassphrase(BT.PASSPHRASE);
 
         BT.registerContract(BT.PASSPHRASE, comp, name, name, SignumValue.fromNQT(LocalVar.FEE),
-                SignumValue.fromSigna(0.1), 1000).blockingGet();
+                SignumValue.fromSigna(0.1), 1000);
         BT.forgeBlock();
 
         AT contract = BT.findContract(creator, name);
 
         SignumValue valueSent = SignumValue.fromSigna(10);
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), valueSent).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), valueSent);
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -205,7 +206,7 @@ public class CompilerTest extends BT {
 
         long value = 512;
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("setValue"), SignumValue.fromSigna(1),
-                SignumValue.fromSigna(0.1), 1000, value).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, value);
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -227,13 +228,13 @@ public class CompilerTest extends BT {
         assertEquals(0, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
 
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method1"), SignumValue.fromSigna(10),
-                SignumValue.fromSigna(0.1), 1000).blockingGet();
+                SignumValue.fromSigna(0.1), 1000);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(1, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
 
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), SignumValue.fromSigna(10),
-                SignumValue.fromSigna(0.1), 1000).blockingGet();
+                SignumValue.fromSigna(0.1), 1000);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(2, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -253,7 +254,7 @@ public class CompilerTest extends BT {
         assertEquals(0, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
 
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method1"), SignumValue.fromSigna(30),
-                SignumValue.fromSigna(0.1), 1000, 100).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, 100);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(1, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -262,7 +263,7 @@ public class CompilerTest extends BT {
         assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
 
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), SignumValue.fromSigna(30),
-                SignumValue.fromSigna(0.1), 1000, 100, 200).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, 100, 200);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(2, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -271,7 +272,7 @@ public class CompilerTest extends BT {
         assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
 
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method3"), SignumValue.fromSigna(30),
-                SignumValue.fromSigna(0.1), 1000, 100, 200, 300).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, 100, 200, 300);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(3, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -280,7 +281,7 @@ public class CompilerTest extends BT {
         assertEquals(300, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
 
         BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method4"), SignumValue.fromSigna(30),
-                SignumValue.fromSigna(0.1), 1000, 1000, 2000, 3000).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, 1000, 2000, 3000);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(4, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -299,7 +300,7 @@ public class CompilerTest extends BT {
                 SignumValue.fromSigna(10));
         System.out.println(contract.getId().getSignedLongId());
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -311,11 +312,11 @@ public class CompilerTest extends BT {
         assertEquals(BT.getAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
 
         BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(0.1))
-                .blockingGet();
+                ;
         BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(1))
-                .blockingGet();
+                ;
         BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(1))
-                .blockingGet();
+                ;
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -328,7 +329,10 @@ public class CompilerTest extends BT {
     }
 
     public void testCounter2() throws Exception {
+    	// make sure all accounts exist
         BT.forgeBlock();
+        BT.forgeBlock(BT.PASSPHRASE2);
+        BT.forgeBlock(BT.PASSPHRASE3);
 
         long ntx, ncalls, nblocks, address;
 
@@ -336,10 +340,10 @@ public class CompilerTest extends BT {
         AT contract = BT.registerContract(compiled, TXCounter2.class.getSimpleName() + System.currentTimeMillis(),
                 SignumValue.fromSigna(10));
         System.out.println(contract.getId().getID());
-        
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("methodCall"), SignumValue.fromSigna(20),
-        		SignumValue.fromSigna(1), 1000).blockingGet();
-        BT.forgeBlock();
+
+        TransactionBroadcast tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("methodCall"), SignumValue.fromSigna(20),
+        		SignumValue.fromSigna(1), 1000);
+        BT.forgeBlock(tb);
         BT.forgeBlock();
         ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
         ncalls = BT.getContractFieldValue(contract, compiled.getField("ncalls").getAddress());
@@ -348,32 +352,25 @@ public class CompilerTest extends BT {
         assertEquals(1, ncalls);
         assertEquals(1, nblocks);
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20)).blockingGet();
-        BT.forgeBlock();
+        tb = BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20));
+        BT.forgeBlock(tb);
         BT.forgeBlock();
 
         ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
-        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
         address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
         assertEquals(2, ntx);
-        assertEquals(2, nblocks);
         assertEquals(BT.getAddressFromPassphrase(PASSPHRASE).getSignedLongId(), address);
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(0.01))
-                .blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(0.1))
-                .blockingGet();
-        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(1))
-                .blockingGet();
-        BT.forgeBlock();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(0.01));
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(0.1));
+        tb = BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromSigna(20), SignumValue.fromSigna(1));
+        BT.forgeBlock(tb);
         BT.forgeBlock();
 
         ntx = BT.getContractFieldValue(contract, compiled.getField("ntx").getAddress());
-        nblocks = BT.getContractFieldValue(contract, compiled.getField("nblocks").getAddress());
         address = BT.getContractFieldValue(contract, compiled.getField("address").getAddress());
 
         assertEquals(5, ntx);
-        assertEquals(3, nblocks);
     }
 
     public void testSha256_64() throws Exception {
@@ -385,7 +382,7 @@ public class CompilerTest extends BT {
         AT contract = BT.registerContract(compiled, "sha" + System.currentTimeMillis(), SignumValue.fromSigna(10));
         System.out.println(contract.getId().getSignedLongId());
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(20));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -407,7 +404,7 @@ public class CompilerTest extends BT {
         System.out.println(contract.getId().getID());
 
         // lets just initialized the contract
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -421,7 +418,7 @@ public class CompilerTest extends BT {
         assertEquals(0, bidder);
 
         // send an acution smaller than the min bid
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(Auction.INITIAL_PRICE / 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(Auction.INITIAL_PRICE / 2));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -430,7 +427,7 @@ public class CompilerTest extends BT {
         assertTrue(balance.longValue() < 30 * Contract.ONE_BURST);
 
         // send bid with enough funds
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(Auction.INITIAL_PRICE * 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(Auction.INITIAL_PRICE * 2));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -445,7 +442,7 @@ public class CompilerTest extends BT {
         assertTrue(balance.longValue() > Auction.INITIAL_PRICE - 30 * Contract.ONE_BURST);
 
         // send another bit with higher value
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(Auction.INITIAL_PRICE * 3)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(Auction.INITIAL_PRICE * 3));
         BT.forgeBlock();
         BT.forgeBlock();
         // bid should be accepted
@@ -457,7 +454,7 @@ public class CompilerTest extends BT {
             BT.forgeBlock();
         }
         // make the contract to run to see the payment
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -473,7 +470,7 @@ public class CompilerTest extends BT {
                 SignumValue.fromNQT(AuctionNFT.ACTIVATION_FEE));
         System.out.println(contract.getId().getID());
 
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -491,7 +488,7 @@ public class CompilerTest extends BT {
         BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("open"),
                 SignumValue.fromNQT(AuctionNFT.ACTIVATION_FEE), SignumValue.fromSigna(0.1), 1000, timeout_mins, minbid,
                 contract.getCreator().getSignedLongId() // beneficiary
-        ).blockingGet();
+        );
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -504,7 +501,7 @@ public class CompilerTest extends BT {
         assertEquals(contract.getCreator().getSignedLongId(), benef_chain);
 
         // send an acution smaller than the min bid
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(minbid / 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(minbid / 2));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -513,7 +510,7 @@ public class CompilerTest extends BT {
         assertTrue(balance.longValue() < 60 * Contract.ONE_BURST);
 
         // send bid with enough funds
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(minbid * 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(minbid * 2));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -528,7 +525,7 @@ public class CompilerTest extends BT {
         assertTrue(balance.longValue() > minbid);
 
         // send another bit with higher value
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(minbid * 3)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(minbid * 3));
         BT.forgeBlock();
         BT.forgeBlock();
         // bid should be accepted
@@ -540,7 +537,7 @@ public class CompilerTest extends BT {
             BT.forgeBlock();
         }
         // make the contract to run to see the payment
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(30));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -561,7 +558,7 @@ public class CompilerTest extends BT {
 
         // initialize the contract and put some balance
         BT.sendAmount(BT.PASSPHRASE, contract.getId(),
-                SignumValue.fromNQT(initialBalance + MultiSigLock.ACTIVATION_FEE)).blockingGet();
+                SignumValue.fromNQT(initialBalance + MultiSigLock.ACTIVATION_FEE));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -587,7 +584,7 @@ public class CompilerTest extends BT {
         BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("sign"),
                 SignumValue.fromNQT(MultiSigLock.ACTIVATION_FEE), SignumValue.fromSigna(0.1), 1000,
                 beneficiary, amount
-        ).blockingGet();
+        );
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -600,7 +597,7 @@ public class CompilerTest extends BT {
         BT.callMethod(BT.PASSPHRASE, contract.getId(), compiled.getMethod("sign"),
                 SignumValue.fromNQT(MultiSigLock.ACTIVATION_FEE), SignumValue.fromSigna(0.1), 1000,
                 beneficiary, amount
-        ).blockingGet();
+        );
         BT.forgeBlock();
         BT.forgeBlock();
         nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
@@ -610,7 +607,7 @@ public class CompilerTest extends BT {
         BT.callMethod(BT.PASSPHRASE2, contract.getId(), compiled.getMethod("sign"),
                 SignumValue.fromNQT(MultiSigLock.ACTIVATION_FEE), SignumValue.fromSigna(0.1), 1000,
                 beneficiary, amount
-        ).blockingGet();
+        );
         BT.forgeBlock();
         BT.forgeBlock();
         nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
@@ -622,7 +619,7 @@ public class CompilerTest extends BT {
         BT.callMethod(BT.PASSPHRASE3, contract.getId(), compiled.getMethod("sign"),
                 SignumValue.fromNQT(MultiSigLock.ACTIVATION_FEE), SignumValue.fromSigna(0.1), 1000,
                 beneficiary, amount*2
-        ).blockingGet();
+        );
         BT.forgeBlock();
         BT.forgeBlock();
         nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
@@ -632,7 +629,7 @@ public class CompilerTest extends BT {
         BT.callMethod(BT.PASSPHRASE3, contract.getId(), compiled.getMethod("sign"),
                 SignumValue.fromNQT(MultiSigLock.ACTIVATION_FEE), SignumValue.fromSigna(0.1), 1000,
                 beneficiary, amount
-        ).blockingGet();
+        );
         BT.forgeBlock();
         BT.forgeBlock();
         nSignatures = BT.getContractFieldValue(contract, compiled.getField("nSignatures").getAddress());
@@ -660,7 +657,7 @@ public class CompilerTest extends BT {
         BT.registerContract(BT.PASSPHRASE, compiled.getCode(), compiled.getDataPages(),
                 name, "test", data,
                 SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE), BT.getMinRegisteringFee(compiled),
-                1000).blockingGet();
+                1000);
         BT.forgeBlock(BT.PASSPHRASE2);
         BT.forgeBlock(BT.PASSPHRASE2);
 
@@ -668,7 +665,7 @@ public class CompilerTest extends BT {
         System.out.println(contract.getId().getID());
 
         // Initialize the contract with a given amount, this also initializes the timeout
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(1000)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(1000));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -676,7 +673,7 @@ public class CompilerTest extends BT {
         BT.forgeBlock();
         BT.forgeBlock();
         BT.forgeBlock();
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -702,7 +699,7 @@ public class CompilerTest extends BT {
         BT.registerContract(BT.PASSPHRASE, compiled.getCode(), compiled.getDataPages(),
                 name, "test", data,
                 SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE), BT.getMinRegisteringFee(compiled),
-                1000).blockingGet();
+                1000);
         BT.forgeBlock(BT.PASSPHRASE2);
         BT.forgeBlock(BT.PASSPHRASE2);
 
@@ -710,12 +707,12 @@ public class CompilerTest extends BT {
         System.out.println(contract.getId().getID());
 
         // Initialize the contract with a given amount, this also initializes the timeout
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(1000)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(1000));
         BT.forgeBlock();
         BT.forgeBlock();
 
         // Request the payment without the key, should not pay
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -731,7 +728,7 @@ public class CompilerTest extends BT {
         b.putLong(key.getValue4());
 
         BT.sendMessage(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(HashedTimeLock.ACTIVATION_FEE),
-                SignumValue.fromSigna(0.1), 1000, b.array()).blockingGet();
+                SignumValue.fromSigna(0.1), 1000, b.array());
         BT.forgeBlock();
         BT.forgeBlock();
 

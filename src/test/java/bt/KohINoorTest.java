@@ -40,7 +40,7 @@ public class KohINoorTest extends BT {
         long price = KohINoor.INITIAL_PRICE;
 
         // initialize the contract
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(KohINoor.ACTIVATION_FEE)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(KohINoor.ACTIVATION_FEE));
         BT.forgeBlock();
         BT.forgeBlock();
 
@@ -57,7 +57,7 @@ public class KohINoorTest extends BT {
         BT.forgeBlock(BT.PASSPHRASE3, 100);
 
         // send a short amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price / 2)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price / 2));
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -68,7 +68,7 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price));
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -80,7 +80,7 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount, another buyer
-        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(price));
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -92,9 +92,9 @@ public class KohINoorTest extends BT {
         assertTrue(BT.getContractBalance(contract).doubleValue()*Contract.ONE_BURST < KohINoor.ACTIVATION_FEE);
 
         // send the asked amount, but three different buyers
-        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
-        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price)).blockingGet();
+        BT.sendAmount(BT.PASSPHRASE3, contract.getId(), SignumValue.fromNQT(price));
+        BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(price));
+        BT.sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(price));
         BT.forgeBlock();
         BT.forgeBlock();
         ownerChain = BT.getContractFieldValue(contract, comp.getField("owner").getAddress());
@@ -113,7 +113,7 @@ public class KohINoorTest extends BT {
         for (int i = 0; i < 10; i++) {
             String pass = String.valueOf(i);
             SignumAddress buyer = BT.getAddressFromPassphrase(pass);
-            BT.sendAmount(PASSPHRASE, buyer, SignumValue.fromNQT(price*2), SignumValue.fromSigna(10)).blockingGet();
+            BT.sendAmount(PASSPHRASE, buyer, SignumValue.fromNQT(price*2), SignumValue.fromSigna(10));
             buyers.add(pass);
             lastBuyer = buyer;
         }
@@ -122,7 +122,7 @@ public class KohINoorTest extends BT {
 
         int i = 0;
         for (String buyer : buyers) {
-            BT.sendAmount(buyer, contract.getId(), SignumValue.fromNQT(price), SignumValue.fromSigna(0.1)).blockingGet();
+            BT.sendAmount(buyer, contract.getId(), SignumValue.fromNQT(price), SignumValue.fromSigna(0.1));
         }
         forgeBlock();
         forgeBlock();

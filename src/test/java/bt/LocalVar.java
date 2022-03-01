@@ -41,7 +41,7 @@ public class LocalVar extends Contract {
 		System.out.println(contract.getId().getFullAddress());
 		System.out.println(contract.getId().getID());
 
-		BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(10)).blockingGet();
+		BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(10));
 		BT.forgeBlock();
 		BT.forgeBlock();
 
@@ -49,7 +49,7 @@ public class LocalVar extends Contract {
 
 		long value = 512;
 		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("setValue"), SignumValue.fromSigna(1),
-				SignumValue.fromSigna(0.1), 1000, value).blockingGet();
+				SignumValue.fromSigna(0.1), 1000, value);
 		BT.forgeBlock();
 		BT.forgeBlock();
 

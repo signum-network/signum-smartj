@@ -13,14 +13,15 @@ import signumj.crypto.SignumCrypto;
 import signumj.entity.SignumAddress;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
+import signumj.entity.response.Transaction;
 import signumj.entity.response.TransactionBroadcast;
 import signumj.service.NodeService;
 
 /**
  * BlockTalk Utility functions for handling on-chain contract interactions.
- * 
+ *
  * Passphrases never leave the local application, messages are signed locally.
- * 
+ *
  * @author jjos
  */
 public class BT {
@@ -39,7 +40,7 @@ public class BT {
     public static final String NODE_SIGNUM_BR = "https://brazil.signum.network";
     public static final String NODE_SIGNUM_EU = "https://europe.signum.network";
     public static final String NODE_BURSTCOIN_RO = "https://wallet.burstcoin.ro:443";
-    
+
     public static boolean CIP20_ACTIVATED = true;
 
     static NodeService bns = NodeService.getInstance(NODE_LOCAL_TESTNET);
@@ -47,7 +48,7 @@ public class BT {
 
     /**
      * Sets the node address, by default localhost with testnet port 6876 is used.
-     * 
+     *
      * @param nodeAddress the node address including port number
      */
     public static void setNodeAddress(String nodeAddress) {
@@ -56,16 +57,16 @@ public class BT {
 
     /**
      * Sets the node service instance
-     * 
+     *
      * @param node the node service instance
      */
     public static void setNodeInstance(NodeService node) {
         bns = node;
     }
-    
+
     /**
      * Activates CIP20 for fee estimation (default is deactivated for now)
-     * 
+     *
      * @param on
      */
     public static void activateCIP20(boolean on) {
@@ -88,11 +89,11 @@ public class BT {
 
     /**
      * Return the compiled version of a Contract.
-     * 
+     *
      * Using this compiled version the user can check for errors
      * {@link Compiler#getErrors()}, can get the methods with
      * {@link Compiler#getMethods()}.
-     * 
+     *
      * @param contractClass
      * @return
      * @throws IOException
@@ -146,7 +147,7 @@ public class BT {
     /**
      * Call a method on the given contract address.
      */
-    public static Single<TransactionBroadcast> callMethod(String passFrom, SignumAddress contractAddress, Method method,
+    public static TransactionBroadcast callMethod(String passFrom, SignumAddress contractAddress, Method method,
             SignumValue value, SignumValue fee, int deadline, Object... args) {
 
         byte[] bytes = callMethodMessage(method, args);
@@ -154,19 +155,21 @@ public class BT {
         return sendMessage(passFrom, contractAddress, value, fee, deadline, bytes);
     }
 
-    public static Single<TransactionBroadcast> sendAmount(String passFrom, SignumAddress receiver, SignumValue value) {
+    public static TransactionBroadcast sendAmount(String passFrom, SignumAddress receiver, SignumValue value) {
         return sendAmount(passFrom, receiver, value, SignumValue.fromSigna(0.1));
     }
 
-    public static Single<TransactionBroadcast> sendAmount(String passFrom, SignumAddress receiver, SignumValue value,
+    public static TransactionBroadcast sendAmount(String passFrom, SignumAddress receiver, SignumValue value,
             SignumValue fee) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransaction(receiver, pubKeyFrom, value, fee, 1440, null)
+        TransactionBroadcast tb = bns.generateTransaction(receiver, pubKeyFrom, value, fee, 1440, null)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
-                });
+                }).blockingGet();
+
+        return tb;
     }
 
     public static Single<TransactionBroadcast> sendMessage(String passFrom, SignumAddress receiver, SignumValue value,
@@ -180,15 +183,44 @@ public class BT {
                 });
     }
 
-    public static Single<TransactionBroadcast> sendMessage(String passFrom, SignumAddress receiver, SignumValue value,
+    public static TransactionBroadcast sendMessage(String passFrom, SignumAddress receiver, SignumValue value,
             SignumValue fee, int deadline, byte[] msg) {
         byte[] pubKeyFrom = bc.getPublicKey(passFrom);
 
-        return bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg, null)
+        TransactionBroadcast tb = bns.generateTransactionWithMessage(receiver, pubKeyFrom, value, fee, deadline, msg, null)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
-                });
+                }).blockingGet();
+
+        return tb;
+    }
+
+
+	/**
+     * Assure a transaction is confirmed
+     */
+    public static void forgeBlock(TransactionBroadcast ... txs) {
+		for (int i = 0; i < 4; i++) {
+			// retries
+			boolean allFound = true;
+			for(TransactionBroadcast tx : txs){
+				try {
+					Transaction txConfirmed = bns.getTransaction(tx.getTransactionId()).blockingGet();
+					if (txConfirmed.getBlockHeight() == Integer.MAX_VALUE) {
+						allFound = false;
+						break;
+					}
+				}
+				catch (Exception e){
+					allFound = false;
+				}
+			}
+			if (allFound)
+				break;
+
+			forgeBlock(PASSPHRASE, 2000);
+		}
     }
 
     /**
@@ -207,40 +239,40 @@ public class BT {
 
     /**
      * Forge block by mock mining for the given passphrase with the given millis timeout.
-     * 
+     *
      * Just for testing purposes.
      */
     public static void forgeBlock(String pass, int millis) {
-    	long height = bns.getMiningInfoSingle().blockingGet().getHeight();
-    	long startTimer = System.currentTimeMillis();
-        bns.submitNonce(pass, "0", null).blockingGet();
-        while(true) {
-        	try {
-        		Thread.sleep(50);
-        		long newHeight = bns.getMiningInfoSingle().blockingGet().getHeight();
-        		long timeElapsed = System.currentTimeMillis() - startTimer;
-        		if(newHeight > height || timeElapsed > millis) {
-        			break;
-        		}
-        	} catch (InterruptedException e) {
-        		e.printStackTrace();
-        		break;
-        	}
-        }
+    	try {
+    		Thread.sleep(200);
+    		long height = bns.getMiningInfoSingle().blockingGet().getHeight();
+    		long startTimer = System.currentTimeMillis();
+    		bns.submitNonce(pass, "0", null).blockingGet();
+    		while(true) {
+    			Thread.sleep(50);
+    			long newHeight = bns.getMiningInfoSingle().blockingGet().getHeight();
+    			long timeElapsed = System.currentTimeMillis() - startTimer;
+    			if(newHeight > height || timeElapsed > millis) {
+    				break;
+    			}
+    		}
+    	} catch (InterruptedException e) {
+    		e.printStackTrace();
+    	}
     }
 
     /**
      * @return the minimum fee to register the given contract
-     * 
+     *
      * @see BT#activateCIP20(boolean)
      */
     public static SignumValue getMinRegisteringFee(Compiler compiledContract) {
     	return getMinRegisteringFee(compiledContract, true);
     }
-    
+
     /**
      * @return the minimum fee to register the given contract
-     * 
+     *
      * @see BT#activateCIP20(boolean)
      */
     public static SignumValue getMinRegisteringFee(Compiler compiledContract, boolean includeCode) {
@@ -248,7 +280,7 @@ public class BT {
         return baseFee.multiply(2 + compiledContract.getDataPages() +
         		(includeCode ? compiledContract.getCodeNPages() : 0));
     }
-    
+
     /**
      * @return the maximum number of code pages the blockchain would accept.
      */
@@ -264,11 +296,7 @@ public class BT {
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
 
-        registerContract(PASSPHRASE, compiledContract, name, contract.getSimpleName(), activationFee,
-                getMinRegisteringFee(compiledContract), 1000).blockingGet();
-        forgeBlock();
-
-        return findContract(bc.getAddressFromPassphrase(PASSPHRASE), name);
+        return registerContract(compiledContract, name, activationFee);
     }
 
     /**
@@ -277,17 +305,25 @@ public class BT {
     public static AT registerContract(Compiler compiledContract, String name, SignumValue activationFee)
             throws Exception {
 
-        registerContract(PASSPHRASE, compiledContract, name, name, activationFee,
+        TransactionBroadcast tb = registerContract(PASSPHRASE, compiledContract, name, name, activationFee,
                 getMinRegisteringFee(compiledContract), 1000).blockingGet();
-        forgeBlock();
+        for (int i = 0; i < 4; i++) {
+	        forgeBlock();
+        	// retries
+        	try {
+        		return getNode().getAt(SignumAddress.fromId(tb.getTransactionId())).blockingGet();
+        	}
+        	catch (RuntimeException ignored) {
+			}
+		}
 
-        return findContract(bc.getAddressFromPassphrase(PASSPHRASE), name);
+        return null;
     }
 
     /**
      * Register the given contract with the given activation fee and paying the
      * given fee.
-     * 
+     *
      * @param passphrase
      * @param compiledContract
      * @param name
@@ -295,7 +331,7 @@ public class BT {
      * @param activationFee
      * @param fee
      * @param deadline         in blocks
-     * 
+     *
      * @return the response
      * @throws Exception
      */
@@ -303,11 +339,11 @@ public class BT {
             String name, String description, SignumValue activationFee, SignumValue fee, int deadline) {
         return registerContract(passphrase, compiledContract.getCode(), compiledContract.getDataPages(), name, description, null, activationFee, fee, deadline);
     }
-    
+
     /**
      * Register the given contract with the given activation fee and paying the
      * given fee.
-     * 
+     *
      * @param passphrase
      * @param compiledContract
      * @param name
@@ -315,7 +351,7 @@ public class BT {
      * @param activationFee
      * @param fee
      * @param deadline         in blocks
-     * 
+     *
      * @return the response
      * @throws Exception
      */
@@ -327,7 +363,7 @@ public class BT {
     /**
      * Register the given contract with the given activation fee and paying the
      * given fee.
-     * 
+     *
      * @param passphrase
      * @param compiledContract
      * @param name
@@ -335,7 +371,7 @@ public class BT {
      * @param activationFee
      * @param fee
      * @param deadline         in blocks
-     * 
+     *
      * @return the response
      * @throws Exception
      */
@@ -348,13 +384,13 @@ public class BT {
         for (int i = 0; data!=null && i < data.length; i++) {
             dataBuffer.putLong(data[i]);
         }
-        
+
         if(code == null) {
             return bns.generateCreateATTransaction(pubkey, fee, activationFee, deadline, name, description, code, dataBuffer.array(), dPages, 1, 1, referenceTxFullHash)
                     .flatMap(unsignedTransactionBytes -> {
                         byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
                         return bns.broadcastTransaction(signedTransactionBytes);
-                    });        	
+                    });
         }
 
         byte[] creationBytes = SignumCrypto.getInstance().getATCreationBytes((short) (CIP20_ACTIVATED ? 2 : 1), code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
@@ -367,7 +403,7 @@ public class BT {
 
     /**
      * Try to find the AT for the given name, registered by the given address.
-     * 
+     *
      * @param address
      * @param name
      * @return the ATResponse or null if not found
@@ -383,7 +419,7 @@ public class BT {
 
     /**
      * Return all contracts registered by the given addres
-     * 
+     *
      * @param address
      * @return
      */
@@ -393,10 +429,10 @@ public class BT {
 
     /**
      * Returns the current long value of a given field address.
-     * 
+     *
      * If the update param is true, the node is consulted (in blocking way) to get
      * the current value of the field.
-     * 
+     *
      * @param contract a smart contract response
      * @param address  the field address, check {@link Field#getAddress()}
      * @return the current long value of a given field
@@ -419,10 +455,10 @@ public class BT {
         contract = bns.getAt(contract.getId()).blockingGet();
         return contract.getBalance();
     }
-    
+
     /**
      * Converts a smart contract timestamp to block height.
-     * 
+     *
      * @param timestamp
      * @return the block height
      */
