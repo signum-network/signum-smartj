@@ -8,7 +8,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestUtils extends BT {
 
-	public static AT registerContract(Class<Hello> contractClass) {
+	public static <T extends Contract> AT registerContract(Class<T> contractClass) {
 		AT at = null;
 		try {
 			at = registerContract(contractClass, SignumValue.fromSigna(10));
