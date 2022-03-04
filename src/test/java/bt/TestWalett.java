@@ -32,5 +32,6 @@ public class TestWalett extends BT{
 
 	public void sendAmount (SignumAddress receiver, double amount) {
 		sendAmount(passphrase, receiver, SignumValue.fromSigna(amount));
+		forgeBlock();
 	}
 }

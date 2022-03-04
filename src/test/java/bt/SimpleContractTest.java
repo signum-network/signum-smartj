@@ -7,8 +7,7 @@ import signumj.entity.response.AT;
 import static org.junit.Assert.assertEquals;
 
 /**
- * We assume a localhost testnet with 0 seconds mock mining is available for the
- * tests to work.
+ * Simple testings for contracts
  *
  * @author tyvain
  */
@@ -24,9 +23,7 @@ public class SimpleContractTest extends BT {
 
 		AT at = TestUtils.registerContract(Hello.class);
 
-		// Fill the contract with 3 times the max payment value
 		player1.sendAmount(at.getId(), 150);
-		forgeBlock();
 
 		assertEquals(850, player1.getBalance(), 0.2);
 	}
