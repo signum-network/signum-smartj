@@ -1,6 +1,8 @@
 package bt;
 
 import bt.sample.Hello;
+import signumj.crypto.SignumCrypto;
+import signumj.entity.SignumAddress;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 
@@ -17,6 +19,10 @@ public class TestUtils extends BT {
 		}
 		assertNotNull("AT could not be registered", at);
 		return at;
+	}
+
+	public static double getBalance(String passPhrase) {
+		return bns.getAccount(SignumCrypto.getInstance().getAddressFromPassphrase(passPhrase)).blockingGet().getUnconfirmedBalance().doubleValue();
 	}
 
 }

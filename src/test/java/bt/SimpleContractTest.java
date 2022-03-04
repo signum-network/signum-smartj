@@ -19,13 +19,28 @@ public class SimpleContractTest extends BT {
 	@Test
 	public void testNominal() throws Exception {
 
-		TestWalett player1 = new TestWalett(1000);
+		TestAccount player1 = new TestAccount(1000);
 
 		AT at = TestUtils.registerContract(Hello.class);
 
 		player1.sendAmount(at.getId(), 150);
 
 		assertEquals(850, player1.getBalance(), 0.2);
+	}
+
+	/*
+	 * Require very high initial amount
+	 */
+	@Test
+	public void testHugeInitialAmount() throws Exception {
+
+		TestAccount player1 = new TestAccount(100000);
+
+		AT at = TestUtils.registerContract(Hello.class);
+
+		player1.sendAmount(at, 150);
+
+		assertEquals(99850, player1.getBalance(), 0.2);
 	}
 
 }
