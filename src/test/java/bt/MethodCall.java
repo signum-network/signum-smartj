@@ -39,7 +39,7 @@ public class MethodCall extends Contract {
 		System.out.println(contract.getId().getFullAddress());
 
 		BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), SignumValue.fromSigna(1),
-			SignumValue.fromSigna(0.1), 1000).blockingGet();
+			SignumValue.fromSigna(0.1), 1000);
 		BT.forgeBlock();
 		BT.forgeBlock();
 	}

@@ -86,13 +86,13 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(nameField = new HintTextField("Contract name", null));
         nameField.setText(atClass.getSimpleName());
         config.add(descField = new HintTextField("Contract description", null));
-        descField.setText(atClass.getSimpleName() + ", created with BlockTalk");
+        descField.setText(atClass.getSimpleName() + ", created with SmartJ");
 
         config.add(deadlineField = new HintTextField("Deadline in minutes", null));
         deadlineField.setText("1440"); // 4 days
-        config.add(feeField = new HintTextField("Deploy fee in BURST", null));
+        config.add(feeField = new HintTextField("Deploy fee in SIGNA", null));
         feeField.setText("7.0");
-        config.add(actFeeField = new HintTextField("Gas fee in BURST", null));
+        config.add(actFeeField = new HintTextField("Gas fee in SIGNA", null));
         actFeeField.setText(SignumValue.fromNQT(Contract.FEE_QUANT*40).toUnformattedString());
         config.add(passField = new JPasswordField());
         passField.setToolTipText("Passphrase, never sent over the wire");
@@ -104,7 +104,7 @@ class CompileDialog extends JDialog implements ActionListener {
         nodeField.addItem(BT.NODE_SIGNUM_BR);
         nodeField.addItem(BT.NODE_BURSTCOIN_RO);
         nodeField.addItem(BT.NODE_LOCAL);
-        nodeField.addItem(BT.NODE_TESTNET_RO);
+        nodeField.addItem(BT.NODE_TESTNET);
         nodeField.addItem(BT.NODE_LOCAL_TESTNET);
 
         left.add(config, BorderLayout.CENTER);
