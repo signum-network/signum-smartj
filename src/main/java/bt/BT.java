@@ -26,7 +26,7 @@ import signumj.service.NodeService;
  */
 public class BT {
 
-    public static final String PASSPHRASE = "block talk, easy to use smart contracts for burst";
+    public static final String PASSPHRASE =  "block talk, easy to use smart contracts for burst";
     public static final String PASSPHRASE2 = "block talk: easy to use smart contracts for burst";
     public static final String PASSPHRASE3 = "block talk! easy to use smart contracts for burst";
     public static final String PASSPHRASE4 = "block";
