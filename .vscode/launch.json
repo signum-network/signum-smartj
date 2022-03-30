@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch SignumArt2",
+            "request": "launch",
+            "mainClass": "bt.dapps.SignumArt2",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "Launch SignumArt",
+            "request": "launch",
+            "mainClass": "bt.dapps.SignumArt",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
             "name": "CodeLens (Launch) - Faucet",
             "request": "launch",
             "mainClass": "bt.sample.Faucet",
