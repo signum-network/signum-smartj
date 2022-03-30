@@ -316,7 +316,7 @@ public class SignumArt2 extends Contract {
 				totalBidsReceived++;
 				sendMessage( highestBidder.getId(), currentPrice, trackNewAuctionBid);
 				
-				if(auctionMaxPrice > ZERO && currentPrice > auctionMaxPrice) {
+				if(auctionMaxPrice > ZERO && currentPrice >= auctionMaxPrice) {
 					// max price reached, so we also end the auction
 					pay(); // pay the current owner
 					owner = highestBidder; // new owner
