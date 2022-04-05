@@ -61,13 +61,13 @@ final class OpCode {
   static final short Set_A2    = 0x0111; // EXT_FUN_DAT       sets A2 from $addr
   static final short Set_A3    = 0x0112; // EXT_FUN_DAT       sets A3 from $addr
   static final short Set_A4    = 0x0113; // EXT_FUN_DAT       sets A4 from $addr
-  static final short Set_A1_A2 = 0x0114; // EXT_FUN_DAT_2     sets A1 from $addr1 and A2 from $addr2 // Unused
+  static final short Set_A1_A2 = 0x0114; // EXT_FUN_DAT_2     sets A1 from $addr1 and A2 from $addr2
   static final short Set_A3_A4 = 0x0115; // EXT_FUN_DAT_2     sets A3 from $addr1 and A4 from $addr2 // Unused
   static final short Set_B1    = 0x0116; // EXT_FUN_DAT       sets B1 from $addr
   static final short Set_B2    = 0x0117; // EXT_FUN_DAT       sets B2 from $addr // Unused
   static final short Set_B3    = 0x0118; // EXT_FUN_DAT       sets B3 from $addr // Unused
   static final short Set_B4    = 0x0119; // EXT_FUN_DAT       sets B4 from $addr // Unused
-  static final short Set_B1_B2 = 0x011a; // EXT_FUN_DAT_2     sets B1 from $addr1 and B2 from $addr2 // Unused
+  static final short Set_B1_B2 = 0x011a; // EXT_FUN_DAT_2     sets B1 from $addr1 and B2 from $addr2
   static final short Set_B3_B4 = 0x011b; // EXT_FUN_DAT_2     sets B3 from $addr1 and B4 from $addr2 // Unused
   
   static final short Clear_A          = 0x0120; //  EXT_FUN           sets A to zero (A being A1..4)
@@ -122,4 +122,10 @@ final class OpCode {
   static final short Send_Old_To_Address_In_B = 0x0404; // EXT_FUN           if B is a valid address then send it the old balance** // Unused
   static final short Send_A_To_Address_In_B   = 0x0405; // EXT_FUN           if B is a valid address then send it A as a message
   static final short Add_Minutes_To_Timestamp = 0x0406; // EXT_FUN_RET_DAT_2 set @addr1 to timestamp $addr2 plus $addr3 minutes***
+  
+  static final short GET_MAP_VALUE_KEYS_IN_A  = 0x0407; // EXT_FUN_RET       keys in A1, A2, and A3 (if A3==0 use the AT ID as key3)
+  static final short SET_MAP_VALUE_KEYS_IN_A  = 0x0408; // EXT_FUN           keys in A1 and A2 with value in A4
+  static final short ISSUE_ASSET              = 0x0409; // EXT_FUN_RET       issue asset with name in A and dec. places in B1, returns the asset id
+  static final short MINT_ASSET               = 0x040a; // EXT_FUN           mint B1 quantity of asset ID in B2
+
 }

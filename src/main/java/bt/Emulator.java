@@ -1,6 +1,7 @@
 package bt;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import signumj.entity.SignumAddress;
@@ -28,6 +29,8 @@ public class Emulator {
 	ArrayList<Block> blocks = new ArrayList<Block>();
 	ArrayList<Transaction> txs = new ArrayList<Transaction>();
 	ArrayList<Address> addresses = new ArrayList<Address>();
+	
+	HashMap<ArrayList<Long>, Long> valuesMap = new HashMap();
 
 	public ArrayList<Block> getBlocks() {
 		return blocks;
@@ -81,16 +84,25 @@ public class Emulator {
 		return instance;
 	}
 
-	public void send(Address from, Address to, long amount) {
-		send(from, to, amount, (String) null);
+	public Transaction send(Address from, Address to, long amount) {
+		return send(from, to, amount, (String) null);
+	}
+	
+	public Transaction send(Address from, Address to, long assetId, long amount) {
+		Transaction t = send(from, to, amount, (String) null);
+		t.assetId = assetId;
+		
+		return t;
 	}
 
-	public void send(Address from, Address to, long amount, String message) {
+	public Transaction send(Address from, Address to, long amount, String message) {
 		Transaction t = new Transaction(from, to, amount, Transaction.TYPE_PAYMENT,
 				new Timestamp(currentBlock.height, currentBlock.txs.size()), message);
 		currentBlock.txs.add(t);
 		t.block = currentBlock;
 		txs.add(t);
+		
+		return t;
 	}
 
 	public void send(Address from, Address to, long amount, Register message) {
@@ -117,6 +129,23 @@ public class Emulator {
 
 	public void airDrop(Address to, long amount) {
 		to.balance += amount;
+	}
+	
+	public long getMapValue(Address contract, long key1, long key2) {
+		ArrayList<Long> keys = new ArrayList<>();
+		keys.add(contract.getId());
+		keys.add(key1);
+		keys.add(key2);
+		Long value = valuesMap.get(keys);
+		return value == null ? 0L : value;
+	}
+	
+	public void setMapValue(Address contract, long key1, long key2, long value) {
+		ArrayList<Long> keys = new ArrayList<>();
+		keys.add(contract.getId());
+		keys.add(key1);
+		keys.add(key2);
+		valuesMap.put(keys, value);
 	}
 
 	public void forgeBlock() throws Exception {

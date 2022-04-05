@@ -11,6 +11,7 @@ import bt.compiler.Method;
 import io.reactivex.Single;
 import signumj.crypto.SignumCrypto;
 import signumj.entity.SignumAddress;
+import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 import signumj.entity.response.Transaction;
@@ -41,7 +42,8 @@ public class BT {
     public static final String NODE_SIGNUM_EU = "https://europe.signum.network";
     public static final String NODE_BURSTCOIN_RO = "https://wallet.burstcoin.ro:443";
 
-    public static boolean CIP20_ACTIVATED = true;
+    static boolean SIP20_ACTIVATED = true;
+    static boolean SIP37_ACTIVATED = false;
 
     static NodeService bns = NodeService.getInstance(NODE_LOCAL_TESTNET);
     static SignumCrypto bc = SignumCrypto.getInstance();
@@ -65,12 +67,28 @@ public class BT {
     }
 
     /**
-     * Activates CIP20 for fee estimation (default is deactivated for now)
+     * Activates SIP20 (default is activated)
      *
      * @param on
      */
     public static void activateCIP20(boolean on) {
-    	CIP20_ACTIVATED = on;
+    	SIP20_ACTIVATED = on;
+    }
+
+    /**
+     * Activates CIP37 (default is deactivated for now)
+     *
+     * @param on
+     */
+    public static void activateSIP37(boolean on) {
+    	SIP37_ACTIVATED = on;
+    	if(on) {
+    		SIP20_ACTIVATED = on;
+    	}
+    }
+    
+    public static boolean isSIP37Activated() {
+    	return SIP37_ACTIVATED;
     }
 
     /**
@@ -276,7 +294,10 @@ public class BT {
      * @see BT#activateCIP20(boolean)
      */
     public static SignumValue getMinRegisteringFee(Compiler compiledContract, boolean includeCode) {
-    	SignumValue baseFee = SignumValue.fromNQT(CIP20_ACTIVATED ? Contract.FEE_QUANT*10L : Contract.ONE_BURST);
+    	SignumValue baseFee = SignumValue.fromNQT(SIP20_ACTIVATED ? Contract.FEE_QUANT*10L : Contract.ONE_BURST);
+    	if(SIP37_ACTIVATED) {
+    		baseFee = SignumValue.fromNQT(Contract.FEE_QUANT_SIP34*10L);
+    	}
         return baseFee.multiply(2 + compiledContract.getDataPages() +
         		(includeCode ? compiledContract.getCodeNPages() : 0));
     }
@@ -285,7 +306,9 @@ public class BT {
      * @return the maximum number of code pages the blockchain would accept.
      */
     public static int getMaxMachineCodePages() {
-    	return CIP20_ACTIVATED ? 20 : 10;
+    	if(SIP37_ACTIVATED)
+    		return 40;
+    	return SIP20_ACTIVATED ? 20 : 10;
     }
 
     /**
@@ -318,6 +341,15 @@ public class BT {
 		}
 
         return null;
+    }
+    
+    /**
+     * @param transactionId
+     * @return the contract for the given transaction id (that created the contract)
+     * @throws Exception
+     */
+    public static AT getContract(SignumID transactionId) throws Exception {
+    	return getNode().getAt(SignumAddress.fromId(transactionId)).blockingGet();
     }
 
     /**
@@ -393,12 +425,18 @@ public class BT {
                     });
         }
 
-        byte[] creationBytes = SignumCrypto.getInstance().getATCreationBytes((short) (CIP20_ACTIVATED ? 2 : 1), code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
+        byte[] creationBytes = SignumCrypto.getInstance().getATCreationBytes(getATVersion(), code, dataBuffer.array(), (short) dPages, (short) 1, (short) 1, activationFee);
         return bns.generateCreateATTransaction(pubkey, fee, deadline, name, description, creationBytes, referenceTxFullHash)
                 .flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passphrase, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
                 });
+    }
+    
+    public static short getATVersion() {
+    	if (SIP37_ACTIVATED)
+    		return (short) 3;
+    	return (short) (SIP20_ACTIVATED ? 2 : 1);
     }
 
     /**

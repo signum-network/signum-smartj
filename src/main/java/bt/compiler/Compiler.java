@@ -1134,9 +1134,64 @@ public class Compiler {
 
 							code.put(OpCode.e_op_code_SLP_DAT);
 							code.putInt(arg1.address);
+						} else if (mi.name.equals("issueAsset")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// issueAsset(long namePart1, long namePart2, long decimalPlaces)
+							StackVar decimals = popVar(m, tmpVar3, false); // decimalPlaces
+							StackVar namePart2 = popVar(m, tmpVar2, false); // namePart2
+							StackVar namePart1 = popVar(m, tmpVar1, false); // namePart1
+							stack.pollLast(); // remove the "this" from stack
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_A1_A2);
+							code.putInt(namePart1.address);
+							code.putInt(namePart2.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_B1);
+							code.putInt(decimals.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.ISSUE_ASSET);
+							code.putInt(tmpVar1); // resulting asset id
+							pushVar(m, tmpVar1);
+						} else if (mi.name.equals("mintAsset")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// mintAsset(long assetId, long quantity)
+							StackVar quantity = popVar(m, tmpVar2, false); // quantity
+							StackVar assetId = popVar(m, tmpVar1, false); // assetId
+							stack.pollLast(); // remove the "this" from stack
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_B1_B2);
+							code.putInt(quantity.address);
+							code.putInt(assetId.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.MINT_ASSET);
 						} else if (mi.name.equals("sendAmount")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							arg2 = popVar(m, tmpVar2, false); // amount
+							if (mi.desc.equals("(JJLbt/Address;)V")) {
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support assets on: " + mi.name);
+
+								// the version with the assetId
+								arg3 = popVar(m, tmpVar3, false);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_B2);
+								code.putInt(arg3.address); // assetId
+							}
+							else if(BT.isSIP37Activated()) {
+								// B2 must not be clear for regular transfer
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);
+							}
 							stack.pollLast(); // remove the 'this'
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
@@ -1207,7 +1262,34 @@ public class Compiler {
 								code.putInt(tmpVar1); // resulting hash
 								pushVar(m, tmpVar1);
 							}
-						} else if (mi.name.equals("sendMessage")) {
+						}
+						else if (mi.name.equals("setMapValue")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							
+							arg3 = popVar(m, tmpVar1, false); // value
+							arg2 = popVar(m, tmpVar1, false); // key2
+							arg1 = popVar(m, tmpVar1, false); // key1
+							stack.pollLast(); // remove the 'this'
+							
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.Clear_A);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_A1));
+							code.putInt(arg1.address);
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_A2));
+							code.putInt(arg2.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_A4));
+							code.putInt(arg3.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.SET_MAP_VALUE_KEYS_IN_A);
+						}
+						else if (mi.name.equals("sendMessage")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
@@ -1539,7 +1621,7 @@ public class Compiler {
 
 							// we push only the first long to the stack
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
-							code.putShort((short) (OpCode.Get_B1));
+							code.putShort(OpCode.Get_B1);
 							code.putInt(tmpVar1); // the message contents
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getMessage2")) {

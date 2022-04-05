@@ -93,7 +93,7 @@ class CompileDialog extends JDialog implements ActionListener {
         config.add(feeField = new HintTextField("Deploy fee in SIGNA", null));
         feeField.setText("7.0");
         config.add(actFeeField = new HintTextField("Gas fee in SIGNA", null));
-        actFeeField.setText(SignumValue.fromNQT(Contract.FEE_QUANT*40).toUnformattedString());
+        actFeeField.setText(SignumValue.fromNQT((BT.isSIP37Activated() ? Contract.FEE_QUANT_SIP34 : Contract.FEE_QUANT)*40).toUnformattedString());
         config.add(passField = new JPasswordField());
         passField.setToolTipText("Passphrase, never sent over the wire");
 

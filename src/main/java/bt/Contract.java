@@ -1,6 +1,7 @@
 package bt;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
@@ -29,6 +30,7 @@ public abstract class Contract {
 
 	public final static long ONE_BURST = 100000000L;
 	public final static long FEE_QUANT = 735000L;
+	public final static long FEE_QUANT_SIP34 = 1_000_000;
 	public final static long STEP_FEE = FEE_QUANT / 10L; // After AT2 fork, othewise ONE_BURST/10
 
 	Address address;
@@ -87,6 +89,45 @@ public abstract class Contract {
 	 */
 	protected void sendAmount(long amount, Address receiver) {
 		Emulator.getInstance().send(address, receiver, amount);
+	}
+	
+	/**
+	 * Sends the given asset ID amount to the receiver address
+	 * @param assetId
+	 * @param amount
+	 * @param receiver
+	 */
+	protected void sendAmount(long assetId, long amount, Address receiver) {
+		Emulator.getInstance().send(address, receiver, assetId, amount);
+	}
+	
+	/**
+	 * Returns the x*y/z calculation using big integer precision
+	 * 
+	 * @param x
+	 * @param y
+	 * @param z
+	 * @return x*y/z, or 0 if z==0
+	 */
+	protected long calcMultDiv(long x, long y, long z) {
+		if(z == 0)
+			return 0;
+		BigInteger big = BigInteger.valueOf(x).multiply(BigInteger.valueOf(y));
+		
+		long ret = big.divide(BigInteger.valueOf(z)).longValue();
+		
+		return ret;
+	}
+	
+	/**
+	 * @param x
+	 * @param y
+	 * @return the geometric mean sqrt(x*y) using big integer precision
+	 */
+	protected long calcGeometricMean(long x, long y) {
+		BigInteger big = BigInteger.valueOf(x).multiply(BigInteger.valueOf(y));
+		
+		return big.sqrt().longValue();
 	}
 
 	/**
@@ -224,6 +265,14 @@ public abstract class Contract {
 	protected long getCurrentTxAmount() {
 		return getCurrentTx().getAmount();
 	}
+	
+	/**
+	 * @param assetId
+	 * @return the current transaction amount for the given asset ID
+	 */
+	protected long getCurrentTxAmount(long assetId) {
+		return getCurrentTx().getAmount(assetId);
+	}
 
 	/**
 	 * @return the block hash of the previous block (part 1 of 4)
@@ -279,6 +328,53 @@ public abstract class Contract {
 	 */
 	protected long getCurrentBalance() {
 		return address.balance;
+	}
+	
+	/**
+	 * @param assetId the asset id we want the balance
+	 * @return the current balance of this contract
+	 */
+	protected long getCurrentBalance(long assetId) {
+		return address.getBalance(assetId);
+	}
+	
+	/**
+	 * @param key1
+	 * @param key2
+	 * @return the map value associated with this contract and given keys
+	 */
+	protected long getMapValue(long key1, long key2) {
+		return Emulator.getInstance().getMapValue(this.address, key1, key2);
+	}
+
+	/**
+	 * @param contract
+	 * @param key1
+	 * @param key2
+	 * @return the map value associated with the given contract and keys
+	 */
+	protected long getMapValue(Address contract, long key1, long key2) {
+		return Emulator.getInstance().getMapValue(contract, key1, key2);
+	}
+
+	/**
+	 * Set the given value to be associated with this contract and given keys.
+	 * 
+	 * @param key1
+	 * @param key2
+	 * @param value
+	 */
+	protected void setMapValue(long key1, long key2, long value) {
+		Emulator.getInstance().setMapValue(this.address, key1, key2, value);
+	}
+	
+	protected long issueAsset(long namePart1, long namePart2, long decimalPlaces) {
+		// TODO: implement on the emulator
+		return namePart1;
+	}
+
+	protected void mintAsset(long assetId, long quantity) {
+		// TODO: implement on the emulator
 	}
 
 	@EmulatorWarning

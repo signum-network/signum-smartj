@@ -1,5 +1,7 @@
 package bt;
 
+import java.util.HashMap;
+
 /**
  * A burstcoin address.
  * 
@@ -16,6 +18,7 @@ public class Address {
 	long id;
 	String rsAddress;
 	long balance;
+	HashMap<Long, Long> assetBalances = new HashMap<>();
 	Contract contract;
 	boolean sleeping;
 	
@@ -54,6 +57,13 @@ public class Address {
 	@EmulatorWarning
 	public long getBalance() {
 		return balance;
+	}
+	
+	@EmulatorWarning
+	public long getBalance(long assetId) {
+		Long balance = assetBalances.get(assetId);
+		
+		return balance == null ? 0 : balance;
 	}
 
 	/**

@@ -19,6 +19,7 @@ public class Transaction {
 	Address sender;
 	Address receiver;
 	long amount;
+	long assetId;
 	byte type;
 	Timestamp ts;
 	String msgString;
@@ -92,6 +93,16 @@ public class Transaction {
 		if (receiver != null && receiver.contract != null)
 			return amount - receiver.contract.activationFee;
 		return amount;
+	}
+	
+	public long getAmount(long assetId) {
+		if(assetId == 0)
+			return getAmount();
+		
+		if(this.assetId == assetId)
+			return amount;
+		
+		return 0;
 	}
 	
 	/**
