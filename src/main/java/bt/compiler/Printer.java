@@ -68,6 +68,10 @@ public class Printer {
 				out.print(" (tmpVar3)");
 			else if (ad == c.tmpVar4)
 				out.print(" (tmpVar4)");
+			else if (ad == c.tmpVar5)
+				out.print(" (tmpVar5)");
+			else if (ad == c.tmpVar6)
+				out.print(" (tmpVar6)");
 			else if (ad == c.localStart)
 				out.print(" (localStart)");
 		}
@@ -526,6 +530,10 @@ public class Printer {
 			return "MINT_ASSET";
 		case OpCode.ISSUE_ASSET:
 			return "ISSUE_ASSET";
+		case OpCode.DIST_TO_ASSET_HOLDERS:
+			return "DIST_TO_ASSET_HOLDERS";
+		case OpCode.GET_ACTIVATION_FEE:
+			return "GET_ACTIVATION_FEE";
 
 		default:
 			return "UNKNOWN FUNCTION";

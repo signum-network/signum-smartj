@@ -1,7 +1,6 @@
 package bt;
 
 import java.lang.reflect.Field;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
@@ -29,6 +28,7 @@ import signumj.entity.SignumID;
 public abstract class Contract {
 
 	public final static long ONE_BURST = 100000000L;
+	public final static long ONE_SIGNA = 100000000L;
 	public final static long FEE_QUANT = 735000L;
 	public final static long FEE_QUANT_SIP34 = 1_000_000;
 	public final static long STEP_FEE = FEE_QUANT / 10L; // After AT2 fork, othewise ONE_BURST/10
@@ -102,32 +102,16 @@ public abstract class Contract {
 	}
 	
 	/**
-	 * Returns the x*y/z calculation using big integer precision
+	 * Returns the pow(x, y/10000) calculation using double precision
 	 * 
 	 * @param x
 	 * @param y
-	 * @param z
-	 * @return x*y/z, or 0 if z==0
+	 * @return pow(x, y/10000)
 	 */
-	protected long calcMultDiv(long x, long y, long z) {
-		if(z == 0)
-			return 0;
-		BigInteger big = BigInteger.valueOf(x).multiply(BigInteger.valueOf(y));
+	protected long calcPow(long x, long y) {
+		double ret = Math.pow(x, y/10_000.0);
 		
-		long ret = big.divide(BigInteger.valueOf(z)).longValue();
-		
-		return ret;
-	}
-	
-	/**
-	 * @param x
-	 * @param y
-	 * @return the geometric mean sqrt(x*y) using big integer precision
-	 */
-	protected long calcGeometricMean(long x, long y) {
-		BigInteger big = BigInteger.valueOf(x).multiply(BigInteger.valueOf(y));
-		
-		return big.sqrt().longValue();
+		return (long)ret;
 	}
 
 	/**
@@ -138,7 +122,7 @@ public abstract class Contract {
 	 * unencrypted.
 	 * 
 	 * @param message  the message, truncated in 4*sizeof(long)
-	 * @param amount   the amount or 0 to send the message only
+	 * @param tradeAmount   the amount or 0 to send the message only
 	 * @param receiver the address
 	 */
 	protected void sendMessage(String message, Address receiver) {
@@ -315,6 +299,15 @@ public abstract class Contract {
 	protected Address getCreator() {
 		return creator;
 	}
+	
+	/**
+	 * @return the address of the creator of another contract
+	 */
+	protected Address getCreator(Address contract) {
+		if(contract.getContract() != null)
+			return contract.getContract().creator;
+		return getAddress(0L);
+	}
 
 	/**
 	 * @return the creation timestamp of this contract
@@ -372,9 +365,17 @@ public abstract class Contract {
 		// TODO: implement on the emulator
 		return namePart1;
 	}
+	
+	protected long getActivationFee() {
+		return 0;
+	}
 
 	protected void mintAsset(long assetId, long quantity) {
 		// TODO: implement on the emulator
+	}
+	
+	protected void distributeToHolders(long minHolderAmount, long assetId, long amount, long assetToDistribute, long quantity) {
+		// TODO implementation missing
 	}
 
 	@EmulatorWarning
