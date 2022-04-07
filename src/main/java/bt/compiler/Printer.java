@@ -213,6 +213,7 @@ public class Printer {
 			case OpCode.e_op_code_AND_DAT:
 			case OpCode.e_op_code_XOR_DAT:
 			case OpCode.e_op_code_MOD_DAT:
+			case OpCode.e_op_code_POW_DAT:
 				p += printOp(code, p, 1, out);
 				switch (op) {
 				case OpCode.e_op_code_ADD_DAT:
@@ -238,6 +239,9 @@ public class Printer {
 					break;
 				case OpCode.e_op_code_MOD_DAT:
 					out.println("\tMOD_DAT");
+					break;
+				case OpCode.e_op_code_POW_DAT:
+					out.println("\tPOW_DAT");
 					break;
 				default:
 					out.println();

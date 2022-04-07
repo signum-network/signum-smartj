@@ -378,6 +378,11 @@ public abstract class Contract {
 		// TODO implementation missing
 	}
 
+	protected int getAssetHoldersCount(long minHolderAmount, long assetId) {
+		// TODO implementation missing
+		return 0;
+	}
+
 	@EmulatorWarning
 	public static Register performSHA256_(Register input) {
 		Register ret = new Register();

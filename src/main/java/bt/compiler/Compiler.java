@@ -1291,6 +1291,25 @@ public class Compiler {
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.MINT_ASSET);
 						}
+						else if (mi.name.equals("getAssetHoldersCount")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// getAssetHoldersCount(long minHolderAmount, long assetId) {
+							StackVar assetId = popVar(m, tmpVar2, false);
+							StackVar minHolderAmount = popVar(m, tmpVar1, false);
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_B1_B2);
+							code.putInt(minHolderAmount.address);
+							code.putInt(assetId.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.ISSUE_ASSET);
+							code.putInt(tmpVar1); // resulting counter
+							pushVar(m, tmpVar1);
+						}
 						else if (mi.name.equals("distributeToHolders")) {
 							if(!BT.isSIP37Activated())
 								addError(insn, "activate SIP37 to support: " + mi.name);

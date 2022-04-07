@@ -129,6 +129,7 @@ final class OpCode {
   static final short ISSUE_ASSET              = 0x0409; // EXT_FUN_RET       issue asset with name in A and dec. places in B1, returns the asset id
   static final short MINT_ASSET               = 0x040a; // EXT_FUN           mint B1 quantity of asset ID in B2
   static final short DIST_TO_ASSET_HOLDERS    = 0x040b; // EXT_FUN           B1 min holding of asset ID in B2, A1 the signa amount to distribute, A3 the assetId to distribute, A4 the asset quantity to distribute
-  static final short GET_ACTIVATION_FEE       = 0x040c; // EXT_FUN_RET       sets @addr to the activation fee of this AT (or the AT id on B2 if B2!=0)
+  static final short GET_ASSET_HOLDERS_COUNT  = 0x040c; // EXT_FUN_RET       number of tokens holders with more than B1 holdings of asset ID in B2
+  static final short GET_ACTIVATION_FEE       = 0x040d; // EXT_FUN_RET       sets @addr to the activation fee of this AT (or the AT id on B2 if B2!=0)
 
 }
