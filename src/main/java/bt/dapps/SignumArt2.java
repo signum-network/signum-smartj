@@ -299,6 +299,7 @@ public class SignumArt2 extends Contract {
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
+					auctionMaxPrice = ZERO;
 					sendMessage(owner.getId(), currentPrice, trackNewOwner);
 					
 					cancelOfferIfPresent();
