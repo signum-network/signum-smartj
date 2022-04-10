@@ -1,6 +1,7 @@
 package bt;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
@@ -88,7 +89,7 @@ public abstract class Contract {
 	 * @param receiver
 	 */
 	protected void sendAmount(long amount, Address receiver) {
-		Emulator.getInstance().send(address, receiver, amount);
+		Emulator.getInstance().send(address, receiver, amount, true);
 	}
 	
 	/**
@@ -97,8 +98,8 @@ public abstract class Contract {
 	 * @param amount
 	 * @param receiver
 	 */
-	protected void sendAmount(long assetId, long amount, Address receiver) {
-		Emulator.getInstance().send(address, receiver, assetId, amount);
+	protected void sendAmount(long assetId, long quantity, Address receiver) {
+		Emulator.getInstance().send(address, receiver, 0L, assetId, quantity, true);
 	}
 	
 	/**
@@ -113,6 +114,14 @@ public abstract class Contract {
 		
 		return (long)ret;
 	}
+	
+	protected long calcMultDiv(long x, long y, long den) {
+		if (den == 0L)
+			return 0L;
+		
+		return BigInteger.valueOf(x).multiply(BigInteger.valueOf(y)).divide(BigInteger.valueOf(den)).longValue();
+	}
+
 
 	/**
 	 * Send the given message to the given address.
@@ -126,7 +135,7 @@ public abstract class Contract {
 	 * @param receiver the address
 	 */
 	protected void sendMessage(String message, Address receiver) {
-		Emulator.getInstance().send(address, receiver, 0, message);
+		Emulator.getInstance().send(address, receiver, 0L, 0L, 0L, message, true);
 	}
 
 	/**
@@ -362,8 +371,7 @@ public abstract class Contract {
 	}
 	
 	protected long issueAsset(long namePart1, long namePart2, long decimalPlaces) {
-		// TODO: implement on the emulator
-		return namePart1;
+		return Emulator.getInstance().issueAsset(this.address, namePart1, namePart2, decimalPlaces);
 	}
 	
 	protected long getActivationFee() {
@@ -371,7 +379,7 @@ public abstract class Contract {
 	}
 
 	protected void mintAsset(long assetId, long quantity) {
-		// TODO: implement on the emulator
+		Emulator.getInstance().mintAsset(this.address, assetId, quantity);
 	}
 	
 	protected void distributeToHolders(long minHolderAmount, long assetId, long amount, long assetToDistribute, long quantity) {

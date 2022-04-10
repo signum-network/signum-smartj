@@ -20,6 +20,7 @@ public class Transaction {
 	Address receiver;
 	long amount;
 	long assetId;
+	long quantity;
 	byte type;
 	Timestamp ts;
 	String msgString;
@@ -100,7 +101,7 @@ public class Transaction {
 			return getAmount();
 		
 		if(this.assetId == assetId)
-			return amount;
+			return quantity;
 		
 		return 0;
 	}

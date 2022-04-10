@@ -61,6 +61,9 @@ public class Address {
 	
 	@EmulatorWarning
 	public long getBalance(long assetId) {
+		if(assetId == 0L)
+			return balance;
+		
 		Long balance = assetBalances.get(assetId);
 		
 		return balance == null ? 0 : balance;

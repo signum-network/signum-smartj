@@ -1179,6 +1179,23 @@ public class Compiler {
 
 							pushVar(m, x.address);
 						}
+						else if (mi.name.equals("calcMultDiv")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// long calcMultDiv(long x, long y, long den)
+							StackVar den = popVar(m, tmpVar3, false);
+							StackVar y = popVar(m, tmpVar2, false);
+							StackVar x = popVar(m, tmpVar1, false);
+							popThis();
+							
+							code.put(OpCode.e_op_code_MDV_DAT);
+							code.putInt(x.address);
+							code.putInt(y.address);
+							code.putInt(den.address);
+
+							pushVar(m, x.address);
+						}
 						else if (mi.name.equals("getCreationTimestamp")) {
 							popThis();
 
@@ -1433,27 +1450,55 @@ public class Compiler {
 							if(!BT.isSIP37Activated())
 								addError(insn, "activate SIP37 to support: " + mi.name);
 							
-							arg3 = popVar(m, tmpVar1, false); // value
-							arg2 = popVar(m, tmpVar1, false); // key2
-							arg1 = popVar(m, tmpVar1, false); // key1
+							StackVar value = popVar(m, tmpVar3, false);
+							StackVar key2 = popVar(m, tmpVar2, false);
+							StackVar key1 = popVar(m, tmpVar1, false);
 							popThis();
 							
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Clear_A);
 							
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
-							code.putShort((short) (OpCode.Set_A1));
-							code.putInt(arg1.address);
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
-							code.putShort((short) (OpCode.Set_A2));
-							code.putInt(arg2.address);
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_A1_A2));
+							code.putInt(key1.address);
+							code.putInt(key2.address);
 							
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort((short) (OpCode.Set_A4));
-							code.putInt(arg3.address);
+							code.putInt(value.address);
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.SET_MAP_VALUE_KEYS_IN_A);
+						}
+						else if (mi.name.equals("getMapValue")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							
+							StackVar key2 = popVar(m, tmpVar3, false);
+							StackVar key1 = popVar(m, tmpVar2, false);
+							if (mi.desc.equals("(Lbt/Address;JJ)J")) {
+								// long getMapValue(Address contract, long key1, long key2)
+								StackVar address = popVar(m, tmpVar1, false);
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A3));
+								code.putInt(address.address);
+							}
+							else {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort((short) (OpCode.Clear_A));
+							}
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_A1_A2));
+							code.putInt(key1.address);
+							code.putInt(key2.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.GET_MAP_VALUE_KEYS_IN_A);
+							code.putInt(tmpVar1);
+							
+							pushVar(m, tmpVar1);
 						}
 						else if (mi.name.equals("sendMessage")) {
 							arg1 = popVar(m, tmpVar1, false); // address
@@ -1621,6 +1666,22 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getAmount")) {
+							if(mi.desc.equals("(J)J")) {
+								// asking for the token amount of a tx
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar assetId = popVar(m, tmpVar1, false);
+
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_A2);
+								code.putInt(assetId.address);
+							}
+							else if(BT.isSIP37Activated()) {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_A);
+							}
+
 							arg1 = popVar(m, tmpVar1, false); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
@@ -1890,14 +1951,18 @@ public class Compiler {
 
 			case GETFIELD:
 			case PUTFIELD:
+			case GETSTATIC:
+			case PUTSTATIC:
 				if (insn instanceof FieldInsnNode) {
 					FieldInsnNode fi = (FieldInsnNode) insn;
 
 					logger.debug((opcode == GETFIELD ? "get " : "put ") + "field: " + fi.name);
 
 					Field field = fields.get(fi.name);
-					if (opcode == GETFIELD) {
-						popThis();
+					if (opcode == GETFIELD || opcode == GETSTATIC) {
+						if(opcode == GETFIELD) {
+							popThis();
+						}
 						for (int i = 0; i < field.size; i++) {
 							pushVar(m, field.address + i);
 						}
@@ -1906,13 +1971,15 @@ public class Compiler {
 						for (int i = field.size - 1; i >= 0; i--) {
 							popVar(m, field.address + i, true);
 						}
-						popThis();
+						if(opcode == PUTFIELD) {
+							popThis();
+						}
 					}
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
-
+			
 			case LDC: // push a constant #index from a constant pool (String, int, float, Class,
 						// java.lang.invoke.MethodType, or java.lang.invoke.MethodHandle) onto the stack
 				if (insn instanceof LdcInsnNode) {

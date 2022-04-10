@@ -50,6 +50,7 @@ final class OpCode {
   static final byte e_op_code_STP_IMD = 0x29; // Unused
   static final byte e_op_code_SLP_IMD = 0x2a;
   static final byte e_op_code_ERR_ADR = 0x2b; // Unused
+  static final byte e_op_code_MDV_DAT = 0x2c;
   static final byte e_op_code_SET_PCS = 0x30;
   static final byte e_op_code_EXT_FUN = 0x32;
   static final byte e_op_code_EXT_FUN_DAT   = 0x33;
