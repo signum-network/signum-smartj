@@ -269,14 +269,15 @@ public class Emulator {
 						try {
 							if (tx.type == Transaction.TYPE_METHOD_CALL) {
 								invoked = true;
-								if (tx.msg.args[1] == null)
-									tx.msg.method.invoke(c);
-								else if (tx.msg.args[2] == null)
-									tx.msg.method.invoke(c, tx.msg.args[1]);
-								else if (tx.msg.args[3] == null)
-									tx.msg.method.invoke(c, tx.msg.args[1], tx.msg.args[2]);
+								Register msg = tx.msg.get(0);
+								if (msg.args[1] == null)
+									msg.method.invoke(c);
+								else if (msg.args[2] == null)
+									msg.method.invoke(c, msg.args[1]);
+								else if (msg.args[3] == null)
+									msg.method.invoke(c, msg.args[1], msg.args[2]);
 								else
-									tx.msg.method.invoke(c, tx.msg.args[1], tx.msg.args[2], tx.msg.args[3]);
+									msg.method.invoke(c, msg.args[1], msg.args[2], msg.args[3]);
 							}
 						} catch (Exception ex) {
 							ex.printStackTrace();

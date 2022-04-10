@@ -1,5 +1,7 @@
 package bt;
 
+import java.util.ArrayList;
+
 /**
  * Class representing a transaction.
  * 
@@ -24,7 +26,7 @@ public class Transaction {
 	byte type;
 	Timestamp ts;
 	String msgString;
-	Register msg;
+	ArrayList<Register> msg = new ArrayList<>();
 
 	/**
 	 * Users are not allowed to create new instances of this class, this function
@@ -49,7 +51,7 @@ public class Transaction {
 			this.msgString = "";
 			return;
 		}
-		this.msg = Register.newMessage(this.msgString);
+		this.msg.add(Register.newMessage(this.msgString));
 	}
 
 	/**
@@ -69,7 +71,8 @@ public class Transaction {
 		this.amount = ammount;
 		this.type = type;
 		this.ts = ts;
-		this.msg = msg;
+		if(msg != null)
+			this.msg.add(msg);
 	}
 
 	/**
@@ -121,7 +124,11 @@ public class Transaction {
 	 * @return the message in this transaction
 	 */
 	public Register getMessage() {
-		return msg;
+		return msg.get(0);
+	}
+	
+	public Register getMessage(long page) {
+		return msg.get((int) page);
 	}
 	
 	/**
@@ -132,7 +139,7 @@ public class Transaction {
 	 * @return the message in this transaction
 	 */
 	public boolean checkMessageSHA256(Register hash) {
-		return Contract.performSHA256_(msg).equals(hash);
+		return Contract.performSHA256_(msg.get(0)).equals(hash);
 	}
 	
 	/**
@@ -142,7 +149,7 @@ public class Transaction {
 	 * @return true if they match
 	 */
 	public boolean checkMessageSHA256_192(Register hash) {
-		Register msgHash = Contract.performSHA256_(msg);
+		Register msgHash = Contract.performSHA256_(msg.get(0));
 		return msgHash.getValue2()== hash.getValue2() && msgHash.getValue3()== hash.getValue3()
 				&& msgHash.getValue4()== hash.getValue4();
 	}
@@ -157,13 +164,13 @@ public class Transaction {
 	public long getMessage1() {
 		if(msg == null)
 			return 0L;
-		return msg.value[0];
+		return msg.get(0).value[0];
 	}
 	
 	public long getMessage2() {
 		if(msg == null)
 			return 0L;
-		return msg.value[1];
+		return msg.get(0).value[1];
 	}
 
 	/**

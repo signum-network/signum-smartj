@@ -1707,12 +1707,27 @@ public class Compiler {
 							code.putInt(tmpVar1); // the timestamp
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getMessage")) {
-							arg1 = popVar(m, tmpVar1, false); // the TX address
+							if(mi.desc.equals("(Lbt/Address;J)Lbt/Register;")) {
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar page = popVar(m, tmpVar2, false);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_A2);
+								code.putInt(page.address);								
+							}
+							else if(BT.isSIP37Activated()) {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_A);
+							}
+							
+							StackVar tx = popVar(m, tmpVar1, false);
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(arg1.address); // the TX address
-
+							code.putInt(tx.address);
+							
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
 
