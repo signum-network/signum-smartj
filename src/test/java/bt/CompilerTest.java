@@ -3,6 +3,11 @@ package bt;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
+import bt.contracts.Cast;
+import bt.contracts.EqualsCreator;
+import bt.contracts.LocalVar;
+import bt.contracts.MethodCall;
+import bt.contracts.MethodCallArgs;
 import bt.sample.Auction;
 import bt.sample.AuctionNFT;
 import bt.sample.Forward;
@@ -33,25 +38,9 @@ import java.nio.ByteOrder;
  * @author jjos
  */
 public class CompilerTest extends BT {
-
-    public static void main(String[] args) throws Exception {
-        CompilerTest t = new CompilerTest();
-        // t.testForward();
-        // t.testForwardMin();
-        // t.testTipThanks();
-        // t.testOdds();
-        // t.testLocalVar();
-        // t.testMethodCall();
-        // t.testMethodCallArgs();
-        // t.testCounter();
-         t.testCounter2();
-        // t.testSha256_64();
-        // t.testAuction();
-        // t.testAuctionNFT();
-        // t.testMultiSigLock();
-        // t.testHashTimelockRefund();
-        // t.testHashTimelockPay();
-    }
+	static {
+		BT.activateSIP37(true);
+	}
 
     @Test
     public void testOdds() throws Exception {
@@ -745,4 +734,29 @@ public class CompilerTest extends BT {
         balance = BT.getContractBalance(contract).longValue();
         assertEquals(0, balance);
     }
+    
+    @Test
+    public void testCast() throws Exception{
+    	AT castContract = registerContract(Cast.class, SignumValue.fromSigna(0.3));
+    	
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, castContract.getId(), castContract.getMinimumActivation());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	
+    	long worked = BT.getContractFieldValue(castContract, 2);
+    	assertEquals(1, worked);
+    }
+    
+    @Test
+    public void testEquals() throws Exception{
+    	AT equalsContract = registerContract(EqualsCreator.class, SignumValue.fromSigna(0.3));
+    	
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, equalsContract.getId(), equalsContract.getMinimumActivation());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	
+    	long worked = BT.getContractFieldValue(equalsContract, 0);
+    	assertEquals(1, worked);
+    }
+    
 }

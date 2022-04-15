@@ -32,7 +32,7 @@ public class TestAccount extends BT {
 		forgeBlock(randomPassForInitialFunding);
 
 		// we forge block until forgedAmount > initialAmount
-		for (int i = 0; TestUtils.getBalance(randomPassForInitialFunding) < initialAmount; i++) {
+		while (TestUtils.getBalance(randomPassForInitialFunding) < initialAmount) {
 			forgeBlock(randomPassForInitialFunding);
 		}
 
@@ -44,7 +44,7 @@ public class TestAccount extends BT {
 	}
 
 	public void sendAmount(TestAccount receiver, double amount) {
-		this.sendAmount(passphrase, receiver.getAddress(), SignumValue.fromSigna(amount));
+		sendAmount(passphrase, receiver.getAddress(), SignumValue.fromSigna(amount));
 	}
 
 	public double getBalance() {

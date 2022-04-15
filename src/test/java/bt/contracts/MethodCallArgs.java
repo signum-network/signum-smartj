@@ -1,5 +1,6 @@
-package bt;
+package bt.contracts;
 
+import bt.Contract;
 import bt.ui.EmulatorWindow;
 
 public class MethodCallArgs extends Contract {

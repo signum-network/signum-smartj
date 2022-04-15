@@ -1,8 +1,6 @@
 package bt;
 
-import bt.sample.Hello;
 import signumj.crypto.SignumCrypto;
-import signumj.entity.SignumAddress;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 
