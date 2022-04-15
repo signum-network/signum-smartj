@@ -8,6 +8,7 @@ import bt.contracts.EqualsCreator;
 import bt.contracts.LocalVar;
 import bt.contracts.MethodCall;
 import bt.contracts.MethodCallArgs;
+import bt.contracts.TestHigherThanOne;
 import bt.sample.Auction;
 import bt.sample.AuctionNFT;
 import bt.sample.Forward;
@@ -757,6 +758,25 @@ public class CompilerTest extends BT {
     	
     	long worked = BT.getContractFieldValue(equalsContract, 0);
     	assertEquals(1, worked);
+    }
+    
+    @Test
+    public void testHigherThanOne() throws Exception{
+    	AT testContrac = registerContract(TestHigherThanOne.class, SignumValue.fromSigna(0.3));
+    	
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContrac.getId(), testContrac.getMinimumActivation());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	
+    	long worked = BT.getContractFieldValue(testContrac, 0);
+    	assertEquals(0, worked);
+
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	tb = sendAmount(BT.PASSPHRASE, testContrac.getId(), amount);
+    	forgeBlock(tb);
+    	forgeBlock();
+    	worked = BT.getContractFieldValue(testContrac, 0);
+    	assertEquals(amount.subtract(testContrac.getMinimumActivation()).longValue(), worked);
     }
     
 }
