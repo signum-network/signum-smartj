@@ -172,6 +172,17 @@ public class BT {
 
         return sendMessage(passFrom, contractAddress, value, fee, deadline, bytes);
     }
+    
+    /**
+     * Call a method on the given contract address.
+     */
+    public static TransactionBroadcast callMethod(String passFrom, SignumAddress contractAddress, Method method,
+            SignumID assetId, SignumValue quantity, SignumValue value, SignumValue fee, int deadline, Object... args) {
+
+        byte[] bytes = callMethodMessage(method, args);
+
+        return sendAsset(passFrom, contractAddress, assetId, quantity, value, fee, deadline, bytes);
+    }
 
     public static TransactionBroadcast sendAmount(String passFrom, SignumAddress receiver, SignumValue value) {
         return sendAmount(passFrom, receiver, value, SignumValue.fromSigna(0.1));
@@ -183,6 +194,24 @@ public class BT {
 
         TransactionBroadcast tb = bns.generateTransaction(receiver, pubKeyFrom, value, fee, 1440, null)
                 .flatMap(unsignedTransactionBytes -> {
+                    byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
+                    return bns.broadcastTransaction(signedTransactionBytes);
+                }).blockingGet();
+
+        return tb;
+    }
+    
+    public static TransactionBroadcast sendAsset(String passFrom, SignumAddress receiver,
+    		SignumID assetId, SignumValue quantity, SignumValue amount, SignumValue fee, int deadline, byte []msg) {
+        byte[] pubKeyFrom = bc.getPublicKey(passFrom);
+        
+        Single<byte[]> single;
+		if(msg == null)
+        	single = bns.generateTransferAssetTransaction(pubKeyFrom, receiver, assetId, quantity, amount, fee, deadline);
+		else
+			single = bns.generateTransferAssetTransactionWithMessage(pubKeyFrom, receiver, assetId, quantity, amount, fee, deadline, msg);
+        
+        TransactionBroadcast tb = single.flatMap(unsignedTransactionBytes -> {
                     byte[] signedTransactionBytes = bc.signTransaction(passFrom, unsignedTransactionBytes);
                     return bns.broadcastTransaction(signedTransactionBytes);
                 }).blockingGet();
@@ -318,6 +347,9 @@ public class BT {
         Compiler compiledContract = compileContract(contract);
 
         String name = contract.getSimpleName() + System.currentTimeMillis();
+        if(name.length() > 30) {
+        	name = name.substring(0, 30);
+        }
 
         return registerContract(compiledContract, name, activationFee);
     }

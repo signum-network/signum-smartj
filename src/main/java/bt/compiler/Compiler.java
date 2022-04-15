@@ -1147,14 +1147,19 @@ public class Compiler {
 						else if (mi.name.equals("getActivationFee")) {
 							if(!BT.isSIP37Activated())
 								addError(insn, "activate SIP37 to support: " + mi.name);
-							if(mi.desc.equals("(Lbt/Address;)Lbt/Address;")) {
-								// asking for the creator of another contract
+							if(mi.desc.equals("(Lbt/Address;)J")) {
+								// asking for the activation fee of another contract
 								
 								StackVar otherContract = popVar(m, tmpVar1, false);
 
 								code.put(OpCode.e_op_code_EXT_FUN_DAT);
 								code.putShort(OpCode.Set_B2);
 								code.putInt(otherContract.address);
+							}
+							else {
+								// B2 must be clear to get the activation fee of this contract
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);								
 							}
 							popThis();
 							
@@ -1494,7 +1499,7 @@ public class Compiler {
 							code.putInt(key1.address);
 							code.putInt(key2.address);
 							
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.GET_MAP_VALUE_KEYS_IN_A);
 							code.putInt(tmpVar1);
 							

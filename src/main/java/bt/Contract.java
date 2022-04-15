@@ -95,7 +95,7 @@ public abstract class Contract {
 	/**
 	 * Sends the given asset ID amount to the receiver address
 	 * @param assetId
-	 * @param amount
+	 * @param quantity
 	 * @param receiver
 	 */
 	protected void sendAmount(long assetId, long quantity, Address receiver) {
@@ -375,6 +375,10 @@ public abstract class Contract {
 	}
 	
 	protected long getActivationFee() {
+		return 0;
+	}
+	
+	protected long getActivationFee(Contract other) {
 		return 0;
 	}
 

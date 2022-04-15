@@ -294,7 +294,7 @@ public class Printer {
 			case OpCode.e_op_code_EXT_FUN_DAT_2:
 			case OpCode.e_op_code_EXT_FUN_RET_DAT:
 				p += printOp(code, p, 1, out);
-				out.println("\tEXT_FUN_RET_" + (op == OpCode.e_op_code_EXT_FUN_DAT_2 ? "DAT_2" : "RET_DAT"));
+				out.println("\tEXT_FUN_" + (op == OpCode.e_op_code_EXT_FUN_DAT_2 ? "DAT_2" : "RET_DAT"));
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
@@ -538,6 +538,11 @@ public class Printer {
 			return "DIST_TO_ASSET_HOLDERS";
 		case OpCode.GET_ACTIVATION_FEE:
 			return "GET_ACTIVATION_FEE";
+
+		case OpCode.GET_MAP_VALUE_KEYS_IN_A:
+			return "GET_MAP_VALUE_KEYS_IN_A";
+		case OpCode.SET_MAP_VALUE_KEYS_IN_A:
+			return "SET_MAP_VALUE_KEYS_IN_A";
 
 		default:
 			return "UNKNOWN FUNCTION";
