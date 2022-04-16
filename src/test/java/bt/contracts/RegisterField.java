@@ -1,5 +1,7 @@
-package bt;
+package bt.contracts;
 
+import bt.Contract;
+import bt.Register;
 import bt.compiler.CompilerVersion;
 import bt.compiler.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
