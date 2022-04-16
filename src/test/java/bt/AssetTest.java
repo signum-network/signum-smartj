@@ -81,6 +81,7 @@ public class AssetTest extends BT {
 		tb = sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(amount));
 		forgeBlock(tb);
 		forgeBlock();
+		forgeBlock();
 		
 		boolean assetReceived = false;
 		AssetBalance[] balances = BT.getNode().getAssetBalances(assetId, -1, -1).blockingGet();
