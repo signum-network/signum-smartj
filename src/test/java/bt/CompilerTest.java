@@ -3,6 +3,7 @@ package bt;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
+import bt.contracts.CalcSqrt;
 import bt.contracts.Cast;
 import bt.contracts.EqualsCreator;
 import bt.contracts.LocalVar;
@@ -762,21 +763,40 @@ public class CompilerTest extends BT {
     
     @Test
     public void testHigherThanOne() throws Exception{
-    	AT testContrac = registerContract(TestHigherThanOne.class, SignumValue.fromSigna(0.3));
+    	AT testContract = registerContract(TestHigherThanOne.class, SignumValue.fromSigna(0.3));
     	
-    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContrac.getId(), testContrac.getMinimumActivation());
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), testContract.getMinimumActivation());
     	forgeBlock(tb);
     	forgeBlock();
     	
-    	long worked = BT.getContractFieldValue(testContrac, 0);
+    	long worked = BT.getContractFieldValue(testContract, 0);
     	assertEquals(0, worked);
 
     	SignumValue amount = SignumValue.fromSigna(2);
-    	tb = sendAmount(BT.PASSPHRASE, testContrac.getId(), amount);
+    	tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
     	forgeBlock(tb);
     	forgeBlock();
-    	worked = BT.getContractFieldValue(testContrac, 0);
-    	assertEquals(amount.subtract(testContrac.getMinimumActivation()).longValue(), worked);
+    	worked = BT.getContractFieldValue(testContract, 0);
+    	assertEquals(amount.subtract(testContract.getMinimumActivation()).longValue(), worked);
+    }
+    
+    @Test
+    public void testSqrt() throws Exception{
+    	AT testContract = registerContract(CalcSqrt.class, SignumValue.fromSigna(0.4));
+    	
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), testContract.getMinimumActivation());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	
+    	long result = BT.getContractFieldValue(testContract, 0);
+    	assertEquals(0, result);
+
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
+    	forgeBlock(tb);
+    	forgeBlock();
+    	result = BT.getContractFieldValue(testContract, 0);
+    	assertEquals((long)Math.sqrt(amount.subtract(testContract.getMinimumActivation()).longValue()), result);
     }
     
 }
