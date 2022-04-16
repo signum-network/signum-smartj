@@ -1245,11 +1245,32 @@ public class Compiler {
 								code.putInt(tmpVar1);
 								pushVar(m, tmpVar1);
 							}
-						} else if (mi.name.equals("getPrevBlockHash1")) {
+						}
+						else if (mi.name.equals("getPrevBlockGenSig")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
 							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN);
-							code.putShort(OpCode.Put_Last_Block_Hash_In_A);
+							code.putShort(OpCode.PUT_LAST_BLOCK_GSIG_IN_A);
+
+							// Load the 4 register values
+							for (int i = 0; i < 4; i++) {
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort((short) (OpCode.Get_A1 + i));
+								code.putInt(tmpVar1);
+								pushVar(m, tmpVar1);
+							}
+						}
+						else if (mi.name.equals("getPrevBlockGenSig1")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							popThis();
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.PUT_LAST_BLOCK_GSIG_IN_A);
 
 							// Load the first value
 							code.put(OpCode.e_op_code_EXT_FUN_RET);

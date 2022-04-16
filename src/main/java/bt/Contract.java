@@ -291,6 +291,20 @@ public abstract class Contract {
 	protected long getPrevBlockHash1() {
 		return Emulator.getInstance().getPrevBlock().hash.getValue1();
 	}
+	
+	/**
+	 * @return the block generation signature of the previous block
+	 */
+	protected Register getPrevBlockGenSig() {
+		return Emulator.getInstance().getPrevBlock().hash;
+	}
+	
+	/**
+	 * @return the first part of the previous generation signature
+	 */
+	protected long getPrevBlockGenSig1() {
+		return Emulator.getInstance().getPrevBlock().hash.getValue1();
+	}
 
 	/**
 	 * @return the timestamp of the previous block

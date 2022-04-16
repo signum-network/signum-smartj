@@ -7,6 +7,7 @@ import bt.contracts.CalcMultDiv96;
 import bt.contracts.CalcSqrt;
 import bt.contracts.Cast;
 import bt.contracts.EqualsCreator;
+import bt.contracts.GenSig;
 import bt.contracts.LocalVar;
 import bt.contracts.MethodCall;
 import bt.contracts.MethodCallArgs;
@@ -856,6 +857,30 @@ public class GeneralTests extends BT {
     		}
     	}
     	assertTrue(found);
+    }
+    
+    @Test
+    public void testGenSig() throws Exception{
+    	forgeBlock();
+    	AT testContract = registerContract(GenSig.class, SignumValue.fromSigna(0.4));
+    	System.out.println(testContract.getId().getID());
+    	
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
+    	forgeBlock(tb);
+    	forgeBlock();
+    	forgeBlock();
+
+    	long genSig = BT.getContractFieldValue(testContract, 0);
+    	long genSig1 = BT.getContractFieldValue(testContract, 1);
+    	long genSig2 = BT.getContractFieldValue(testContract, 2);
+    	long genSig3 = BT.getContractFieldValue(testContract, 3);
+    	long genSig4 = BT.getContractFieldValue(testContract, 4);
+    	assertTrue(genSig1 != 0L);
+    	assertTrue(genSig2 != 0L);
+    	assertTrue(genSig3 != 0L);
+    	assertTrue(genSig4 != 0L);
+    	assertEquals(genSig, genSig1);
     }
     
 }
