@@ -43,7 +43,7 @@ import java.nio.ByteOrder;
  *
  * @author jjos
  */
-public class CompilerTest extends BT {
+public class GeneralTests extends BT {
 	static {
 		BT.activateSIP37(true);
 	}
@@ -114,8 +114,8 @@ public class CompilerTest extends BT {
         SignumAddress address = SignumAddress.fromEither(ForwardMin.ADDRESS);
 
         // send some burst to make sure the account exist
-        sendAmount(PASSPHRASE, address, SignumValue.fromNQT(1));
-        forgeBlock();
+        TransactionBroadcast tb = sendAmount(PASSPHRASE, address, SignumValue.fromNQT(1));
+        forgeBlock(tb);
 
         Account bmfAccount = bns.getAccount(address).blockingGet();
         SignumValue balance = bmfAccount.getUnconfirmedBalance();
@@ -125,16 +125,16 @@ public class CompilerTest extends BT {
         AT at = registerContract(ForwardMin.class, actvFee);
         assertNotNull("AT could not be registered", at);
 
-        sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
-        forgeBlock();
+        tb = sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
+        forgeBlock(tb);
 
         bmfAccount = bns.getAccount(address).blockingGet();
         SignumValue newBalance = bmfAccount.getUnconfirmedBalance();
         double result = newBalance.doubleValue() - balance.doubleValue();
         assertTrue("Value forwarded while it should not", result < amount);
 
-        sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
-        forgeBlock();
+        tb = sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
+        forgeBlock(tb);
         forgeBlock();
 
         bmfAccount = bns.getAccount(address).blockingGet();
@@ -147,34 +147,38 @@ public class CompilerTest extends BT {
     public void testTipThanks() throws Exception {
         SignumAddress address = SignumAddress.fromEither(TipThanks.ADDRESS);
 
-        // send some burst to make sure the account exist
+        // send some signa to make sure the account exists
         sendAmount(PASSPHRASE, address, SignumValue.fromSigna(100));
         forgeBlock();
 
         Account benefAccout = bns.getAccount(address).blockingGet();
         SignumValue balance = benefAccout.getUnconfirmedBalance();
         SignumValue actvFee = SignumValue.fromSigna(1);
-        double amount = TipThanks.MIN_AMOUNT * 0.8;
+        long amount = (long)(TipThanks.MIN_AMOUNT * 0.8);
 
         AT at = registerContract(TipThanks.class, actvFee);
         assertNotNull("AT could not be registered", at);
+        System.out.println(at.getId().getID());
 
-        sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
+        TransactionBroadcast tb = sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
+        forgeBlock(tb);
+        forgeBlock();
         forgeBlock();
 
         benefAccout = bns.getAccount(address).blockingGet();
         SignumValue newBalance = benefAccout.getUnconfirmedBalance();
-        double result = newBalance.doubleValue() - balance.doubleValue();
-        assertTrue("Value forwarded while it should not", result < amount);
+        long result = newBalance.longValue() - balance.longValue();
+        assertTrue("Value forwarded while it should not", result == 0);
 
-        sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT((long) amount));
+        tb = sendAmount(PASSPHRASE, at.getId(), SignumValue.fromNQT(amount));
+        forgeBlock(tb);
         forgeBlock();
         forgeBlock();
 
         benefAccout = bns.getAccount(address).blockingGet();
         newBalance = benefAccout.getUnconfirmedBalance();
-        result = newBalance.doubleValue() - balance.doubleValue();
-        assertTrue("Value not forwarded as it should", result * Contract.ONE_BURST > amount);
+        result = newBalance.longValue() - balance.longValue();
+        assertTrue("Value not forwarded as it should", result > amount);
     }
 
     @Test
@@ -185,9 +189,10 @@ public class CompilerTest extends BT {
         String name = LocalVar.class.getSimpleName() + System.currentTimeMillis();
         SignumAddress creator = SignumCrypto.getInstance().getAddressFromPassphrase(BT.PASSPHRASE);
 
-        BT.registerContract(BT.PASSPHRASE, comp, name, name, SignumValue.fromNQT(LocalVar.FEE),
-                SignumValue.fromSigna(0.1), 1000);
-        BT.forgeBlock();
+        TransactionBroadcast tb = BT.registerContract(BT.PASSPHRASE, comp, name, name,
+        		SignumValue.fromNQT(LocalVar.FEE),
+                SignumValue.fromSigna(1), 1000).blockingGet();
+        BT.forgeBlock(tb);
 
         AT contract = BT.findContract(creator, name);
 
@@ -196,13 +201,13 @@ public class CompilerTest extends BT {
         BT.forgeBlock();
         BT.forgeBlock();
 
-        assertEquals(valueSent.longValue() * Contract.ONE_BURST,
+        assertEquals(valueSent.longValue(),
                 BT.getContractFieldValue(contract, comp.getField("amountNoFee").getAddress()));
 
         long value = 512;
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("setValue"), SignumValue.fromSigna(1),
+        tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("setValue"), SignumValue.fromSigna(1),
                 SignumValue.fromSigna(0.1), 1000, value);
-        BT.forgeBlock();
+        BT.forgeBlock(tb);
         BT.forgeBlock();
 
         long valueChain = BT.getContractFieldValue(contract, comp.getField("valueTimes2").getAddress());
@@ -803,6 +808,8 @@ public class CompilerTest extends BT {
     	tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
     	forgeBlock(tb);
     	forgeBlock();
+    	forgeBlock();
+    	
     	result = BT.getContractFieldValue(testContract, 0);
     	assertEquals((long)Math.sqrt(amount.subtract(testContract.getMinimumActivation()).longValue()), result);
     }
@@ -816,6 +823,8 @@ public class CompilerTest extends BT {
     	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
     	forgeBlock(tb);
     	forgeBlock();
+    	forgeBlock();
+    	
     	long result = BT.getContractFieldValue(testContract, 0);
     	assertEquals((long)(amount.subtract(testContract.getMinimumActivation()).longValue() * 0.96), result);
     }
@@ -829,6 +838,7 @@ public class CompilerTest extends BT {
     	SignumValue amount = SignumValue.fromSigna(2);
     	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
     	forgeBlock(tb);
+    	forgeBlock();
     	forgeBlock();
 
     	boolean found = false;
