@@ -10,6 +10,7 @@ import bt.contracts.EqualsCreator;
 import bt.contracts.LocalVar;
 import bt.contracts.MethodCall;
 import bt.contracts.MethodCallArgs;
+import bt.contracts.Send2Messages;
 import bt.contracts.TestHigherThanOne;
 import bt.sample.Auction;
 import bt.sample.AuctionNFT;
@@ -27,7 +28,9 @@ import signumj.entity.SignumAddress;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 import signumj.entity.response.Account;
+import signumj.entity.response.Transaction;
 import signumj.entity.response.TransactionBroadcast;
+import signumj.response.appendix.PlaintextMessageAppendix;
 
 import static org.junit.Assert.*;
 
@@ -815,6 +818,34 @@ public class CompilerTest extends BT {
     	forgeBlock();
     	long result = BT.getContractFieldValue(testContract, 0);
     	assertEquals((long)(amount.subtract(testContract.getMinimumActivation()).longValue() * 0.96), result);
+    }
+    
+    
+    @Test
+    public void test2Messages() throws Exception{
+    	forgeBlock();
+    	AT testContract = registerContract(Send2Messages.class, SignumValue.fromSigna(0.4));
+    	
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
+    	forgeBlock(tb);
+    	forgeBlock();
+
+    	boolean found = false;
+    	Transaction[] txs = BT.getNode().getAccountTransactions(testContract.getId(), 0, 100, false).blockingGet();
+    	for(Transaction tx : txs) {
+    		if(tx.getSender().equals(testContract.getId())) {
+    			if(tx.getAppendages().length == 1 && tx.getAppendages()[0] instanceof PlaintextMessageAppendix) {
+    				PlaintextMessageAppendix msg = (PlaintextMessageAppendix) tx.getAppendages()[0];
+    				assertTrue(msg.isText() == false);
+    				// should have the 2 messages concatenated
+    				assertEquals(8*4*2 *2, msg.getMessage().length());
+    				found = true;
+    				break;
+    			}
+    		}
+    	}
+    	assertTrue(found);
     }
     
 }
