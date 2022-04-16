@@ -7,14 +7,14 @@ import bt.ui.EmulatorWindow;
 
 public class GenSig extends Contract {
 
-	long genSig1;
-	Register genSig;
+	long genSig;
+	Register genSigReg;
 
 	@Override
 	public void txReceived() {
-		genSig1 = this.getPrevBlockGenSig1();
+		genSig = this.getPrevBlockGenSig1();
 		
-		genSig = this.getPrevBlockGenSig();
+		genSigReg = this.getPrevBlockGenSig();
 	}
 
 	public static void main(String[] args) {

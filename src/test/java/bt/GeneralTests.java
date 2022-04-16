@@ -872,15 +872,16 @@ public class GeneralTests extends BT {
     	forgeBlock();
 
     	long genSig = BT.getContractFieldValue(testContract, 0);
-    	long genSig1 = BT.getContractFieldValue(testContract, 1);
-    	long genSig2 = BT.getContractFieldValue(testContract, 2);
-    	long genSig3 = BT.getContractFieldValue(testContract, 3);
-    	long genSig4 = BT.getContractFieldValue(testContract, 4);
-    	assertTrue(genSig1 != 0L);
-    	assertTrue(genSig2 != 0L);
-    	assertTrue(genSig3 != 0L);
-    	assertTrue(genSig4 != 0L);
-    	assertEquals(genSig, genSig1);
+    	long genSigReg1 = BT.getContractFieldValue(testContract, 1);
+    	long genSigReg2 = BT.getContractFieldValue(testContract, 2);
+    	long genSigReg3 = BT.getContractFieldValue(testContract, 3);
+    	long genSigReg4 = BT.getContractFieldValue(testContract, 4);
+    	assertTrue(genSig != 0L);
+    	assertTrue(genSigReg1 != 0L);
+    	assertTrue(genSigReg2 != 0L);
+    	assertTrue(genSigReg3 != 0L);
+    	assertTrue(genSigReg4 != 0L);
+    	assertEquals(genSig, genSigReg1);
     }
     
 }
