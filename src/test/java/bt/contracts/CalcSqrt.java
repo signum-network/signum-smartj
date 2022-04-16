@@ -9,7 +9,8 @@ public class CalcSqrt extends Contract {
 
 	@Override
 	public void txReceived() {
-		sqrt = calcPow(getCurrentTx().getAmount(), 5000);
+		// the exponent is divided by 1_0000_0000, so 0.5 is 5000_0000
+		sqrt = calcPow(getCurrentTx().getAmount(), 5000_0000);
 	}
 
 	public static void main(String[] args) {
