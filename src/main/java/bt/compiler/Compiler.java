@@ -1175,7 +1175,7 @@ public class Compiler {
 
 							// long calcPow(long x, long y)
 							StackVar y = popVar(m, tmpVar2, false);
-							StackVar x = popVar(m, tmpVar1, false);
+							StackVar x = popVar(m, tmpVar1, true);
 							popThis();
 							
 							code.put(OpCode.e_op_code_POW_DAT);
@@ -1191,7 +1191,7 @@ public class Compiler {
 							// long calcMultDiv(long x, long y, long den)
 							StackVar den = popVar(m, tmpVar3, false);
 							StackVar y = popVar(m, tmpVar2, false);
-							StackVar x = popVar(m, tmpVar1, false);
+							StackVar x = popVar(m, tmpVar1, true);
 							popThis();
 							
 							code.put(OpCode.e_op_code_MDV_DAT);

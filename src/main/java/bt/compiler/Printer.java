@@ -266,6 +266,14 @@ public class Printer {
 				p += printAddress(code, p, out, c);
 				break;
 
+			case OpCode.e_op_code_MDV_DAT:
+				p += printOp(code, p, 1, out);
+				out.println("\tMDV_DAT");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				break;
+
 			case OpCode.e_op_code_RET_SUB:
 				p += printOp(code, p, 1, out);
 				out.println("\tRET_SUB");

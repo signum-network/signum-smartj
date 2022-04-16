@@ -3,6 +3,7 @@ package bt;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
+import bt.contracts.CalcMultDiv96;
 import bt.contracts.CalcSqrt;
 import bt.contracts.Cast;
 import bt.contracts.EqualsCreator;
@@ -739,6 +740,7 @@ public class CompilerTest extends BT {
     
     @Test
     public void testCast() throws Exception{
+    	forgeBlock();
     	AT castContract = registerContract(Cast.class, SignumValue.fromSigna(0.3));
     	
     	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, castContract.getId(), castContract.getMinimumActivation());
@@ -751,6 +753,7 @@ public class CompilerTest extends BT {
     
     @Test
     public void testEquals() throws Exception{
+    	forgeBlock();
     	AT equalsContract = registerContract(EqualsCreator.class, SignumValue.fromSigna(0.3));
     	
     	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, equalsContract.getId(), equalsContract.getMinimumActivation());
@@ -763,6 +766,7 @@ public class CompilerTest extends BT {
     
     @Test
     public void testHigherThanOne() throws Exception{
+    	forgeBlock();
     	AT testContract = registerContract(TestHigherThanOne.class, SignumValue.fromSigna(0.3));
     	
     	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), testContract.getMinimumActivation());
@@ -782,6 +786,7 @@ public class CompilerTest extends BT {
     
     @Test
     public void testSqrt() throws Exception{
+    	forgeBlock();
     	AT testContract = registerContract(CalcSqrt.class, SignumValue.fromSigna(0.4));
     	
     	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), testContract.getMinimumActivation());
@@ -797,6 +802,19 @@ public class CompilerTest extends BT {
     	forgeBlock();
     	result = BT.getContractFieldValue(testContract, 0);
     	assertEquals((long)Math.sqrt(amount.subtract(testContract.getMinimumActivation()).longValue()), result);
+    }
+    
+    @Test
+    public void testCalcMultDiv() throws Exception{
+    	forgeBlock();
+    	AT testContract = registerContract(CalcMultDiv96.class, SignumValue.fromSigna(0.4));
+    	
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	TransactionBroadcast tb = sendAmount(BT.PASSPHRASE, testContract.getId(), amount);
+    	forgeBlock(tb);
+    	forgeBlock();
+    	long result = BT.getContractFieldValue(testContract, 0);
+    	assertEquals((long)(amount.subtract(testContract.getMinimumActivation()).longValue() * 0.96), result);
     }
     
 }
