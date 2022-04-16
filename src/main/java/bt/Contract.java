@@ -103,18 +103,29 @@ public abstract class Contract {
 	}
 	
 	/**
-	 * Returns the pow(x, y/10000) calculation using double precision
+	 * Returns the pow(x, y/1_0000_0000) calculation using double precision
 	 * 
 	 * @param x
 	 * @param y
-	 * @return pow(x, y/10000)
+	 * @return pow(x, y/1_0000_0000)
 	 */
 	protected long calcPow(long x, long y) {
-		double ret = Math.pow(x, y/10_000.0);
+		if(x < 0)
+			return 0;
+		
+		double ret = Math.pow(x, y/10000_0000.0);
 		
 		return (long)ret;
 	}
 	
+	/**
+	 * Calculates (x*y)/den using big integer precision (arbitrary high precision)
+	 * 
+	 * @param x
+	 * @param y
+	 * @param den
+	 * @return (x*y)/den
+	 */
 	protected long calcMultDiv(long x, long y, long den) {
 		if (den == 0L)
 			return 0L;
