@@ -126,9 +126,9 @@ public class BT {
     /**
      * Build the message for a method call
      */
-    public static byte[] callMethodMessage(Method method, Object... args) {
+    public static byte[] callMethodMessage(Method method, byte []extraPages, Object... args) {
 
-        ByteBuffer b = ByteBuffer.allocate(32);
+        ByteBuffer b = ByteBuffer.allocate(32 + (extraPages == null ? 0 : extraPages.length));
         b.order(ByteOrder.LITTLE_ENDIAN);
 
         // Start with the method hash
@@ -158,6 +158,10 @@ public class BT {
             throw new InvalidParameterException(
                     "Expecting " + method.getNArgs() + " but received " + nargs + " parameters");
         }
+        
+        if(extraPages != null) {
+        	b.put(extraPages);
+        }
 
         return b.array();
     }
@@ -168,7 +172,18 @@ public class BT {
     public static TransactionBroadcast callMethod(String passFrom, SignumAddress contractAddress, Method method,
             SignumValue value, SignumValue fee, int deadline, Object... args) {
 
-        byte[] bytes = callMethodMessage(method, args);
+        byte[] bytes = callMethodMessage(method, null, args);
+
+        return sendMessage(passFrom, contractAddress, value, fee, deadline, bytes);
+    }
+    
+    /**
+     * Call a method on the given contract address.
+     */
+    public static TransactionBroadcast callMethod(String passFrom, SignumAddress contractAddress, Method method,
+    		byte []extraPages, SignumValue value, SignumValue fee, int deadline, Object... args) {
+
+        byte[] bytes = callMethodMessage(method, extraPages, args);
 
         return sendMessage(passFrom, contractAddress, value, fee, deadline, bytes);
     }
@@ -179,7 +194,7 @@ public class BT {
     public static TransactionBroadcast callMethod(String passFrom, SignumAddress contractAddress, Method method,
             SignumID assetId, SignumValue quantity, SignumValue value, SignumValue fee, int deadline, Object... args) {
 
-        byte[] bytes = callMethodMessage(method, args);
+        byte[] bytes = callMethodMessage(method, null, args);
 
         return sendAsset(passFrom, contractAddress, assetId, quantity, value, fee, deadline, bytes);
     }

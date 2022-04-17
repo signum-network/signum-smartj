@@ -103,6 +103,8 @@ final class OpCode {
   static final short Check_HASH160_A_With_B   = 0x0203; //  EXT_FUN_RET       @addr to bool if RIPEMD160 hash of A1..3 matches B1..3 // Unused
   static final short SHA256_A_To_B            = 0x0204; //  EXT_FUN           take a SHA256 hash of A and put this in B
   static final short Check_SHA256_A_With_B    = 0x0205; //  EXT_FUN_RET       @addr to bool if SHA256 hash of A matches B // Unused
+  static final short CHECK_SIG_B_WITH_A       = 0x0206; //  EXT_FUN_RET       @addr to bool if [AT ID, B2..4] signature can be verified with the message attached on tx id in A1 (page in A2) for account id in A3
+
   
   static final short Get_Block_Timestamp       = 0x0300; // EXT_FUN_RET       sets @addr to the timestamp of the current block
   static final short Get_Creation_Timestamp    = 0x0301; // EXT_FUN_RET       sets @addr to the timestamp of the AT creation block

@@ -1526,6 +1526,44 @@ public class Compiler {
 							
 							pushVar(m, tmpVar1);
 						}
+						else if (mi.name.equals("checkSignature")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							// long checkSignature(long msg2, long msg3, long msg4,
+							// Transaction tx, long page, long accountId)
+							
+							StackVar accountId = popVar(m, tmpVar1, false);
+							StackVar page = popVar(m, tmpVar2, false);
+							StackVar tx = popVar(m, tmpVar3, false);
+							StackVar msg4 = popVar(m, tmpVar4, false);
+							StackVar msg3 = popVar(m, tmpVar5, false);
+							StackVar msg2 = popVar(m, tmpVar6, false);
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_A1_A2));
+							code.putInt(tx.address);
+							code.putInt(page.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_A3));
+							code.putInt(accountId.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_B2));
+							code.putInt(msg2.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_B3_B4));
+							code.putInt(msg3.address);
+							code.putInt(msg4.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.CHECK_SIG_B_WITH_A);
+							code.putInt(tmpVar1);
+							
+							pushVar(m, tmpVar1);
+						}
 						else if (mi.name.equals("sendMessage")) {
 							arg1 = popVar(m, tmpVar1, false); // address
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);

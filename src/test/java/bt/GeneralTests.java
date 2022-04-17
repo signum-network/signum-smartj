@@ -3,9 +3,11 @@ package bt;
 import org.junit.Test;
 
 import bt.compiler.Compiler;
+import bt.compiler.Method;
 import bt.contracts.CalcMultDiv96;
 import bt.contracts.CalcSqrt;
 import bt.contracts.Cast;
+import bt.contracts.CheckSignature;
 import bt.contracts.EqualsCreator;
 import bt.contracts.GenSig;
 import bt.contracts.LocalVar;
@@ -920,5 +922,52 @@ public class GeneralTests extends BT {
     	assertEquals(value1, value1Contract);
     	assertEquals(value2, value2Contract);
     }
-    
+
+    @Test
+    public void testCheckSignature() throws Exception{
+    	forgeBlock();
+    	AT testContract = registerContract(CheckSignature.class, SignumValue.fromSigna(0.4));
+    	System.out.println(testContract.getId().getID());
+    	
+    	Compiler comp = BT.compileContract(CheckSignature.class);
+
+    	Random r = new Random();
+    	long msg2 = r.nextLong();
+    	long msg3 = r.nextLong();
+    	long msg4 = r.nextLong();
+
+    	ByteBuffer msg = ByteBuffer.allocate(8*4);
+    	msg.order(ByteOrder.LITTLE_ENDIAN);
+    	msg.putLong(testContract.getId().getSignedLongId());
+    	msg.putLong(msg2);
+    	msg.putLong(msg3);
+    	msg.putLong(msg4);
+    	msg.clear();
+    	
+    	byte[] signature = SignumCrypto.getInstance().sign(msg.array(), BT.PASSPHRASE);
+    	
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	Method method = comp.getMethod("checkSignature");
+    	
+    	// send a null signature first
+    	TransactionBroadcast tb = BT.callMethod(BT.PASSPHRASE, testContract.getId(), method, amount, SignumValue.fromSigna(0.1), 1000,
+    			msg2, msg3, msg4);
+    	forgeBlock(tb);
+    	forgeBlock();
+    	forgeBlock();
+
+    	long verified = BT.getContractFieldValue(testContract, 0);
+    	assertEquals(0, verified);
+
+    	// send the correct signature now
+    	tb = BT.callMethod(BT.PASSPHRASE, testContract.getId(), method, signature, amount, SignumValue.fromSigna(0.1), 1000,
+    			msg2, msg3, msg4);
+    	forgeBlock(tb);
+    	forgeBlock();
+    	forgeBlock();
+
+    	verified = BT.getContractFieldValue(testContract, 0);
+    	assertEquals(1, verified);
+    }
+
 }

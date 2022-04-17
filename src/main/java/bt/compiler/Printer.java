@@ -538,6 +538,9 @@ public class Printer {
 		case OpCode.Check_SHA256_A_With_B: // = 0x0205; // EXT_FUN_RET @addr to bool if SHA256 hash of A matches B
 			return "Check_SHA256_A_With_B";
 			
+		case OpCode.CHECK_SIG_B_WITH_A:
+			return "CHECK_SIG_B_WITH_A";
+			
 		case OpCode.MINT_ASSET:
 			return "MINT_ASSET";
 		case OpCode.ISSUE_ASSET:

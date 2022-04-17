@@ -467,6 +467,24 @@ public abstract class Contract {
 		Register ret = performSHA256_(input);
 		return ret.getValue1();
 	}
+	
+	/**
+	 * Checks if the signature of the given account id in tx (page, page+1) matches for the given message.
+	 * 
+	 * The message actually consists in [contractId, msg2, msg3, msg4].
+	 * 
+	 * @param msg2
+	 * @param msg3
+	 * @param msg4
+	 * @param tx
+	 * @param page
+	 * @param accountId
+	 * @return
+	 */
+	protected long checkSignature(long msg2, long msg3, long msg4, Transaction tx, long page, long accountId) {
+		// TODO: no account id and public key stored in the emulator to verify the signature
+		return 0;
+	}
 
 	/**
 	 * Sleeps until the contract receives a new transaction.
