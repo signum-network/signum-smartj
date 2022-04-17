@@ -8,6 +8,7 @@ import bt.contracts.CalcMultDiv96;
 import bt.contracts.CalcSqrt;
 import bt.contracts.Cast;
 import bt.contracts.CheckSignature;
+import bt.contracts.CodeHashId;
 import bt.contracts.EqualsCreator;
 import bt.contracts.GenSig;
 import bt.contracts.LocalVar;
@@ -968,6 +969,42 @@ public class GeneralTests extends BT {
 
     	verified = BT.getContractFieldValue(testContract, 0);
     	assertEquals(1, verified);
+    }
+    
+    @Test
+    public void testCodeHash() throws Exception{
+    	forgeBlock();
+    	AT testContract = registerContract(CodeHashId.class, SignumValue.fromSigna(0.4));
+    	System.out.println(testContract.getId().getID());
+    	
+    	Compiler comp = BT.compileContract(CodeHashId.class);
+    	Method method = comp.getMethod("getCodeHash");
+    	
+    	Random r = new Random();
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	TransactionBroadcast tb = BT.callMethod(BT.PASSPHRASE, testContract.getId(), method, amount, SignumValue.fromSigna(0.1), 1000,
+    			r.nextLong());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	forgeBlock();
+
+    	long thisCodeHash = BT.getContractFieldValue(testContract, 0);
+    	long codeHash = BT.getContractFieldValue(testContract, 1);
+
+    	assertEquals(thisCodeHash, testContract.getMachineCodeHashId().getSignedLongId());
+    	assertEquals(0L, codeHash);
+    	
+    	tb = BT.callMethod(BT.PASSPHRASE, testContract.getId(), method, amount, SignumValue.fromSigna(0.1), 1000,
+    			testContract.getId().getSignedLongId());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	forgeBlock();
+    	
+    	thisCodeHash = BT.getContractFieldValue(testContract, 0);
+    	codeHash = BT.getContractFieldValue(testContract, 1);
+    	
+    	assertEquals(thisCodeHash, codeHash);
+    	assertTrue(thisCodeHash != 0L);
     }
 
 }

@@ -335,6 +335,23 @@ public abstract class Contract {
 	}
 	
 	/**
+	 * @param contractId
+	 * @return the code hash ID for the given contract ID
+	 */
+	protected long getCodeHashId(long contractId) {
+		// TODO Emulator implementation
+		return 0;
+	}
+	
+	/**
+	 * @return the code hash ID of this contract
+	 */
+	protected long getCodeHashId() {
+		// TODO Emulator implementation
+		return 0;
+	}
+	
+	/**
 	 * @return the address of the creator of another contract
 	 */
 	protected Address getCreator(Address contract) {

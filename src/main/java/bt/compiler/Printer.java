@@ -540,6 +540,8 @@ public class Printer {
 			
 		case OpCode.CHECK_SIG_B_WITH_A:
 			return "CHECK_SIG_B_WITH_A";
+		case OpCode.GET_CODE_HASH_ID:
+			return "GET_CODE_HASH_ID";
 			
 		case OpCode.MINT_ASSET:
 			return "MINT_ASSET";

@@ -1060,9 +1060,10 @@ public class Compiler {
 								popThis();
 								pushVar(m, lastTxAmount);
 							}
-						} else if (mi.name.equals("getCurrentBalance")) {
+						}
+						else if (mi.name.equals("getCurrentBalance")) {
 							if(mi.desc.equals("(J)J")) {
-								// asking for the creator of another contract
+								// asking for the balance of another contract
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support: " + mi.name);
 								
@@ -1082,7 +1083,31 @@ public class Compiler {
 							code.putShort(OpCode.Get_Current_Balance);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
-						} else if (mi.name.equals("getTxAfterTimestamp")) {
+						}
+						else if (mi.name.equals("getCodeHashId")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							if(mi.desc.equals("(J)J")) {
+								// asking for the code hash of another contract
+								
+								StackVar contractId = popVar(m, tmpVar1, false);
+
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_B2);
+								code.putInt(contractId.address);
+							}
+							else {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);
+							}
+							
+							popThis();
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.GET_CODE_HASH_ID);
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("getTxAfterTimestamp")) {
 							arg1 = popVar(m, tmpVar1, false); // timestamp
 							popThis();
 
