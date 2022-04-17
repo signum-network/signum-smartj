@@ -9,6 +9,7 @@ import bt.contracts.Cast;
 import bt.contracts.EqualsCreator;
 import bt.contracts.GenSig;
 import bt.contracts.LocalVar;
+import bt.contracts.MessagePage;
 import bt.contracts.MethodCall;
 import bt.contracts.MethodCallArgs;
 import bt.contracts.Send2Messages;
@@ -37,6 +38,7 @@ import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Random;
 
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
@@ -882,6 +884,41 @@ public class GeneralTests extends BT {
     	assertTrue(genSigReg3 != 0L);
     	assertTrue(genSigReg4 != 0L);
     	assertEquals(genSig, genSigReg1);
+    }
+    
+    @Test
+    public void testMassagePage() throws Exception{
+    	forgeBlock();
+    	AT testContract = registerContract(MessagePage.class, SignumValue.fromSigna(0.4));
+    	System.out.println(testContract.getId().getID());
+    	
+    	ByteBuffer msg = ByteBuffer.allocate(4*8*2);
+    	msg.order(ByteOrder.LITTLE_ENDIAN);
+    	
+    	Random r = new Random();
+    	long value1 = r.nextLong();
+    	msg.putLong(value1);
+    	msg.putLong(r.nextLong());
+    	msg.putLong(r.nextLong());
+    	msg.putLong(r.nextLong());
+    	long value2 = r.nextLong();
+    	msg.putLong(value2);
+    	msg.putLong(r.nextLong());
+    	msg.putLong(r.nextLong());
+    	msg.putLong(r.nextLong());
+    	msg.clear();
+    	
+    	SignumValue amount = SignumValue.fromSigna(2);
+    	TransactionBroadcast tb = sendMessage(BT.PASSPHRASE, testContract.getId(), amount, SignumValue.fromSigna(0.1), 100,
+    			msg.array());
+    	forgeBlock(tb);
+    	forgeBlock();
+    	forgeBlock();
+
+    	long value1Contract = BT.getContractFieldValue(testContract, 0);
+    	long value2Contract = BT.getContractFieldValue(testContract, 4);
+    	assertEquals(value1, value1Contract);
+    	assertEquals(value2, value2Contract);
     }
     
 }

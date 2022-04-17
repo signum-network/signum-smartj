@@ -1733,7 +1733,7 @@ public class Compiler {
 							code.putInt(tmpVar1); // the timestamp
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getMessage")) {
-							if(mi.desc.equals("(Lbt/Address;J)Lbt/Register;")) {
+							if(mi.desc.equals("(J)Lbt/Register;")) {
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support: " + mi.name);
 								
