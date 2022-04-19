@@ -53,11 +53,18 @@ public class TokenFactory extends Contract {
 	}
 	
 	public static void main(String[] args) throws Exception {
+		BT.activateSIP37(true);
+		
 		// Code to deploy this contract
 		String passphrase = "ENTER YOU TESTNET PASSPHRASE HERE";
 		BT.setNodeAddress(BT.NODE_LOCAL_TESTNET);
 		
 		Compiler comp = BT.compileContract(TokenFactory.class);
+		
+		if(comp.getErrors().size() > 0) {
+			System.err.println(comp.getErrors().get(0).getMessage());
+			return;
+		}
 		
 		String tokenName = "FACTORY";
 		long decimalPlaces = 4;
