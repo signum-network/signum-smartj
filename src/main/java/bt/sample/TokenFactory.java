@@ -54,7 +54,7 @@ public class TokenFactory extends Contract {
 	
 	public static void main(String[] args) throws Exception {
 		// Code to deploy this contract
-		String passphrase = "a";
+		String passphrase = "ENTER YOU TESTNET PASSPHRASE HERE";
 		BT.setNodeAddress(BT.NODE_LOCAL_TESTNET);
 		
 		Compiler comp = BT.compileContract(TokenFactory.class);

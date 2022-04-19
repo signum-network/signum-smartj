@@ -9,116 +9,109 @@ import bt.BT;
 /**
  * A unidirectional (micro) payment channel.
  * 
- * The creator is the payer and someone else is the payee. There is no way for
- * the payer to reduce the BURST amount in an open channel, only to increase it
- * by depositing more BURST on it.
+ * The creator is the payer and someone else is the receiver. There is no way for
+ * the payer to reduce the SIGNA amount in an open channel, only to increase it
+ * by depositing more SIGNA on it.
  * 
- * So the payer should write "checks" ({@link #approveAmount(long, long)} signed
- * messages) and send them to the payee (off-chain). Neither the payer nor the
- * payee usually broadcast these messages, since that would cost a transaction
- * fee without additional benefit.
+ * So the payer should write "checks" (signed messages) and send them to the
+ * receiver (off-chain). Neither the payer nor the receiver usually broadcast
+ * these messages, since that would cost a transaction fee without additional benefit.
  * 
- * Whenever the payee finds suitable (but before the channel timeout) the
- * payee broadcast the payer mesage for the largest value approved and then
- * closes the channel {@link #closeChannel(long)} to receive the BURST amount.
+ * Whenever the receiver finds suitable, he/she broadcasts the payer message
+ * for the largest value approved by calling {@link #claimPayment(long, long)}
+ * to receive the SIGNA amount.
  * 
- * By extending this contract, a bi-directional channel could be implemented.
- * Either that or simply open two different channels with payer and payee roles
- * inverted.
+ * The creator can call {@link #askToClose()} to either get back the locked funds
+ * after the deadline or to force the receiver to claim the payment.
+ * 
  * 
  * @author jjos
  */
 public class PaymentChannel extends Contract {
 
-	Address payee;
+	Address receiver;
+	long deadline;
+	long minimumPayout;
 	Timestamp timeout;
-	long amountApproved;
 	long nonce;
-
+	
 	/**
-	 * Open a new channel for the given payee and timeout.
+	 * Open a new channel for the given receiver and deadline in minutes.
 	 * 
 	 * Only the creator can open the channel and it must not be currently open.
 	 * 
-	 * @param payee
+	 * @param receiver
 	 * @param timeout
 	 */
-	public void openChannel(Address payee, long timeout) {
-		checkTimeout();
-		// only creator can open a channel, and it must be currenctly closed (payee==null)
-		if (getCurrentTxSender().equals(getCreator()) && this.payee == null) {
-			this.payee = payee;
-			this.timeout = getBlockTimestamp().addMinutes(timeout);
-			this.amountApproved = 0;
+	public void openChannel(Address receiver, long deadline, long minimumPayout) {
+		// only creator can open a channel, and it must be currently closed (receiver==null)
+		if (getCurrentTxSender().equals(getCreator()) && this.receiver == null) {
+			this.receiver = receiver;
+			this.deadline = deadline;
+			this.minimumPayout = minimumPayout;
+			this.timeout = null;
 		}
 	}
 
 	/**
-	 * A message that approves the transfer of the given amount to the payee.
+	 * Process a message that approves the transfer of the given amount to the receiver.
 	 * 
-	 * This message usually will be signed and sent from the payer to the payee
-	 * off-chain. The payee can check the message contents and signature off-chain
-	 * and then accept the payment **instantly**.
+	 * This message usually will be signed and sent from the payer to the receiver
+	 * off-chain. The receiver can check the message contents and signature off-chain
+	 * and then accept the payment **instantly** if the amount is lower than the
+	 * current contract balance.
 	 * 
 	 * @param amount
 	 * @param nonce
 	 */
-	public void approveAmount(long amount, long nonce) {
+	public void claimPayment(long nonce, long amount) {
 		checkTimeout();
 
-		if (getCurrentTxSender().equals(getCreator()) && this.nonce == nonce) {
-			// Only creator can approve command must be valid:
-			// - before timeout
-			// - correct nonce (avoids double spend)
-			if (amount > amountApproved)
-				amountApproved = amount;
+		if(this.nonce == nonce && checkSignature(nonce, amount, receiver.getId(), getCurrentTx(), 1L, getCreator().getId()) != 0) {
+			// We got a valid signature with the correct nonce (avoids double spend)
+			sendAmount(amount, receiver);
+			
+			resetContract();
 		}
 	}
 
 	/**
-	 * Closes the channel and pays the approved amount to the payee.
-	 * 
-	 * Only the payee can close the channel.
-	 * 
-	 * The given nonce must match the nonce stored on the contract. When the channel
-	 * is closed the nonce is incremented avoiding double spending on this contract
-	 * and allowing to reuse this contract by calling
-	 * {@link #openChannel(Address, long)} again.
+	 * Resets the contract, sends the minimum payout to the receiver and the balance back to the creator.
 	 */
-	public void closeChannel(long nonce) {
-		checkTimeout();
-		if (getCurrentTxSender().equals(payee) && this.nonce == nonce) {
-			// Only payee can close the channel:
-			// - before timeout
-			// - correct nonce (avoids double spend)
-			sendAmount(amountApproved, payee);
-			// increment the nonce, so any previous payment order becomes invalid
-			nonce++;
-			payee = null;
-			timeout = null;
-		}
+	private void resetContract() {
+		sendAmount(minimumPayout, receiver);
+		nonce++;
+		receiver = null;
+		timeout = null;
+		sendBalance(getCreator());
 	}
-
+	
+	
 	/**
-	 * Utility function to get the channel balance back.
+	 * The creator is asking to close the channel.
 	 * 
-	 * Only the creator can call this function. It would be used to get back the
-	 * balance of a closed channel or when the channel timeout.
+	 * Only the creator can call this method. It would be used to get back the
+	 * remaining balance in the contract or to force the receiver to claim the payment.
+	 * If any off-chain payment was made to the receiver, he/she has to be broadcast it
+	 * to {@link #claimPayment(long, long)} before the timeout.
 	 */
-	public void getBalance() {
+	public void askToClose() {
 		checkTimeout();
-		// only creator can get the balance back, the channel must be currently
-		// closed (payee==null or timedout)
-		if (!getCurrentTxSender().equals(getCreator()))
+		// only creator can ask to close the channel
+		if (timeout != null || !getCurrentTxSender().equals(getCreator()))
 			return;
-		if (payee == null)
-			sendBalance(getCreator());
+		
+		if(receiver != null) {
+			// initiate the timeout so we can close it later
+			timeout = getCurrentTxTimestamp().addMinutes(deadline);
+		}
 	}
 
 	/**
 	 * This contract only accepts the public method calls above.
 	 * 
-	 * If an unrecognized method was called we do nothing
+	 * If an unrecognized method was called we do nothing. This can be used to increase the
+	 * contract balance.
 	 */
 	public void txReceived() {
 	}
@@ -127,11 +120,10 @@ public class PaymentChannel extends Contract {
 	 * Private method, not available from blockchain messages, for checking
 	 * if this channel timedout.
 	 */
-	private void checkTimeout() {
-		if (getBlockTimestamp().ge(timeout)) {
+	public void checkTimeout() {
+		if (timeout!=null && getBlockTimestamp().ge(timeout)) {
 			// expired
-			nonce++;
-			payee = null;
+			resetContract();
 		}
 	}
 
@@ -141,7 +133,7 @@ public class PaymentChannel extends Contract {
 	 * This function is not compiled into bytecode and do not go to the blockchain.
 	 */
 	public static void main(String[] args) throws Exception {
-		BT.activateCIP20(true);
+		BT.activateSIP37(true);
 		new EmulatorWindow(PaymentChannel.class);
 	}
 }
