@@ -11,12 +11,13 @@ import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.compiler.Compiler.Error;
-import bt.sample.TokenFactory;
 import bt.sample.AssetQuantityReceived;
+import bt.sample.TokenFactory;
 import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 import signumj.entity.response.AssetBalance;
+import signumj.entity.response.Transaction;
 import signumj.entity.response.TransactionBroadcast;
 
 /**
@@ -58,8 +59,9 @@ public class AssetTest extends BT {
 		};
 
 		BT.forgeBlock();
+		SignumValue activationFee = SignumValue.fromSigna(0.3);
 		TransactionBroadcast tb = BT.registerContract(BT.PASSPHRASE, comp.getCode(), comp.getDataPages(),
-				name, name, data, SignumValue.fromSigna(0.3),
+				name, name, data, activationFee,
 				SignumValue.fromSigna(.5), 1000, null).blockingGet();
 		BT.forgeBlock(tb);
 
@@ -68,7 +70,7 @@ public class AssetTest extends BT {
 		System.out.println("factory at :" + contract.getId().getID());
 
 		// initialize the contract to create the token
-		tb = BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(151));
+		tb = BT.sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(160));
 		BT.forgeBlock(tb);
 		BT.forgeBlock();
 		BT.forgeBlock();
@@ -78,7 +80,7 @@ public class AssetTest extends BT {
 		assertTrue(assetId.getSignedLongId() != 0L);
 
 		long amount = 10 * Contract.ONE_SIGNA;
-		tb = sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(amount));
+		tb = sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(amount).add(activationFee));
 		forgeBlock(tb);
 		forgeBlock();
 		forgeBlock();
@@ -94,6 +96,15 @@ public class AssetTest extends BT {
 			}
 		}
 		assertTrue("asset not received back correctly", assetReceived);
+		
+		// send back some asset to get back SIGNA
+		tb = sendAsset(BT.PASSPHRASE, contract.getId(), assetId, SignumValue.fromNQT(2000), activationFee, SignumValue.fromSigna(0.1), 1000, null);
+		forgeBlock(tb);
+		forgeBlock();
+		forgeBlock();
+		Transaction[] txs = BT.getNode().getAccountTransactions(BT.getAddressFromPassphrase(BT.PASSPHRASE), 0, 1, false).blockingGet();
+		assertTrue(txs.length > 0);
+		assertEquals(2000_0000L, txs[0].getAmount().longValue());
 		
 		// send out our asset
 		AT contractReceived = registerContract(AssetQuantityReceived.class, SignumValue.fromSigna(0.2));

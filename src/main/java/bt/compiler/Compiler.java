@@ -1038,7 +1038,7 @@ public class Compiler {
 							pushVar(m, lastTxSender);
 						} else if (mi.name.equals("getCurrentTxAmount")) {
 							if(mi.desc.equals("(J)J")) {
-								// asking for the creator of another contract
+								// asking for the TX amount of an asset
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support: " + mi.name);
 								

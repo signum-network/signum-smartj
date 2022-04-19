@@ -28,7 +28,9 @@ public class TokenFactory extends Contract {
 	
 	long tokenId;
 	long amount;
+	long amountReceived;
 	long quantity;
+	long quantityReceived;
 	
 	@Override
 	public void txReceived() {
@@ -36,19 +38,19 @@ public class TokenFactory extends Contract {
 			tokenId = issueAsset(namePart1, namePart2, decimalPlaces);
 			return;
 		}
-		amount = (getCurrentTxAmount() + getActivationFee());		
-		if(amount > 0) {
-			quantity = amount / factor;
+		
+		quantityReceived = getCurrentTxAmount(tokenId);
+		if(quantityReceived > 0) {
+			amount = quantityReceived * factor;
+			sendAmount(amount, getCurrentTxSender());
+		}
+		
+		amountReceived = getCurrentTxAmount();
+		if(amountReceived > 0) {
+			quantity = amountReceived / factor;
 			mintAsset(tokenId, quantity);
 			// sends back tokens 1-1
 			sendAmount(tokenId, quantity, getCurrentTxSender());
-			return;
-		}
-		
-		quantity = getCurrentTxAmount(tokenId);
-		if(quantity > 0) {
-			amount = quantity * factor;
-			sendAmount(amount, getCurrentTxSender());
 		}
 	}
 	
