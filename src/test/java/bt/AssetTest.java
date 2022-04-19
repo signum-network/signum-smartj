@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.compiler.Compiler.Error;
-import bt.sample.AssetFactory;
+import bt.sample.TokenFactory;
 import bt.sample.AssetQuantityReceived;
 import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
@@ -33,7 +33,7 @@ public class AssetTest extends BT {
 
 	@Test
 	public void testAll() throws Exception {
-		Compiler comp = BT.compileContract(AssetFactory.class);
+		Compiler comp = BT.compileContract(TokenFactory.class);
 		for(Error e : comp.getErrors()) {
 			System.err.println(e.getMessage());
 		}
@@ -60,7 +60,7 @@ public class AssetTest extends BT {
 		BT.forgeBlock();
 		TransactionBroadcast tb = BT.registerContract(BT.PASSPHRASE, comp.getCode(), comp.getDataPages(),
 				name, name, data, SignumValue.fromSigna(0.3),
-				SignumValue.fromSigna(.4), 1000, null).blockingGet();
+				SignumValue.fromSigna(.5), 1000, null).blockingGet();
 		BT.forgeBlock(tb);
 
 		AT contract = BT.getContract(tb.getTransactionId());
@@ -77,8 +77,8 @@ public class AssetTest extends BT {
 		System.out.println("assetId: " + assetId.getID());
 		assertTrue(assetId.getSignedLongId() != 0L);
 
-		long amount = 10;
-		tb = sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromSigna(amount));
+		long amount = 10 * Contract.ONE_SIGNA;
+		tb = sendAmount(BT.PASSPHRASE, contract.getId(), SignumValue.fromNQT(amount));
 		forgeBlock(tb);
 		forgeBlock();
 		forgeBlock();
@@ -87,7 +87,7 @@ public class AssetTest extends BT {
 		AssetBalance[] balances = BT.getNode().getAssetBalances(assetId, -1, -1).blockingGet();
 		for(AssetBalance b : balances) {
 			if(b.getAccountAddress().getSignedLongId() == BT.getAddressFromPassphrase(BT.PASSPHRASE).getSignedLongId()) {
-				if(b.getBalance().longValue()/10000 == amount) {
+				if(b.getBalance().longValue() == amount/factor) {
 					assetReceived = true;
 					break;
 				}
