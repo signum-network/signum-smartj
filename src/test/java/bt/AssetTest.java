@@ -14,12 +14,14 @@ import bt.compiler.Compiler;
 import bt.compiler.Compiler.Error;
 import bt.sample.AssetQuantityReceived;
 import bt.sample.TokenFactory;
+import bt.sample.TokenPlusSignaEcho;
 import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 import signumj.entity.response.AssetBalance;
 import signumj.entity.response.Transaction;
 import signumj.entity.response.TransactionBroadcast;
+import signumj.response.attachment.AssetTransferAttachment;
 
 /**
  * We assume a localhost testnet with 0 seconds mock mining is available for the
@@ -136,5 +138,55 @@ public class AssetTest extends BT {
 		
 		assertEquals(assetId.getSignedLongId(), assetIdReceived);
 		assertEquals(quantity.longValue(), quantityReceived);
+		
+		// send twice in the same block, 1*amount and 2*amount, should get back 3*amount tokens
+		BT.forgeBlock(BT.PASSPHRASE2);
+		tb = sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(amount*2).add(activationFee));
+		TransactionBroadcast tb2 = sendAmount(BT.PASSPHRASE2, contract.getId(), SignumValue.fromNQT(amount).add(activationFee));
+		forgeBlock(tb, tb2);
+		forgeBlock();
+		forgeBlock();
+		
+		assetReceived = false;
+		balances = BT.getNode().getAssetBalances(assetId, -1, -1).blockingGet();
+		for(AssetBalance b : balances) {
+			if(b.getAccountAddress().getSignedLongId() == BT.getAddressFromPassphrase(BT.PASSPHRASE2).getSignedLongId()) {
+				if(b.getBalance().longValue() == 3*amount/factor) {
+					assetReceived = true;
+					break;
+				}
+			}
+		}
+		assertTrue("asset not received back correctly", assetReceived);
+		
+		
+		// send out our asset
+		AT contractEcho = registerContract(TokenPlusSignaEcho.class, SignumValue.fromSigna(0.2));
+		System.out.println("echo at :" + contractEcho.getId().getID());
+
+		Compiler compEcho = BT.compileContract(TokenPlusSignaEcho.class);
+		assertTrue(compEcho.getErrors().size() == 0);
+
+		quantity = SignumValue.fromNQT(1000);
+		tb = BT.callMethod(BT.PASSPHRASE, contractEcho.getId(), compEcho.getMethod("echoToken"), assetId, quantity, SignumValue.fromSigna(1.0), SignumValue.fromSigna(0.1), 1000, assetId.getSignedLongId());
+		
+		forgeBlock(tb);
+		forgeBlock();
+		forgeBlock();
+
+		txs = BT.getNode().getAccountTransactions(contractEcho.getId(), -1, -1, false).blockingGet();
+		assertTrue(txs.length > 0);
+		found = false;
+		for(Transaction tx : txs) {
+			if(tx.getSender().getSignedLongId() == contractEcho.getId().getSignedLongId()) {
+				if(tx.getAmount().longValue() == 80000000 && tx.getAttachment() instanceof AssetTransferAttachment) {
+					AssetTransferAttachment attachment = (AssetTransferAttachment) tx.getAttachment();
+					if(attachment.getQuantityQNT().equals(Long.toString(quantity.longValue()))){
+						found = true;
+					}
+				}
+			}
+		}
+		assertTrue(found);
 	}
 }

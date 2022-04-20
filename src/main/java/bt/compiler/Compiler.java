@@ -1408,33 +1408,48 @@ public class Compiler {
 							code.putShort(OpCode.DIST_TO_ASSET_HOLDERS);
 						}
 						else if (mi.name.equals("sendAmount")) {
-							arg1 = popVar(m, tmpVar1, false); // address
-							arg2 = popVar(m, tmpVar2, false); // amount
-							if (mi.desc.equals("(JJLbt/Address;)V")) {
+							StackVar receiver = popVar(m, tmpVar1, false);
+							StackVar amount = popVar(m, tmpVar2, false);
+							
+							if(BT.isSIP37Activated()) {
+								// B2 must be clear since we also use B2 and B3
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);
+							}
+							if (mi.desc.equals("(JJLbt/Address;)V") || mi.desc.equals("(JJJLbt/Address;)V")) {
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support assets on: " + mi.name);
 
 								// the version with the assetId
-								arg3 = popVar(m, tmpVar3, false);
+								StackVar assetId = popVar(m, tmpVar3, false);
 								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+								code.putShort(OpCode.Set_B1_B2);
+								code.putInt(receiver.address);
+								code.putInt(assetId.address);
+								
+								if(mi.desc.equals("(JJJLbt/Address;)V")) {
+									// the version with asset+SIGNA
+									// sendAmount(long amount, long assetId, long quantity, Address receiver)
+									StackVar amountSigna = popVar(m, tmpVar4, false);
+									
+									code.put(OpCode.e_op_code_EXT_FUN_DAT);
+									code.putShort(OpCode.Set_B3);
+									code.putInt(amountSigna.address);
+								}
+							}
+							else {
+								// old version, signa only to address in B1
 								code.put(OpCode.e_op_code_EXT_FUN_DAT);
-								code.putShort(OpCode.Set_B2);
-								code.putInt(arg3.address); // assetId
+								code.putShort(OpCode.Set_B1);
+								code.putInt(receiver.address);
 							}
-							else if(BT.isSIP37Activated()) {
-								// B2 must be clear for regular transfer
-								code.put(OpCode.e_op_code_EXT_FUN);
-								code.putShort(OpCode.Clear_B);
-							}
-							popThis();
-
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
-							code.putShort(OpCode.Set_B1);
-							code.putInt(arg1.address); // address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Send_To_Address_In_B);
-							code.putInt(arg2.address); // amount
+							code.putInt(amount.address);
+							
+							popThis();
 						} else if (mi.name.equals("sendBalance")) {
 							StackVar address = stack.pollLast();
 							popThis();

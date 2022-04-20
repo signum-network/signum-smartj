@@ -103,6 +103,16 @@ public abstract class Contract {
 	}
 	
 	/**
+	 * Sends the given asset ID quantity plus SIGNA amount to the receiver address
+	 * @param assetId
+	 * @param quantity
+	 * @param receiver
+	 */
+	protected void sendAmount(long amount, long assetId, long quantity, Address receiver) {
+		Emulator.getInstance().send(address, receiver, amount, assetId, quantity, true);
+	}
+	
+	/**
 	 * Returns the pow(x, y/1_0000_0000) calculation using double precision
 	 * 
 	 * @param x
