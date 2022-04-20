@@ -890,7 +890,7 @@ public class GeneralTests extends BT {
     }
     
     @Test
-    public void testMassagePage() throws Exception{
+    public void testMessagePage() throws Exception{
     	forgeBlock();
     	AT testContract = registerContract(MessagePage.class, SignumValue.fromSigna(0.4));
     	System.out.println(testContract.getId().getID());

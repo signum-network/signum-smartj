@@ -1,6 +1,7 @@
 package bt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
@@ -105,6 +106,16 @@ public class AssetTest extends BT {
 		Transaction[] txs = BT.getNode().getAccountTransactions(BT.getAddressFromPassphrase(BT.PASSPHRASE), 0, 1, false).blockingGet();
 		assertTrue(txs.length > 0);
 		assertEquals(2000_0000L, txs[0].getAmount().longValue());
+		
+		// the contract should have burned the tokens
+		boolean found = false;
+		balances = BT.getNode().getAssetBalances(assetId, -1, -1).blockingGet();
+		for(AssetBalance b : balances) {
+			if(b.getAccountAddress().getSignedLongId() == contract.getId().getSignedLongId()) {
+				found = true;
+			}
+		}
+		assertFalse(found);
 		
 		// send out our asset
 		AT contractReceived = registerContract(AssetQuantityReceived.class, SignumValue.fromSigna(0.2));

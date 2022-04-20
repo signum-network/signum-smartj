@@ -43,6 +43,7 @@ public class TokenFactory extends Contract {
 		if(quantityReceived > 0) {
 			amount = quantityReceived * factor;
 			sendAmount(amount, getCurrentTxSender());
+			sendAmount(tokenId, quantityReceived, getAddress(0));
 		}
 		
 		amountReceived = getCurrentTxAmount();
