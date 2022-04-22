@@ -2,6 +2,7 @@ package bt;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
@@ -12,13 +13,16 @@ import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.compiler.Compiler.Error;
+import bt.contracts.DistributeToHolders;
 import bt.sample.AssetQuantityReceived;
 import bt.sample.TokenFactory;
 import bt.sample.TokenPlusSignaEcho;
+import signumj.entity.SignumAddress;
 import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
 import signumj.entity.response.AssetBalance;
+import signumj.entity.response.IndirectIncoming;
 import signumj.entity.response.Transaction;
 import signumj.entity.response.TransactionBroadcast;
 import signumj.response.attachment.AssetTransferAttachment;
@@ -36,7 +40,7 @@ public class AssetTest extends BT {
 	}
 
 	@Test
-	public void testAll() throws Exception {
+	public void testGeneral() throws Exception {
 		Compiler comp = BT.compileContract(TokenFactory.class);
 		for(Error e : comp.getErrors()) {
 			System.err.println(e.getMessage());
@@ -188,5 +192,69 @@ public class AssetTest extends BT {
 			}
 		}
 		assertTrue(found);
+	}
+	
+	
+	@Test
+	public void testDistribute() throws Exception {
+		Compiler comp = BT.compileContract(DistributeToHolders.class);
+		for(Error e : comp.getErrors()) {
+			System.err.println(e.getMessage());
+		}
+		assertTrue(comp.getErrors().size() == 0);
+		
+		BT.forgeBlock();
+		byte[] unsigned = BT.getNode().generateIssueAssetTransaction(BT.bc.getPublicKey(BT.PASSPHRASE), "TESTD", "Test token for the distribution",
+				SignumValue.fromNQT(100000000), 2, SignumValue.fromSigna(150), 1000).blockingGet();
+		
+		byte[] signedTransactionBytes = BT.bc.signTransaction(BT.PASSPHRASE, unsigned);
+        TransactionBroadcast tb = BT.getNode().broadcastTransaction(signedTransactionBytes).blockingGet();
+        forgeBlock(tb);
+        
+        SignumID assetId = tb.getTransactionId();
+		System.out.println("asset :" + assetId.getID());
+        
+        for (int i = 1; i <= 1000; i++) {
+        	// create a 1000 holders
+			BT.sendAsset(BT.PASSPHRASE, SignumAddress.fromId((long)i), assetId, SignumValue.fromNQT(100), null, SignumValue.fromSigna(0.1),
+					1000, null);
+		}
+		BT.forgeBlock();
+		BT.forgeBlock();
+		
+		SignumValue activationFee = SignumValue.fromSigna(0.3);
+		String name = "dist" + System.currentTimeMillis();
+		tb = BT.registerContract(BT.PASSPHRASE, comp.getCode(), comp.getDataPages(),
+				name, name, new long[] {assetId.getSignedLongId()}, activationFee,
+				SignumValue.fromSigna(.5), 1000, null).blockingGet();
+		BT.forgeBlock(tb);
+
+		AT contract = BT.getContract(tb.getTransactionId());
+
+		System.out.println("dist at :" + contract.getId().getID());
+
+		// send the amount in SIGNA to distribute to holders
+		SignumValue amountSent = SignumValue.fromSigna(100);
+		tb = BT.sendAmount(BT.PASSPHRASE, contract.getId(), amountSent);
+		BT.forgeBlock(tb);
+		BT.forgeBlock();
+		BT.forgeBlock();
+		
+		SignumAddress account1 = SignumAddress.fromId(1);
+		Transaction[] txs = BT.getNode().getAccountTransactions(account1, 0, 1, true).blockingGet();
+		assertEquals(2, txs.length);
+		IndirectIncoming indirect = BT.getNode().getIndirectIncoming(account1, txs[0].getId()).blockingGet();
+		assertNotNull(indirect);
+		assertEquals(0, indirect.getQuantity().longValue());
+		assertTrue(amountSent.longValue() / indirect.getAmount().longValue() > 1000);
+		
+		SignumAddress account1000 = SignumAddress.fromId(1000);
+		txs = BT.getNode().getAccountTransactions(account1, 0, 1, true).blockingGet();
+		assertEquals(2, txs.length);
+		indirect = BT.getNode().getIndirectIncoming(account1000, txs[0].getId()).blockingGet();
+		assertNotNull(indirect);
+		assertEquals(0, indirect.getQuantity().longValue());
+		assertTrue(amountSent.longValue() / indirect.getAmount().longValue() > 1000);
+
 	}
 }

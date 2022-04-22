@@ -17,7 +17,7 @@ dependencies {
     implementation 'org.ow2.asm:asm-tree:7.1'
 
     //implementation 'com.github.signum-network:signumj:v1.0.0'
-    implementation 'com.github.signum-network:signumj:08715954f6'
+    implementation 'com.github.signum-network:signumj:36d61a7150'
 
     implementation 'io.reactivex.rxjava2:rxjava:2.2.15'
 
