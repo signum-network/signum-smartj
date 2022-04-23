@@ -205,7 +205,7 @@ public class AssetTest extends BT {
 		
 		BT.forgeBlock();
 		byte[] unsigned = BT.getNode().generateIssueAssetTransaction(BT.bc.getPublicKey(BT.PASSPHRASE), "TESTD", "Test token for the distribution",
-				SignumValue.fromNQT(100000000), 2, SignumValue.fromSigna(150), 1000).blockingGet();
+				SignumValue.fromNQT(2_000_000), 3, SignumValue.fromSigna(150), 1000).blockingGet();
 		
 		byte[] signedTransactionBytes = BT.bc.signTransaction(BT.PASSPHRASE, unsigned);
         TransactionBroadcast tb = BT.getNode().broadcastTransaction(signedTransactionBytes).blockingGet();
@@ -216,13 +216,13 @@ public class AssetTest extends BT {
         
         for (int i = 1; i <= 1000; i++) {
         	// create a 1000 holders
-			BT.sendAsset(BT.PASSPHRASE, SignumAddress.fromId((long)i), assetId, SignumValue.fromNQT(100), null, SignumValue.fromSigna(0.1),
+			BT.sendAsset(BT.PASSPHRASE, SignumAddress.fromId((long)i), assetId, SignumValue.fromNQT(1000), null, SignumValue.fromSigna(0.1),
 					1000, null);
 		}
 		BT.forgeBlock();
 		BT.forgeBlock();
 		
-		SignumValue activationFee = SignumValue.fromSigna(0.3);
+		SignumValue activationFee = SignumValue.fromSigna(0.1);
 		String name = "dist" + System.currentTimeMillis();
 		tb = BT.registerContract(BT.PASSPHRASE, comp.getCode(), comp.getDataPages(),
 				name, name, new long[] {assetId.getSignedLongId()}, activationFee,
@@ -232,6 +232,16 @@ public class AssetTest extends BT {
 		AT contract = BT.getContract(tb.getTransactionId());
 
 		System.out.println("dist at :" + contract.getId().getID());
+		
+		// send the amount in SIGNA to distribute to holders, but not enough for it to run the distribution
+		tb = BT.sendAmount(BT.PASSPHRASE, contract.getId(), activationFee);
+		BT.forgeBlock(tb);
+		BT.forgeBlock();
+		BT.forgeBlock();
+
+		// no tx should have gone out
+		Transaction[] txs = BT.getNode().getAccountTransactions(contract.getId(), 0, 100, true).blockingGet();
+		assertEquals(1, txs.length);
 
 		// send the amount in SIGNA to distribute to holders
 		SignumValue amountSent = SignumValue.fromSigna(100);
@@ -241,7 +251,7 @@ public class AssetTest extends BT {
 		BT.forgeBlock();
 		
 		SignumAddress account1 = SignumAddress.fromId(1);
-		Transaction[] txs = BT.getNode().getAccountTransactions(account1, 0, 1, true).blockingGet();
+		txs = BT.getNode().getAccountTransactions(account1, 0, 1, true).blockingGet();
 		assertEquals(2, txs.length);
 		IndirectIncoming indirect = BT.getNode().getIndirectIncoming(account1, txs[0].getId()).blockingGet();
 		assertNotNull(indirect);
@@ -256,5 +266,26 @@ public class AssetTest extends BT {
 		assertEquals(0, indirect.getQuantity().longValue());
 		assertTrue(amountSent.longValue() / indirect.getAmount().longValue() > 1000);
 
+
+		// send the amount in SIGNA+token to distribute to holders
+		tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("distributeToken"), assetId, SignumValue.fromNQT(20000), amountSent,
+				SignumValue.fromSigna(0.1), 1000, assetId.getSignedLongId());
+		BT.forgeBlock(tb);
+		BT.forgeBlock();
+		BT.forgeBlock();
+		
+		txs = BT.getNode().getAccountTransactions(account1, 0, 1, true).blockingGet();
+		assertEquals(2, txs.length);
+		indirect = BT.getNode().getIndirectIncoming(account1, txs[0].getId()).blockingGet();
+		assertNotNull(indirect);
+		assertEquals(10, indirect.getQuantity().longValue());
+		assertTrue(amountSent.longValue() / indirect.getAmount().longValue() > 1000);
+		
+		txs = BT.getNode().getAccountTransactions(account1, 0, 1, true).blockingGet();
+		assertEquals(2, txs.length);
+		indirect = BT.getNode().getIndirectIncoming(account1000, txs[0].getId()).blockingGet();
+		assertNotNull(indirect);
+		assertEquals(10, indirect.getQuantity().longValue());
+		assertTrue(amountSent.longValue() / indirect.getAmount().longValue() > 1000);
 	}
 }
