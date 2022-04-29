@@ -249,11 +249,12 @@ public class SignumArt2 extends Contract {
 		if(highestBidder==null && getCurrentTxSender().equals(owner) && offerPrice > ZERO) {
 			currentPrice = offerPrice;
 			pay();
+			sendMessage(owner.getId(), trackSetNotForSale);
+			sendMessage(offerAddress.getId(), currentPrice,owner.getId(), trackNewOwner);
 			owner = offerAddress;
 			offerAddress = null;
 			offerPrice = ZERO;
 			status = STATUS_NOT_FOR_SALE;
-			sendMessage(owner.getId(), currentPrice, trackNewOwner);
 		}
 	}
 
@@ -282,10 +283,9 @@ public class SignumArt2 extends Contract {
 			if (getCurrentTxAmount() >= currentPrice) {
 				// Conditions match, let's execute the sale
 				pay(); // pay the current owner
+				sendMessage(getCurrentTxSender(), getCurrentTxAmount(), owner.getId(),trackNewOwner);
 				owner = getCurrentTxSender(); // new owner
 				status = STATUS_NOT_FOR_SALE;
-				sendMessage(owner.getId(), getCurrentTxAmount(), trackNewOwner);
-				
 				cancelOfferIfPresent();
 				return;
 			}
@@ -295,12 +295,11 @@ public class SignumArt2 extends Contract {
 				// auction timed out, apply the transfer if any
 				if (highestBidder != null) {
 					pay(); // pay the current owner
+					sendMessage(highestBidder.getId(), currentPrice,owner.getId(), trackNewOwner);
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
 					auctionMaxPrice = ZERO;
-					sendMessage(owner.getId(), currentPrice, trackNewOwner);
-					
 					cancelOfferIfPresent();
 				}
 				// current transaction will be refunded below
@@ -319,11 +318,11 @@ public class SignumArt2 extends Contract {
 				if(auctionMaxPrice > ZERO && currentPrice >= auctionMaxPrice) {
 					// max price reached, so we also end the auction
 					pay(); // pay the current owner
+					sendMessage(highestBidder.getId(), currentPrice,owner.getId(), trackNewOwner);
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
 					auctionMaxPrice = ZERO;
-					sendMessage(owner.getId(), currentPrice, trackNewOwner);
 					
 					cancelOfferIfPresent();
 				}
@@ -347,7 +346,6 @@ public class SignumArt2 extends Contract {
 		totalRoyaltiesFee += amountToRoyalties;
 		totalTimesSold++;
 		
-		sendMessage(owner.getId(), trackSetNotForSale);
 		sendAmount(amountToRoyalties, royaltiesOwner);
 		sendAmount(currentPrice - amountToPlatform - amountToRoyalties, owner);
 	}
