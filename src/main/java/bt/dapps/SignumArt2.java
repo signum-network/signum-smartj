@@ -249,7 +249,9 @@ public class SignumArt2 extends Contract {
 		if(highestBidder==null && getCurrentTxSender().equals(owner) && offerPrice > ZERO) {
 			currentPrice = offerPrice;
 			pay();
-			sendMessage(owner.getId(), trackSetNotForSale);
+			if (status != STATUS_NOT_FOR_SALE) {
+				sendMessage(owner.getId(), trackSetNotForSale);
+			}
 			sendMessage(offerAddress.getId(), currentPrice,owner.getId(), trackNewOwner);
 			owner = offerAddress;
 			offerAddress = null;
