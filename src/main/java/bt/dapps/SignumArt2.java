@@ -60,7 +60,7 @@ public class SignumArt2 extends Contract {
 	Address offerAddress;
 	long offerPrice;
 	
-	// Duch auction variables
+	// Dutch auction variables
 	long duchStartHeight;
 	long startPrice;
 	long priceDropPerBlock;
