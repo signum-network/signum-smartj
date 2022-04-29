@@ -283,7 +283,7 @@ public class SignumArt2 extends Contract {
 			if (getCurrentTxAmount() >= currentPrice) {
 				// Conditions match, let's execute the sale
 				pay(); // pay the current owner
-				sendMessage(getCurrentTxSender(), getCurrentTxAmount(), owner.getId(),trackNewOwner);
+				sendMessage(getCurrentTxSender().getId(), getCurrentTxAmount(), owner.getId(),trackNewOwner);
 				owner = getCurrentTxSender(); // new owner
 				status = STATUS_NOT_FOR_SALE;
 				cancelOfferIfPresent();
