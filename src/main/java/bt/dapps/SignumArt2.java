@@ -206,7 +206,7 @@ public class SignumArt2 extends Contract {
 	 * 
 	 */
 	public void makeOffer() {
-		if(getCurrentTxAmount() > offerPrice) {
+		if(getCurrentTxAmount() > offerPrice && highestBidder==null )  {
 			if(offerAddress != null) {
 				// send back the latest offer
 				sendAmount(offerPrice, offerAddress);
