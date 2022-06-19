@@ -121,7 +121,7 @@ class CompileDialog extends JDialog implements ActionListener {
         codeAreaForm = new JTextArea(10, 30);
         codeAreaForm.setEditable(false);
         JScrollPane codeScrollForm = new JScrollPane(codeAreaForm);
-        codeScrollForm.setBorder(new TitledBorder("AT FORMATTED BYTECODE"));
+        codeScrollForm.setBorder(new TitledBorder("AT ASSEMBLY CODE"));
         codePanelForm.add(codeScrollForm, BorderLayout.CENTER);
         methodHashArea = new JTextArea(10, 30);
         methodHashArea.setEditable(false);
