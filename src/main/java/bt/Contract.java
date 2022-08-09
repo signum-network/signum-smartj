@@ -71,6 +71,16 @@ public abstract class Contract {
 	}
 
 	/**
+	 * Utility function that return the transaction object of a given ID
+	 * @param id the signed long id
+	 * @return the transaction
+	 */
+	protected Address getTransaction(long id) {
+		// TODO: implement on the emulator
+		return null;
+	}
+
+	/**
 	 * Send the entire balance to the given address.
 	 * 
 	 * Care should be exercised with this function since a contract with no balance
