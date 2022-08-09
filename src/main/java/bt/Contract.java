@@ -75,7 +75,7 @@ public abstract class Contract {
 	 * @param id the signed long id
 	 * @return the transaction
 	 */
-	protected Address getTransaction(long id) {
+	protected Transaction getTransaction(long id) {
 		// TODO: implement on the emulator
 		return null;
 	}
