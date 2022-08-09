@@ -21,6 +21,7 @@ import signumj.entity.SignumAddress;
 import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
 import signumj.entity.response.AT;
+import signumj.entity.response.Account;
 import signumj.entity.response.AssetBalance;
 import signumj.entity.response.IndirectIncoming;
 import signumj.entity.response.Transaction;
@@ -172,7 +173,8 @@ public class AssetTest extends BT {
 		assertTrue(compEcho.getErrors().size() == 0);
 
 		quantity = SignumValue.fromNQT(1000);
-		tb = BT.callMethod(BT.PASSPHRASE, contractEcho.getId(), compEcho.getMethod("echoToken"), assetId, quantity, SignumValue.fromSigna(1.0), SignumValue.fromSigna(0.1), 1000, assetId.getSignedLongId());
+		tb = BT.callMethod(BT.PASSPHRASE, contractEcho.getId(), compEcho.getMethod("echoToken"), assetId, quantity,
+				SignumValue.fromSigna(10.2), SignumValue.fromSigna(0.1), 1000, assetId.getSignedLongId());
 		
 		forgeBlock(tb);
 		forgeBlock();
@@ -183,7 +185,7 @@ public class AssetTest extends BT {
 		found = false;
 		for(Transaction tx : txs) {
 			if(tx.getSender().getSignedLongId() == contractEcho.getId().getSignedLongId()) {
-				if(tx.getAmount().longValue() == 80000000 && tx.getAttachment() instanceof AssetTransferAttachment) {
+				if(tx.getAmount().equals(SignumValue.fromSigna(10)) && tx.getAttachment() instanceof AssetTransferAttachment) {
 					AssetTransferAttachment attachment = (AssetTransferAttachment) tx.getAttachment();
 					if(attachment.getQuantityQNT().equals(Long.toString(quantity.longValue()))){
 						found = true;
@@ -192,6 +194,11 @@ public class AssetTest extends BT {
 			}
 		}
 		assertTrue(found);
+		
+		// all should have left the contract
+		Account account = BT.getNode().getAccount(contractEcho.getId()).blockingGet();
+		assertEquals(0, account.getAssetBalances().length);
+		assertTrue(account.getBalance().longValue() < Contract.ONE_SIGNA);
 	}
 	
 	
