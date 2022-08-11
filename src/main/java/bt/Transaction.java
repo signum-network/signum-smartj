@@ -131,6 +131,10 @@ public class Transaction {
 		return msg.get((int) page);
 	}
 	
+	public Register getAssetIds() {
+		return Register.newInstance(assetId, 0, 0, 0);
+	}
+	
 	/**
 	 * Return the message attached to a transaction.
 	 * 

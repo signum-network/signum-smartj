@@ -1816,7 +1816,30 @@ public class Compiler {
 							code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 							code.putInt(tmpVar1); // the timestamp
 							pushVar(m, tmpVar1);
-						} else if (mi.name.equals("getMessage")) {
+						}
+						else if (mi.name.equals("getAssetIds")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							StackVar tx = popVar(m, tmpVar1, false);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(tx.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.B_TO_ASSET_IDS_OF_TX_IN_A);
+
+							// we push the four longs to the stack, so the field that receive
+							// this should consume all of them
+							for (int i = 0; i < 4; i++) {
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort((short) (OpCode.Get_B1 + i));
+								code.putInt(tmpVar1); // the asset ids
+								pushVar(m, tmpVar1);
+							}
+						}
+						else if (mi.name.equals("getMessage")) {
 							if(mi.desc.equals("(J)Lbt/Register;")) {
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support: " + mi.name);

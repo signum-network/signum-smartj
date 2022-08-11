@@ -119,6 +119,7 @@ final class OpCode {
   static final short B_To_Address_Of_Tx_In_A   = 0x030a; // EXT_FUN           if A is a valid tx then B set to the tx address
   static final short B_To_Address_Of_Creator   = 0x030b; // EXT_FUN           sets B to the address of the AT's creator
   static final short GET_CODE_HASH_ID          = 0x030c; // EXT_FUN_RET       sets @addr to the code hash ID of the AT's (or of the AT id on B2 if B2!=0)
+  static final short B_TO_ASSET_IDS_OF_TX_IN_A = 0x030d; // EXT_FUN           if A is a valid tx then B set to the asset ids received (terminated by 0)
   
   static final short Get_Current_Balance      = 0x0400; // EXT_FUN_RET       sets @addr to current balance of the AT
   static final short Get_Previous_Balance     = 0x0401; // EXT_FUN_RET       sets @addr to the balance it had last had when running* // Unused

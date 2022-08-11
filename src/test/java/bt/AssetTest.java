@@ -17,6 +17,7 @@ import bt.contracts.DistributeToHolders;
 import bt.sample.AssetQuantityReceived;
 import bt.sample.TokenFactory;
 import bt.sample.TokenPlusSignaEcho;
+import bt.sample.TokenPlusSignaEchoHalf;
 import signumj.entity.SignumAddress;
 import signumj.entity.SignumID;
 import signumj.entity.SignumValue;
@@ -199,6 +200,39 @@ public class AssetTest extends BT {
 		Account account = BT.getNode().getAccount(contractEcho.getId()).blockingGet();
 		assertEquals(0, account.getAssetBalances().length);
 		assertTrue(account.getBalance().longValue() < Contract.ONE_SIGNA);
+
+		// send out our asset
+		AT contractEchoHalf = registerContract(TokenPlusSignaEchoHalf.class, SignumValue.fromSigna(0.2));
+		System.out.println("echo half at :" + contractEchoHalf.getId().getID());
+
+		quantity = SignumValue.fromNQT(1000);
+		tb = BT.sendAsset(BT.PASSPHRASE, contractEchoHalf.getId(), assetId, quantity,
+				SignumValue.fromSigna(10.2), SignumValue.fromSigna(0.1), 1000, null);
+		
+		forgeBlock(tb);
+		forgeBlock();
+		forgeBlock();
+
+		txs = BT.getNode().getAccountTransactions(contractEchoHalf.getId(), -1, -1, false).blockingGet();
+		assertTrue(txs.length > 0);
+		found = false;
+		for(Transaction tx : txs) {
+			if(tx.getSender().getSignedLongId() == contractEchoHalf.getId().getSignedLongId()) {
+				if(tx.getAmount().equals(SignumValue.fromSigna(5)) && tx.getAttachment() instanceof AssetTransferAttachment) {
+					AssetTransferAttachment attachment = (AssetTransferAttachment) tx.getAttachment();
+					if(attachment.getQuantityQNT().equals(Long.toString(quantity.longValue()/2))){
+						found = true;
+					}
+				}
+			}
+		}
+		assertTrue(found);
+		
+		// half should have left the contract
+		account = BT.getNode().getAccount(contractEchoHalf.getId()).blockingGet();
+		assertEquals(1, account.getAssetBalances().length);
+		assertEquals(quantity.longValue()/2, account.getAssetBalances()[0].getBalance().longValue());
+		assertTrue(account.getBalance().longValue() > SignumValue.fromSigna(4).longValue());
 	}
 	
 	
