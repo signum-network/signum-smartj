@@ -259,8 +259,9 @@ public class GeneralTests extends BT {
         // variable not initialized yet
         assertEquals(0, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
 
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method1"), SignumValue.fromSigna(30),
+        TransactionBroadcast tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method1"), SignumValue.fromSigna(30),
                 SignumValue.fromSigna(0.1), 1000, 100);
+        BT.forgeBlock(tb);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(1, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -268,8 +269,9 @@ public class GeneralTests extends BT {
         assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
         assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
 
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), SignumValue.fromSigna(30),
+        tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method2"), SignumValue.fromSigna(30),
                 SignumValue.fromSigna(0.1), 1000, 100, 200);
+        BT.forgeBlock(tb);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(2, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -277,8 +279,9 @@ public class GeneralTests extends BT {
         assertEquals(200, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
         assertEquals(-1, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
 
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method3"), SignumValue.fromSigna(30),
+        tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method3"), SignumValue.fromSigna(30),
                 SignumValue.fromSigna(0.1), 1000, 100, 200, 300);
+        BT.forgeBlock(tb);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(3, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
@@ -286,8 +289,9 @@ public class GeneralTests extends BT {
         assertEquals(200, BT.getContractFieldValue(contract, comp.getFieldAddress("arg2")));
         assertEquals(300, BT.getContractFieldValue(contract, comp.getFieldAddress("arg3")));
 
-        BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method4"), SignumValue.fromSigna(30),
+        tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("method4"), SignumValue.fromSigna(30),
                 SignumValue.fromSigna(0.1), 1000, 1000, 2000, 3000);
+        BT.forgeBlock(tb);
         BT.forgeBlock();
         BT.forgeBlock();
         assertEquals(4, BT.getContractFieldValue(contract, comp.getFieldAddress("methodCalled")));
