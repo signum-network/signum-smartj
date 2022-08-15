@@ -418,5 +418,25 @@ public class AssetTest extends BT {
 		assertNotNull(indirect);
 		assertEquals(10, indirect.getQuantity().longValue());
 		assertTrue(amountSent.longValue() / indirect.getAmount().longValue() > 1000);
+		
+		
+		// one account sending the distribution, should not receive
+		BT.forgeBlock("1");
+		unsigned = BT.getNode().generateDistributeToAssetHolders(crypto.getPublicKey("1"), assetId, SignumValue.fromNQT(0),
+				SignumValue.fromSigna(0.1), SignumID.fromLong(0), SignumValue.fromNQT(0), SignumValue.fromSigna(1.1), 1000).blockingGet();
+		signedTransactionBytes = BT.bc.signTransaction("1", unsigned);
+        tb = BT.getNode().broadcastTransaction(signedTransactionBytes).blockingGet();
+        BT.forgeBlock(tb);
+        
+        indirect = BT.getNode().getIndirectIncoming(account1000, tb.getTransactionId()).blockingGet();
+        Exception unknownTx = null;
+        try {
+        	// this should throw an exception as the sender should not be a receiver
+        	indirect = BT.getNode().getIndirectIncoming(account1, tb.getTransactionId()).blockingGet();
+        }
+        catch (Exception e) {
+        	unknownTx = e;
+		}
+        assertNotNull(unknownTx);
 	}
 }
