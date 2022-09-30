@@ -368,7 +368,7 @@ public class SignumArt2 extends Contract {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
 		keyvalue1 = get.tx.message.argument1();
 		keyvalue2 = get.tx.message.argument2();
-		value = get.tx.message.argument2();
+		value = get.tx.message.argument3();
 		if (keyvalue1 != 1){
 			saveValue(keyvalue1,keyvalue2,value);
 		   }
