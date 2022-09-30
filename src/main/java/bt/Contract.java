@@ -29,6 +29,7 @@ import signumj.entity.SignumID;
 public abstract class Contract {
 
 	public final static long ONE_BURST = 100000000L;
+	public final static long ONE_SIGNA = 100000000L;
 	public final static long FEE_QUANT = 735000L;
 	public final static long FEE_QUANT_SIP34 = 1_000_000;
 	public final static long STEP_FEE = FEE_QUANT / 10L; // After AT2 fork, othewise ONE_BURST/10
@@ -70,6 +71,16 @@ public abstract class Contract {
 	}
 
 	/**
+	 * Utility function that return the transaction object of a given ID
+	 * @param id the signed long id
+	 * @return the transaction
+	 */
+	protected Transaction getTransaction(long id) {
+		// TODO: implement on the emulator
+		return null;
+	}
+
+	/**
 	 * Send the entire balance to the given address.
 	 * 
 	 * Care should be exercised with this function since a contract with no balance
@@ -88,47 +99,60 @@ public abstract class Contract {
 	 * @param receiver
 	 */
 	protected void sendAmount(long amount, Address receiver) {
-		Emulator.getInstance().send(address, receiver, amount);
+		Emulator.getInstance().send(address, receiver, amount, true);
 	}
 	
 	/**
 	 * Sends the given asset ID amount to the receiver address
 	 * @param assetId
-	 * @param amount
+	 * @param quantity
 	 * @param receiver
 	 */
-	protected void sendAmount(long assetId, long amount, Address receiver) {
-		Emulator.getInstance().send(address, receiver, assetId, amount);
+	protected void sendAmount(long assetId, long quantity, Address receiver) {
+		Emulator.getInstance().send(address, receiver, 0L, assetId, quantity, true);
 	}
 	
 	/**
-	 * Returns the x*y/z calculation using big integer precision
+	 * Sends the given asset ID quantity plus SIGNA amount to the receiver address
+	 * @param assetId
+	 * @param quantity
+	 * @param receiver
+	 */
+	protected void sendAmount(long amount, long assetId, long quantity, Address receiver) {
+		Emulator.getInstance().send(address, receiver, amount, assetId, quantity, true);
+	}
+	
+	/**
+	 * Returns the pow(x, y/1_0000_0000) calculation using double precision
 	 * 
 	 * @param x
 	 * @param y
-	 * @param z
-	 * @return x*y/z, or 0 if z==0
+	 * @return pow(x, y/1_0000_0000)
 	 */
-	protected long calcMultDiv(long x, long y, long z) {
-		if(z == 0)
+	protected long calcPow(long x, long y) {
+		if(x < 0)
 			return 0;
-		BigInteger big = BigInteger.valueOf(x).multiply(BigInteger.valueOf(y));
 		
-		long ret = big.divide(BigInteger.valueOf(z)).longValue();
+		double ret = Math.pow(x, y/10000_0000.0);
 		
-		return ret;
+		return (long)ret;
 	}
 	
 	/**
+	 * Calculates (x*y)/den using big integer precision (arbitrary high precision)
+	 * 
 	 * @param x
 	 * @param y
-	 * @return the geometric mean sqrt(x*y) using big integer precision
+	 * @param den
+	 * @return (x*y)/den
 	 */
-	protected long calcGeometricMean(long x, long y) {
-		BigInteger big = BigInteger.valueOf(x).multiply(BigInteger.valueOf(y));
+	protected long calcMultDiv(long x, long y, long den) {
+		if (den == 0L)
+			return 0L;
 		
-		return big.sqrt().longValue();
+		return BigInteger.valueOf(x).multiply(BigInteger.valueOf(y)).divide(BigInteger.valueOf(den)).longValue();
 	}
+
 
 	/**
 	 * Send the given message to the given address.
@@ -138,11 +162,11 @@ public abstract class Contract {
 	 * unencrypted.
 	 * 
 	 * @param message  the message, truncated in 4*sizeof(long)
-	 * @param amount   the amount or 0 to send the message only
+	 * @param tradeAmount   the amount or 0 to send the message only
 	 * @param receiver the address
 	 */
 	protected void sendMessage(String message, Address receiver) {
-		Emulator.getInstance().send(address, receiver, 0, message);
+		Emulator.getInstance().send(address, receiver, 0L, 0L, 0L, message, true);
 	}
 
 	/**
@@ -287,6 +311,20 @@ public abstract class Contract {
 	protected long getPrevBlockHash1() {
 		return Emulator.getInstance().getPrevBlock().hash.getValue1();
 	}
+	
+	/**
+	 * @return the block generation signature of the previous block
+	 */
+	protected Register getPrevBlockGenSig() {
+		return Emulator.getInstance().getPrevBlock().hash;
+	}
+	
+	/**
+	 * @return the first part of the previous generation signature
+	 */
+	protected long getPrevBlockGenSig1() {
+		return Emulator.getInstance().getPrevBlock().hash.getValue1();
+	}
 
 	/**
 	 * @return the timestamp of the previous block
@@ -314,6 +352,32 @@ public abstract class Contract {
 	 */
 	protected Address getCreator() {
 		return creator;
+	}
+	
+	/**
+	 * @param contractId
+	 * @return the code hash ID for the given contract ID
+	 */
+	protected long getCodeHashId(long contractId) {
+		// TODO Emulator implementation
+		return 0;
+	}
+	
+	/**
+	 * @return the code hash ID of this contract
+	 */
+	protected long getCodeHashId() {
+		// TODO Emulator implementation
+		return 0;
+	}
+	
+	/**
+	 * @return the address of the creator of another contract
+	 */
+	protected Address getCreator(Address contract) {
+		if(contract.getContract() != null)
+			return contract.getContract().creator;
+		return getAddress(0L);
 	}
 
 	/**
@@ -369,12 +433,28 @@ public abstract class Contract {
 	}
 	
 	protected long issueAsset(long namePart1, long namePart2, long decimalPlaces) {
-		// TODO: implement on the emulator
-		return namePart1;
+		return Emulator.getInstance().issueAsset(this.address, namePart1, namePart2, decimalPlaces);
+	}
+	
+	protected long getActivationFee() {
+		return 0;
+	}
+	
+	protected long getActivationFee(Contract other) {
+		return 0;
 	}
 
 	protected void mintAsset(long assetId, long quantity) {
-		// TODO: implement on the emulator
+		Emulator.getInstance().mintAsset(this.address, assetId, quantity);
+	}
+	
+	protected void distributeToHolders(long minHolderAmount, long assetId, long amount, long assetToDistribute, long quantity) {
+		// TODO implementation missing
+	}
+
+	protected int getAssetHoldersCount(long minHolderAmount, long assetId) {
+		// TODO implementation missing
+		return 0;
 	}
 
 	@EmulatorWarning
@@ -423,6 +503,24 @@ public abstract class Contract {
 
 		Register ret = performSHA256_(input);
 		return ret.getValue1();
+	}
+	
+	/**
+	 * Checks if the signature of the given account id in tx (page, page+1) matches for the given message.
+	 * 
+	 * The message actually consists in [contractId, msg2, msg3, msg4].
+	 * 
+	 * @param msg2
+	 * @param msg3
+	 * @param msg4
+	 * @param tx
+	 * @param page
+	 * @param accountId
+	 * @return
+	 */
+	protected long checkSignature(long msg2, long msg3, long msg4, Transaction tx, long page, long accountId) {
+		// TODO: no account id and public key stored in the emulator to verify the signature
+		return 0;
 	}
 
 	/**

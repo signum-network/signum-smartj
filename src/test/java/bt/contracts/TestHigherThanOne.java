@@ -1,9 +1,9 @@
-package bt;
+package bt.contracts;
 
 import bt.Contract;
 import bt.ui.EmulatorWindow;
 
-public class TestIf extends Contract {
+public class TestHigherThanOne extends Contract {
 
 	long longValue;
 
@@ -15,6 +15,6 @@ public class TestIf extends Contract {
 	}
 
 	public static void main(String[] args) {
-		new EmulatorWindow(TestIf.class);
+		new EmulatorWindow(TestHigherThanOne.class);
 	}
 }

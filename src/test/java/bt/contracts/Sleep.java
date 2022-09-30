@@ -1,6 +1,8 @@
-package bt;
+package bt.contracts;
 
+import bt.Address;
 import bt.Contract;
+import bt.Emulator;
 import bt.ui.EmulatorWindow;
 
 /**

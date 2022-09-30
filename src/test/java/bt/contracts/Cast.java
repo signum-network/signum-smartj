@@ -1,4 +1,4 @@
-package bt;
+package bt.contracts;
 
 import bt.Contract;
 import bt.ui.EmulatorWindow;
@@ -7,6 +7,7 @@ public class Cast extends Contract {
 
 	long longValue;
 	int intValue;
+	boolean worked;
 	//byte byteValue;
 
 	@Override
@@ -15,10 +16,9 @@ public class Cast extends Contract {
 		intValue = 276459577;
 		//byteValue = 57;
 
-		if (intValue == (int) longValue)
-			sendMessage("Cast int is working", getCurrentTx().getSenderAddress());
-		//if (byteValue == (byte) longValue)
-		//	sendMessage("Cast byte is working", getCurrentTx().getSenderAddress());
+		if (intValue == (int) longValue) {
+			worked = true;
+		}
 	}
 
 	public static void main(String[] args) {

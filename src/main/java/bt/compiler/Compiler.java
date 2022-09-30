@@ -49,11 +49,12 @@ public class Compiler {
 	public static final String TX_RECEIVED_METHOD = "txReceived";
 	public static final int PAGE_SIZE = 256;
 
-	private static final String UNEXPECTED_ERROR = "Unexpected error, please report at https://github.com/burst-apps-team/blocktalk/issues";
+	private static final String UNEXPECTED_ERROR = "Unexpected error, please report at https://github.com/signum-network/signum-smartj/issues";
 	
 	private static Logger logger = LogManager.getLogger();
 
 	ClassNode cn;
+	AbstractInsnNode insn;
 	ByteBuffer code;
 
 	LinkedList<StackVar> stack = new LinkedList<>();
@@ -80,7 +81,7 @@ public class Compiler {
 	boolean hasPublicMethods;
 	boolean hasTxReceived;
 
-	public class Error {
+	public class Error extends Throwable {
 		AbstractInsnNode node;
 		String message;
 
@@ -527,7 +528,12 @@ public class Compiler {
 			if (m.hash != 0) {
 				logger.info("METHOD: {}, hash: {}", m.node.name, m.hash);
 			}
-			parseMethod(m);
+			try {
+				parseMethod(m);
+			} catch (Error e) {
+				e.printStackTrace();
+				addError(e);
+			}
 
 			if (m.node.name.equals(TX_RECEIVED_METHOD) && m.code.position() > 1)
 				hasTxReceived = true;
@@ -600,14 +606,19 @@ public class Compiler {
 		}
 		return v;
 	}
+	
+	StackVar popVar(Method m, int destAddress, boolean forceCopy) throws Error {
+		return popVar(m, destAddress, forceCopy, false);
+	}
 
 	/**
 	 * Pop the lastest added variable from the stack and store on the given address.
 	 * 
 	 * @param m
-	 * @param destAddress
+	 * @param destAdd
+	 * @throws Error ress
 	 */
-	StackVar popVar(Method m, int destAddress, boolean forceCopy) {
+	StackVar popVar(Method m, int destAddress, boolean forceCopy, boolean alsoThis) throws Error {
 		StackVar var = stack.pollLast();
 
 		if (pendingPush != null && pendingPush.address == destAddress) {
@@ -636,13 +647,23 @@ public class Compiler {
 			}
 			// otherwise, do nothing
 		} else if (var.type == STACK_THIS) {
-			// do nothing
-		} else
-			addError(null, UNEXPECTED_ERROR);
+			if(!alsoThis) {
+				throw getError(this.insn, UNEXPECTED_ERROR);
+			}
+		} else {
+			throw getError(this.insn, UNEXPECTED_ERROR);
+		}
 		return var;
 	}
+	
+	void popThis() throws Error {
+		StackVar var = stack.pollLast();
+		if (var.type != STACK_THIS) {
+			throw getError(this.insn, UNEXPECTED_ERROR);
+		}
+	}
 
-	private void parseMethod(Method m) {
+	private void parseMethod(Method m) throws Error {
 		ByteBuffer code = ByteBuffer.allocate(40 * Compiler.PAGE_SIZE);
 		code.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -668,7 +689,7 @@ public class Compiler {
 
 		Iterator<AbstractInsnNode> ite = m.node.instructions.iterator();
 		while (ite.hasNext()) {
-			AbstractInsnNode insn = ite.next();
+			insn = ite.next();
 
 			int opcode = insn.getOpcode();
 			checkNotUnsupported(opcode);
@@ -928,7 +949,7 @@ public class Compiler {
 
 			case DUP: // duplicate the value on top of the stack
 			{
-				StackVar var = popVar(m, tmpVar1, false);
+				StackVar var = popVar(m, tmpVar1, false, true);
 				if (var.type == STACK_THIS) {
 					stack.addLast(var);
 					stack.addLast(var);
@@ -957,7 +978,7 @@ public class Compiler {
 					if (owner.equals(Contract.class.getName())) {
 						if (mi.name.equals(INIT_METHOD)) {
 							// Contract super constructor call, do nothing
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 						} else {
 							addError(insn, "Cannot access " + owner + "." + mi.name);
 						}
@@ -1007,26 +1028,88 @@ public class Compiler {
 					} else if (owner.equals(className)) {
 						// call on the contract itself
 						if (mi.name.equals("getCurrentTx")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							pushVar(m, lastTxReceived);
 						} else if (mi.name.equals("getCurrentTxTimestamp")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							pushVar(m, lastTxTimestamp);
 						} else if (mi.name.equals("getCurrentTxSender")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							pushVar(m, lastTxSender);
 						} else if (mi.name.equals("getCurrentTxAmount")) {
-							stack.pollLast(); // remove the "this" from stack
-							pushVar(m, lastTxAmount);
-						} else if (mi.name.equals("getCurrentBalance")) {
-							stack.pollLast(); // remove the "this" from stack
+							if(mi.desc.equals("(J)J")) {
+								// asking for the TX amount of an asset
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar assetId = popVar(m, tmpVar1, false);
+								popThis();
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+								code.putShort(OpCode.Set_A1_A2);
+								code.putInt(lastTxReceived);
+								code.putInt(assetId.address);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort(OpCode.Get_Amount_For_Tx_In_A);
+								code.putInt(tmpVar1);
+
+								pushVar(m, tmpVar1);
+							}
+							else {
+								popThis();
+								pushVar(m, lastTxAmount);
+							}
+						}
+						else if (mi.name.equals("getCurrentBalance")) {
+							if(mi.desc.equals("(J)J")) {
+								// asking for the balance of another contract
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar assetId = popVar(m, tmpVar1, false);
+
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_B2);
+								code.putInt(assetId.address);
+							}
+							else if(BT.isSIP37Activated()) {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);
+							}
+							
+							popThis();
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Current_Balance);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
-						} else if (mi.name.equals("getTxAfterTimestamp")) {
+						}
+						else if (mi.name.equals("getCodeHashId")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							if(mi.desc.equals("(J)J")) {
+								// asking for the code hash of another contract
+								
+								StackVar contractId = popVar(m, tmpVar1, false);
+
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_B2);
+								code.putInt(contractId.address);
+							}
+							else {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);
+							}
+							
+							popThis();
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.GET_CODE_HASH_ID);
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("getTxAfterTimestamp")) {
 							arg1 = popVar(m, tmpVar1, false); // timestamp
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.A_To_Tx_After_Timestamp);
@@ -1038,7 +1121,7 @@ public class Compiler {
 							pushVar(m, tmpVar2);
 						} else if (mi.name.equals("parseAddress")) {
 							StackVar address = stack.pollLast();
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							long value = 0;
 							try {
@@ -1054,30 +1137,117 @@ public class Compiler {
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getAddress")) {
 							arg1 = popVar(m, tmpVar1, false); // the address
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							
 							pushVar(m, arg1.address);
-						} else if (mi.name.equals("getCreator")) {
-							stack.pollLast(); // remove the "this" from stack
+						}
+						else if (mi.name.equals("getTransaction")) {
+							arg1 = popVar(m, tmpVar1, false); // the transaction
+							popThis();
+							
+							pushVar(m, arg1.address);
+						}
+						else if (mi.name.equals("getCreator")) {
+							if(mi.desc.equals("(Lbt/Address;)Lbt/Address;")) {
+								// asking for the creator of another contract
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar otherContract = popVar(m, tmpVar1, false);
+								popThis();
 
-							useCreator = true;
-							pushVar(m, creator);
-						} else if (mi.name.equals("getCreationTimestamp")) {
-							stack.pollLast(); // remove the "this" from stack
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_B2);
+								code.putInt(otherContract.address);
+								
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.B_To_Address_Of_Creator);
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort(OpCode.Get_B1);
+								code.putInt(tmpVar1);
+
+								pushVar(m, tmpVar1);
+							}
+							else {
+								popThis();
+
+								useCreator = true;
+								pushVar(m, creator);
+							}
+						}
+						else if (mi.name.equals("getActivationFee")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							if(mi.desc.equals("(Lbt/Address;)J")) {
+								// asking for the activation fee of another contract
+								
+								StackVar otherContract = popVar(m, tmpVar1, false);
+
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_B2);
+								code.putInt(otherContract.address);
+							}
+							else {
+								// B2 must be clear to get the activation fee of this contract
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);								
+							}
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.GET_ACTIVATION_FEE);
+							code.putInt(tmpVar1);
+
+							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("calcPow")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// long calcPow(long x, long y)
+							StackVar y = popVar(m, tmpVar2, false);
+							StackVar x = popVar(m, tmpVar1, true);
+							popThis();
+							
+							code.put(OpCode.e_op_code_POW_DAT);
+							code.putInt(x.address);
+							code.putInt(y.address);
+
+							pushVar(m, x.address);
+						}
+						else if (mi.name.equals("calcMultDiv")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// long calcMultDiv(long x, long y, long den)
+							StackVar den = popVar(m, tmpVar3, false);
+							StackVar y = popVar(m, tmpVar2, false);
+							StackVar x = popVar(m, tmpVar1, true);
+							popThis();
+							
+							code.put(OpCode.e_op_code_MDV_DAT);
+							code.putInt(x.address);
+							code.putInt(y.address);
+							code.putInt(den.address);
+
+							pushVar(m, x.address);
+						}
+						else if (mi.name.equals("getCreationTimestamp")) {
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Creation_Timestamp);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getBlockTimestamp")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Block_Timestamp);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getBlockHeight")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Block_Timestamp);
@@ -1094,7 +1264,7 @@ public class Compiler {
 							
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getPrevBlockHash")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Put_Last_Block_Hash_In_A);
@@ -1106,11 +1276,32 @@ public class Compiler {
 								code.putInt(tmpVar1);
 								pushVar(m, tmpVar1);
 							}
-						} else if (mi.name.equals("getPrevBlockHash1")) {
-							stack.pollLast(); // remove the "this" from stack
+						}
+						else if (mi.name.equals("getPrevBlockGenSig")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN);
-							code.putShort(OpCode.Put_Last_Block_Hash_In_A);
+							code.putShort(OpCode.PUT_LAST_BLOCK_GSIG_IN_A);
+
+							// Load the 4 register values
+							for (int i = 0; i < 4; i++) {
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort((short) (OpCode.Get_A1 + i));
+								code.putInt(tmpVar1);
+								pushVar(m, tmpVar1);
+							}
+						}
+						else if (mi.name.equals("getPrevBlockGenSig1")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							popThis();
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.PUT_LAST_BLOCK_GSIG_IN_A);
 
 							// Load the first value
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
@@ -1118,7 +1309,7 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getPrevBlockTimestamp")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Last_Block_Timestamp);
@@ -1126,11 +1317,11 @@ public class Compiler {
 
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("sleepOneBlock")) {
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							code.put(OpCode.e_op_code_SLP_IMD);
 						} else if (mi.name.equals("sleep")) {
 							arg1 = popVar(m, tmpVar1, false);
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 
 							code.put(OpCode.e_op_code_SLP_DAT);
 							code.putInt(arg1.address);
@@ -1142,7 +1333,7 @@ public class Compiler {
 							StackVar decimals = popVar(m, tmpVar3, false); // decimalPlaces
 							StackVar namePart2 = popVar(m, tmpVar2, false); // namePart2
 							StackVar namePart1 = popVar(m, tmpVar1, false); // namePart1
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							
 							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
 							code.putShort(OpCode.Set_A1_A2);
@@ -1164,7 +1355,7 @@ public class Compiler {
 							// mintAsset(long assetId, long quantity)
 							StackVar quantity = popVar(m, tmpVar2, false); // quantity
 							StackVar assetId = popVar(m, tmpVar1, false); // assetId
-							stack.pollLast(); // remove the "this" from stack
+							popThis();
 							
 							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
 							code.putShort(OpCode.Set_B1_B2);
@@ -1173,37 +1364,101 @@ public class Compiler {
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.MINT_ASSET);
-						} else if (mi.name.equals("sendAmount")) {
-							arg1 = popVar(m, tmpVar1, false); // address
-							arg2 = popVar(m, tmpVar2, false); // amount
-							if (mi.desc.equals("(JJLbt/Address;)V")) {
+						}
+						else if (mi.name.equals("getAssetHoldersCount")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// getAssetHoldersCount(long minHolderAmount, long assetId) {
+							StackVar assetId = popVar(m, tmpVar2, false);
+							StackVar minHolderAmount = popVar(m, tmpVar1, false);
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_B1_B2);
+							code.putInt(minHolderAmount.address);
+							code.putInt(assetId.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.ISSUE_ASSET);
+							code.putInt(tmpVar1); // resulting counter
+							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("distributeToHolders")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							// void distributeToHolders(long minHolderAmount, long assetId, long amount, long assetToDistribute, long quantity)
+							StackVar quantity = popVar(m, tmpVar5, false);
+							StackVar assetToDistribute = popVar(m, tmpVar4, false);
+							StackVar amount = popVar(m, tmpVar3, false);
+							StackVar assetId = popVar(m, tmpVar2, false);
+							StackVar minHolding = popVar(m, tmpVar1, false);
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_B1_B2);
+							code.putInt(minHolding.address);
+							code.putInt(assetId.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(amount.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_A3_A4);
+							code.putInt(assetToDistribute.address);
+							code.putInt(quantity.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.DIST_TO_ASSET_HOLDERS);
+						}
+						else if (mi.name.equals("sendAmount")) {
+							StackVar receiver = popVar(m, tmpVar1, false);
+							StackVar amount = popVar(m, tmpVar2, false);
+							
+							if(BT.isSIP37Activated()) {
+								// B2 must be clear since we also use B2 and B3
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_B);
+							}
+							if (mi.desc.equals("(JJLbt/Address;)V") || mi.desc.equals("(JJJLbt/Address;)V")) {
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support assets on: " + mi.name);
 
 								// the version with the assetId
-								arg3 = popVar(m, tmpVar3, false);
+								StackVar assetId = popVar(m, tmpVar3, false);
 								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+								code.putShort(OpCode.Set_B1_B2);
+								code.putInt(receiver.address);
+								code.putInt(assetId.address);
+								
+								if(mi.desc.equals("(JJJLbt/Address;)V")) {
+									// the version with asset+SIGNA
+									// sendAmount(long amount, long assetId, long quantity, Address receiver)
+									StackVar amountSigna = popVar(m, tmpVar4, false);
+									
+									code.put(OpCode.e_op_code_EXT_FUN_DAT);
+									code.putShort(OpCode.Set_B3);
+									code.putInt(amountSigna.address);
+								}
+							}
+							else {
+								// old version, signa only to address in B1
 								code.put(OpCode.e_op_code_EXT_FUN_DAT);
-								code.putShort(OpCode.Set_B2);
-								code.putInt(arg3.address); // assetId
+								code.putShort(OpCode.Set_B1);
+								code.putInt(receiver.address);
 							}
-							else if(BT.isSIP37Activated()) {
-								// B2 must not be clear for regular transfer
-								code.put(OpCode.e_op_code_EXT_FUN);
-								code.putShort(OpCode.Clear_B);
-							}
-							stack.pollLast(); // remove the 'this'
-
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
-							code.putShort(OpCode.Set_B1);
-							code.putInt(arg1.address); // address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Send_To_Address_In_B);
-							code.putInt(arg2.address); // amount
+							code.putInt(amount.address);
+							
+							popThis();
 						} else if (mi.name.equals("sendBalance")) {
 							StackVar address = stack.pollLast();
-							stack.pollLast(); // remove the 'this'
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_B1);
@@ -1214,7 +1469,7 @@ public class Compiler {
 						} else if (mi.name.equals("performSHA256_64")) {
 							arg2 = popVar(m, tmpVar1, false); // input2
 							arg1 = popVar(m, tmpVar2, false); // input1
-							stack.pollLast(); // remove the 'this'
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Clear_A);
@@ -1238,7 +1493,7 @@ public class Compiler {
 							arg3 = popVar(m, tmpVar2, false); // input3
 							arg2 = popVar(m, tmpVar3, false); // input2
 							arg1 = popVar(m, tmpVar4, false); // input1
-							stack.pollLast(); // remove the 'this'
+							popThis();
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
@@ -1267,27 +1522,93 @@ public class Compiler {
 							if(!BT.isSIP37Activated())
 								addError(insn, "activate SIP37 to support: " + mi.name);
 							
-							arg3 = popVar(m, tmpVar1, false); // value
-							arg2 = popVar(m, tmpVar1, false); // key2
-							arg1 = popVar(m, tmpVar1, false); // key1
-							stack.pollLast(); // remove the 'this'
+							StackVar value = popVar(m, tmpVar3, false);
+							StackVar key2 = popVar(m, tmpVar2, false);
+							StackVar key1 = popVar(m, tmpVar1, false);
+							popThis();
 							
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Clear_A);
 							
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
-							code.putShort((short) (OpCode.Set_A1));
-							code.putInt(arg1.address);
-							code.put(OpCode.e_op_code_EXT_FUN_DAT);
-							code.putShort((short) (OpCode.Set_A2));
-							code.putInt(arg2.address);
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_A1_A2));
+							code.putInt(key1.address);
+							code.putInt(key2.address);
 							
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort((short) (OpCode.Set_A4));
-							code.putInt(arg3.address);
+							code.putInt(value.address);
 
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.SET_MAP_VALUE_KEYS_IN_A);
+						}
+						else if (mi.name.equals("getMapValue")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							
+							StackVar key2 = popVar(m, tmpVar3, false);
+							StackVar key1 = popVar(m, tmpVar2, false);
+							if (mi.desc.equals("(Lbt/Address;JJ)J")) {
+								// long getMapValue(Address contract, long key1, long key2)
+								StackVar address = popVar(m, tmpVar1, false);
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort((short) (OpCode.Set_A3));
+								code.putInt(address.address);
+							}
+							else {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort((short) (OpCode.Clear_A));
+							}
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_A1_A2));
+							code.putInt(key1.address);
+							code.putInt(key2.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.GET_MAP_VALUE_KEYS_IN_A);
+							code.putInt(tmpVar1);
+							
+							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("checkSignature")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+							// long checkSignature(long msg2, long msg3, long msg4,
+							// Transaction tx, long page, long accountId)
+							
+							StackVar accountId = popVar(m, tmpVar1, false);
+							StackVar page = popVar(m, tmpVar2, false);
+							StackVar tx = popVar(m, tmpVar3, false);
+							StackVar msg4 = popVar(m, tmpVar4, false);
+							StackVar msg3 = popVar(m, tmpVar5, false);
+							StackVar msg2 = popVar(m, tmpVar6, false);
+							popThis();
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_A1_A2));
+							code.putInt(tx.address);
+							code.putInt(page.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_A3));
+							code.putInt(accountId.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort((short) (OpCode.Set_B2));
+							code.putInt(msg2.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort((short) (OpCode.Set_B3_B4));
+							code.putInt(msg3.address);
+							code.putInt(msg4.address);
+
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.CHECK_SIG_B_WITH_A);
+							code.putInt(tmpVar1);
+							
+							pushVar(m, tmpVar1);
 						}
 						else if (mi.name.equals("sendMessage")) {
 							arg1 = popVar(m, tmpVar1, false); // address
@@ -1376,7 +1697,7 @@ public class Compiler {
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Send_A_To_Address_In_B);
 
-							stack.pollLast(); // remove the 'this'
+							popThis();
 						} else {
 							// check for user defined methods
 							Method mcall = methods.get(mi.name);
@@ -1416,7 +1737,7 @@ public class Compiler {
 									code.putInt(tmpVar2);
 								}
 							}
-							stack.pollLast(); // remove the 'this'
+							popThis();
 
 							// call method here
 							code.put(OpCode.e_op_code_JMP_SUB);
@@ -1455,6 +1776,22 @@ public class Compiler {
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						} else if (mi.name.equals("getAmount")) {
+							if(mi.desc.equals("(J)J")) {
+								// asking for the token amount of a tx
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar assetId = popVar(m, tmpVar1, false);
+
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_A2);
+								code.putInt(assetId.address);
+							}
+							else if(BT.isSIP37Activated()) {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_A);
+							}
+
 							arg1 = popVar(m, tmpVar1, false); // the TX address
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
@@ -1479,13 +1816,51 @@ public class Compiler {
 							code.putShort(OpCode.Get_Timestamp_For_Tx_In_A);
 							code.putInt(tmpVar1); // the timestamp
 							pushVar(m, tmpVar1);
-						} else if (mi.name.equals("getMessage")) {
-							arg1 = popVar(m, tmpVar1, false); // the TX address
+						}
+						else if (mi.name.equals("getAssetIds")) {
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							StackVar tx = popVar(m, tmpVar1, false);
+							
+							code.put(OpCode.e_op_code_EXT_FUN_DAT);
+							code.putShort(OpCode.Set_A1);
+							code.putInt(tx.address);
+							
+							code.put(OpCode.e_op_code_EXT_FUN);
+							code.putShort(OpCode.B_TO_ASSET_IDS_OF_TX_IN_A);
+
+							// we push the four longs to the stack, so the field that receive
+							// this should consume all of them
+							for (int i = 0; i < 4; i++) {
+								code.put(OpCode.e_op_code_EXT_FUN_RET);
+								code.putShort((short) (OpCode.Get_B1 + i));
+								code.putInt(tmpVar1); // the asset ids
+								pushVar(m, tmpVar1);
+							}
+						}
+						else if (mi.name.equals("getMessage")) {
+							if(mi.desc.equals("(J)Lbt/Register;")) {
+								if(!BT.isSIP37Activated())
+									addError(insn, "activate SIP37 to support: " + mi.name);
+								
+								StackVar page = popVar(m, tmpVar2, false);
+								
+								code.put(OpCode.e_op_code_EXT_FUN_DAT);
+								code.putShort(OpCode.Set_A2);
+								code.putInt(page.address);								
+							}
+							else if(BT.isSIP37Activated()) {
+								code.put(OpCode.e_op_code_EXT_FUN);
+								code.putShort(OpCode.Clear_A);
+							}
+							
+							StackVar tx = popVar(m, tmpVar1, false);
 
 							code.put(OpCode.e_op_code_EXT_FUN_DAT);
 							code.putShort(OpCode.Set_A1);
-							code.putInt(arg1.address); // the TX address
-
+							code.putInt(tx.address);
+							
 							code.put(OpCode.e_op_code_EXT_FUN);
 							code.putShort(OpCode.Message_From_Tx_In_A_To_B);
 
@@ -1724,14 +2099,18 @@ public class Compiler {
 
 			case GETFIELD:
 			case PUTFIELD:
+			case GETSTATIC:
+			case PUTSTATIC:
 				if (insn instanceof FieldInsnNode) {
 					FieldInsnNode fi = (FieldInsnNode) insn;
 
 					logger.debug((opcode == GETFIELD ? "get " : "put ") + "field: " + fi.name);
 
 					Field field = fields.get(fi.name);
-					if (opcode == GETFIELD) {
-						stack.pollLast(); // remove the 'this'
+					if (opcode == GETFIELD || opcode == GETSTATIC) {
+						if(opcode == GETFIELD) {
+							popThis();
+						}
 						for (int i = 0; i < field.size; i++) {
 							pushVar(m, field.address + i);
 						}
@@ -1740,13 +2119,15 @@ public class Compiler {
 						for (int i = field.size - 1; i >= 0; i--) {
 							popVar(m, field.address + i, true);
 						}
-						stack.pollLast(); // remove the 'this'
+						if(opcode == PUTFIELD) {
+							popThis();
+						}
 					}
 				} else {
 					addError(insn, UNEXPECTED_ERROR);
 				}
 				break;
-
+			
 			case LDC: // push a constant #index from a constant pool (String, int, float, Class,
 						// java.lang.invoke.MethodType, or java.lang.invoke.MethodHandle) onto the stack
 				if (insn instanceof LdcInsnNode) {
@@ -1779,6 +2160,10 @@ public class Compiler {
 				arg2 = popVar(m, tmpVar2, false);
 				arg1 = popVar(m, tmpVar1, true);
 				code.put(OpCode.e_op_code_SUB_DAT);
+				if(arg1.address == null || arg2.address == null) {
+					addError(insn, UNEXPECTED_ERROR);
+					return;
+				}
 				code.putInt(arg1.address);
 				code.putInt(arg2.address);
 				pushVar(m, arg1.address);
@@ -1903,6 +2288,14 @@ public class Compiler {
 	}
 
 	void addError(AbstractInsnNode node, String error) {
+		errors.add(getError(node, error));
+	}
+	
+	void addError(Error error) {
+		errors.add(error);
+	}
+	
+	Error getError(AbstractInsnNode node, String error) {
 		// try to find a line number to report
 		int line = -1;
 		AbstractInsnNode prev = node;
@@ -1915,7 +2308,7 @@ public class Compiler {
 		}
 		String message = "line " + line + ": " + error;
 
-		errors.add(new Error(node, message));
+		return new Error(node, message);
 	}
 
 	public static long getMethodSignature(Method m) {

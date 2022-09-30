@@ -1,9 +1,9 @@
-package bt;
+package bt.contracts;
 
 import bt.Contract;
 import bt.ui.EmulatorWindow;
 
-public class Equals extends Contract {
+public class EqualsCreator extends Contract {
 
 	boolean equalReceived;
 
@@ -13,6 +13,6 @@ public class Equals extends Contract {
 	}
 
 	public static void main(String[] args) {
-		new EmulatorWindow(Equals.class);
+		new EmulatorWindow(EqualsCreator.class);
 	}
 }

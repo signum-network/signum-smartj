@@ -18,10 +18,14 @@ public class Register {
 	Object[] args;
 
 	@EmulatorWarning
-	public static Register newMethodCall(Method m, Object[] args) {
+	public static Register newMethodCall(bt.compiler.Compiler c, Method m, Object... args) {
 		Register r = new Register();
 		r.method = m;
-		r.args = args;
+		r.args = new Object[4];
+		r.args[0] = c.getMethod(m.getName()).getHash(); // TODO: public method overloading will not be identified here
+		for (int i = 0; i < 2 && i < args.length; i++) {
+			r.args[i+1] = args[i];
+		}
 		return r;
 	}
 	
@@ -56,24 +60,32 @@ public class Register {
 	 * @return the first long value
 	 */
 	public long getValue1() {
+		if(args != null)
+			return (Long)args[0];
 		return value[0];
 	}
 	/**
 	 * @return the second long value
 	 */
 	public long getValue2() {
+		if(args != null)
+			return (Long)args[1];
 		return value[1];
 	}
 	/**
 	 * @return the third long value
 	 */
 	public long getValue3() {
+		if(args != null)
+			return (Long)args[2];
 		return value[2];
 	}
 	/**
 	 * @return the fourth long value
 	 */
 	public long getValue4() {
+		if(args != null)
+			return (Long)args[3];
 		return value[3];
 	}
 
@@ -99,7 +111,7 @@ public class Register {
 	public String toString() {
 		if(method!=null){
 			String ret = method.getName() + '(';
-			for (int i = 0; i < args.length && args[i]!=null; i++) {
+			for (int i = 0; args!=null && i < args.length && args[i]!=null; i++) {
 				if(i>0)
 					ret += ", ";
 				ret += args[i].toString();

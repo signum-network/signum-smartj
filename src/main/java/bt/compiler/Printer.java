@@ -68,6 +68,10 @@ public class Printer {
 				out.print(" (tmpVar3)");
 			else if (ad == c.tmpVar4)
 				out.print(" (tmpVar4)");
+			else if (ad == c.tmpVar5)
+				out.print(" (tmpVar5)");
+			else if (ad == c.tmpVar6)
+				out.print(" (tmpVar6)");
 			else if (ad == c.localStart)
 				out.print(" (localStart)");
 		}
@@ -209,6 +213,7 @@ public class Printer {
 			case OpCode.e_op_code_AND_DAT:
 			case OpCode.e_op_code_XOR_DAT:
 			case OpCode.e_op_code_MOD_DAT:
+			case OpCode.e_op_code_POW_DAT:
 				p += printOp(code, p, 1, out);
 				switch (op) {
 				case OpCode.e_op_code_ADD_DAT:
@@ -235,6 +240,9 @@ public class Printer {
 				case OpCode.e_op_code_MOD_DAT:
 					out.println("\tMOD_DAT");
 					break;
+				case OpCode.e_op_code_POW_DAT:
+					out.println("\tPOW_DAT");
+					break;
 				default:
 					out.println();
 				}
@@ -253,6 +261,14 @@ public class Printer {
 			case OpCode.e_op_code_IDX_DAT:
 				p += printOp(code, p, 1, out);
 				out.println(op == OpCode.e_op_code_SET_IDX ? "\tSET_IDX" : "\tIDX_DAT");
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				p += printAddress(code, p, out, c);
+				break;
+
+			case OpCode.e_op_code_MDV_DAT:
+				p += printOp(code, p, 1, out);
+				out.println("\tMDV_DAT");
 				p += printAddress(code, p, out, c);
 				p += printAddress(code, p, out, c);
 				p += printAddress(code, p, out, c);
@@ -286,7 +302,7 @@ public class Printer {
 			case OpCode.e_op_code_EXT_FUN_DAT_2:
 			case OpCode.e_op_code_EXT_FUN_RET_DAT:
 				p += printOp(code, p, 1, out);
-				out.println("\tEXT_FUN_RET_" + (op == OpCode.e_op_code_EXT_FUN_DAT_2 ? "DAT_2" : "RET_DAT"));
+				out.println("\tEXT_FUN_" + (op == OpCode.e_op_code_EXT_FUN_DAT_2 ? "DAT_2" : "RET_DAT"));
 				out.print(tab);
 				p += print(code, p, 2, out);
 				out.println(" " + funcName(code, p));
@@ -522,10 +538,24 @@ public class Printer {
 		case OpCode.Check_SHA256_A_With_B: // = 0x0205; // EXT_FUN_RET @addr to bool if SHA256 hash of A matches B
 			return "Check_SHA256_A_With_B";
 			
+		case OpCode.CHECK_SIG_B_WITH_A:
+			return "CHECK_SIG_B_WITH_A";
+		case OpCode.GET_CODE_HASH_ID:
+			return "GET_CODE_HASH_ID";
+			
 		case OpCode.MINT_ASSET:
 			return "MINT_ASSET";
 		case OpCode.ISSUE_ASSET:
 			return "ISSUE_ASSET";
+		case OpCode.DIST_TO_ASSET_HOLDERS:
+			return "DIST_TO_ASSET_HOLDERS";
+		case OpCode.GET_ACTIVATION_FEE:
+			return "GET_ACTIVATION_FEE";
+
+		case OpCode.GET_MAP_VALUE_KEYS_IN_A:
+			return "GET_MAP_VALUE_KEYS_IN_A";
+		case OpCode.SET_MAP_VALUE_KEYS_IN_A:
+			return "SET_MAP_VALUE_KEYS_IN_A";
 
 		default:
 			return "UNKNOWN FUNCTION";

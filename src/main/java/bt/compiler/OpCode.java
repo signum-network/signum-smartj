@@ -33,6 +33,7 @@ final class OpCode {
   static final byte e_op_code_MOD_DAT = 0x16;
   static final byte e_op_code_SHL_DAT = 0x17; // Unused
   static final byte e_op_code_SHR_DAT = 0x18; // Unused
+  static final byte e_op_code_POW_DAT = 0x19;
   static final byte e_op_code_JMP_ADR = 0x1a;
   static final byte e_op_code_BZR_DAT = 0x1b;
   static final byte e_op_code_BNZ_DAT = 0x1e;
@@ -49,6 +50,7 @@ final class OpCode {
   static final byte e_op_code_STP_IMD = 0x29; // Unused
   static final byte e_op_code_SLP_IMD = 0x2a;
   static final byte e_op_code_ERR_ADR = 0x2b; // Unused
+  static final byte e_op_code_MDV_DAT = 0x2c;
   static final byte e_op_code_SET_PCS = 0x30;
   static final byte e_op_code_EXT_FUN = 0x32;
   static final byte e_op_code_EXT_FUN_DAT   = 0x33;
@@ -101,6 +103,8 @@ final class OpCode {
   static final short Check_HASH160_A_With_B   = 0x0203; //  EXT_FUN_RET       @addr to bool if RIPEMD160 hash of A1..3 matches B1..3 // Unused
   static final short SHA256_A_To_B            = 0x0204; //  EXT_FUN           take a SHA256 hash of A and put this in B
   static final short Check_SHA256_A_With_B    = 0x0205; //  EXT_FUN_RET       @addr to bool if SHA256 hash of A matches B // Unused
+  static final short CHECK_SIG_B_WITH_A       = 0x0206; //  EXT_FUN_RET       @addr to bool if [AT ID, B2..4] signature can be verified with the message attached on tx id in A1 (page in A2) for account id in A3
+
   
   static final short Get_Block_Timestamp       = 0x0300; // EXT_FUN_RET       sets @addr to the timestamp of the current block
   static final short Get_Creation_Timestamp    = 0x0301; // EXT_FUN_RET       sets @addr to the timestamp of the AT creation block
@@ -114,6 +118,8 @@ final class OpCode {
   static final short Message_From_Tx_In_A_To_B = 0x0309; // EXT_FUN           if A is a valid tx then B to the tx message****
   static final short B_To_Address_Of_Tx_In_A   = 0x030a; // EXT_FUN           if A is a valid tx then B set to the tx address
   static final short B_To_Address_Of_Creator   = 0x030b; // EXT_FUN           sets B to the address of the AT's creator
+  static final short GET_CODE_HASH_ID          = 0x030c; // EXT_FUN_RET       sets @addr to the code hash ID of the AT's (or of the AT id on B2 if B2!=0)
+  static final short B_TO_ASSET_IDS_OF_TX_IN_A = 0x030d; // EXT_FUN           if A is a valid tx then B set to the asset ids received (terminated by 0)
   
   static final short Get_Current_Balance      = 0x0400; // EXT_FUN_RET       sets @addr to current balance of the AT
   static final short Get_Previous_Balance     = 0x0401; // EXT_FUN_RET       sets @addr to the balance it had last had when running* // Unused
@@ -127,5 +133,9 @@ final class OpCode {
   static final short SET_MAP_VALUE_KEYS_IN_A  = 0x0408; // EXT_FUN           keys in A1 and A2 with value in A4
   static final short ISSUE_ASSET              = 0x0409; // EXT_FUN_RET       issue asset with name in A and dec. places in B1, returns the asset id
   static final short MINT_ASSET               = 0x040a; // EXT_FUN           mint B1 quantity of asset ID in B2
+  static final short DIST_TO_ASSET_HOLDERS    = 0x040b; // EXT_FUN           B1 min holding of asset ID in B2, A1 the signa amount to distribute, A3 the assetId to distribute, A4 the asset quantity to distribute
+  static final short GET_ASSET_HOLDERS_COUNT  = 0x040c; // EXT_FUN_RET       number of tokens holders with more than B1 holdings of asset ID in B2
+  static final short GET_ACTIVATION_FEE       = 0x040d; // EXT_FUN_RET       sets @addr to the activation fee of this AT (or the AT id on B2 if B2!=0)
+  static final short PUT_LAST_BLOCK_GSIG_IN_A = 0x040e; // EXT_FUN           puts the block generation signature of the previous block in A
 
 }

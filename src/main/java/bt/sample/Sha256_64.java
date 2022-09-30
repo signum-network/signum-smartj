@@ -6,7 +6,7 @@ import bt.compiler.TargetCompilerVersion;
 import bt.ui.EmulatorWindow;
 
 /**
- * A smart contract that simply echoes the message received.
+ * A smart contract for testing hashing
  * 
  * @author jjos
  */

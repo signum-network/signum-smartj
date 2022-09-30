@@ -158,7 +158,13 @@ class MethodCallDialog extends JDialog implements ActionListener {
             }
         }
 
-        msg = Register.newMethodCall(m, argValues);
+		try {
+			Compiler comp = new Compiler(contract.getClass());
+			comp.compile();
+	        msg = Register.newMethodCall(comp, m, argValues);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
         return JOptionPane.OK_OPTION;
     }
