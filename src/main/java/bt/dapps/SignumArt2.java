@@ -60,7 +60,7 @@ public class SignumArt2 extends Contract {
 	Address offerAddress;
 	long offerPrice;
 	
-	// Duch auction variables
+	// Dutch auction variables
 	long duchStartHeight;
 	long startPrice;
 	long priceDropPerBlock;
@@ -77,6 +77,9 @@ public class SignumArt2 extends Contract {
 	long amountToRoyalties;
 	long amountToPlatform;
 
+	// Soulbound feature
+	boolean UseSoulbound;
+	boolean unbound = true;
 	// Other constants
 	private static final long ZERO = 0;
 	private static final long STATUS_NOT_FOR_SALE = ZERO;
@@ -96,10 +99,13 @@ public class SignumArt2 extends Contract {
 	 * @param newOwner
 	 */
 	public void transfer(Address newOwner) {
-		if (owner.equals(this.getCurrentTxSender())) {
+		if (owner.equals(this.getCurrentTxSender()) && unbound) {
 			// only the current owner can transfer
 			sendMessage(owner.getId(), newOwner.getId(), trackOwnershipTransferred);	
 			owner = newOwner;
+			if (UseSoulbound) {
+				unbound = false;
+			}
 		}
 	}
 	
@@ -138,7 +144,7 @@ public class SignumArt2 extends Contract {
 	 *                 this amount + gas fees)
 	 */
 	public void putForSale(long priceNQT) {
-		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			currentPrice = priceNQT;
@@ -159,7 +165,7 @@ public class SignumArt2 extends Contract {
 	 * @param reservePrice the minimum accepted price
 	 */
 	public void putForDuchAuction(long startPrice, long reservePrice, long priceDropPerBlock) {
-		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			duchStartHeight = getBlockHeight();
@@ -184,7 +190,7 @@ public class SignumArt2 extends Contract {
 	 * @param timeout  how many minutes the sale will be available
 	 */
 	public void putForAuction(long priceNQT, long maxPrice, int timeout) {
-		if (highestBidder==null && owner.equals(this.getCurrentTxSender())) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_AUCTION;
 			auctionTimeout = getBlockTimestamp().addMinutes(timeout);
@@ -204,10 +210,9 @@ public class SignumArt2 extends Contract {
 	 * The owner can accept the offer and the offer is cancelled/refunded if the item is
 	 * actually sold or a running auction ends.
 	 * 
-	 * @param offerNQT
 	 */
-	public void makeOffer(long offerNQT) {
-		if(getCurrentTxAmount() > offerPrice) {
+	public void makeOffer() {
+		if(getCurrentTxAmount() > offerPrice && highestBidder==null && unbound )  {
 			if(offerAddress != null) {
 				// send back the latest offer
 				sendAmount(offerPrice, offerAddress);
@@ -247,14 +252,21 @@ public class SignumArt2 extends Contract {
 	 * The owner accepts a posted offer.
 	 */
 	public void acceptOffer() {
-		if(highestBidder==null && getCurrentTxSender().equals(owner) && offerPrice > ZERO) {
+		if(highestBidder==null && getCurrentTxSender().equals(owner) && offerPrice > ZERO && unbound) {
 			currentPrice = offerPrice;
 			pay();
+			if (status != STATUS_NOT_FOR_SALE) {
+				sendMessage(owner.getId(), trackSetNotForSale);
+			}
+			sendMessage(offerAddress.getId(), currentPrice,owner.getId(), trackNewOwner);
 			owner = offerAddress;
 			offerAddress = null;
 			offerPrice = ZERO;
 			status = STATUS_NOT_FOR_SALE;
-			sendMessage(owner.getId(), currentPrice, trackNewOwner);
+			if (UseSoulbound) {
+				unbound = false;
+			}
+
 		}
 	}
 
@@ -283,11 +295,13 @@ public class SignumArt2 extends Contract {
 			if (getCurrentTxAmount() >= currentPrice) {
 				// Conditions match, let's execute the sale
 				pay(); // pay the current owner
+				sendMessage(getCurrentTxSender().getId(), getCurrentTxAmount(), owner.getId(),trackNewOwner);
 				owner = getCurrentTxSender(); // new owner
 				status = STATUS_NOT_FOR_SALE;
-				sendMessage(owner.getId(), getCurrentTxAmount(), trackNewOwner);
-				
 				cancelOfferIfPresent();
+				if (UseSoulbound) {
+					unbound = false;
+				}
 				return;
 			}
 		}
@@ -296,12 +310,15 @@ public class SignumArt2 extends Contract {
 				// auction timed out, apply the transfer if any
 				if (highestBidder != null) {
 					pay(); // pay the current owner
+					sendMessage(highestBidder.getId(), currentPrice,owner.getId(), trackNewOwner);
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
-					sendMessage(owner.getId(), currentPrice, trackNewOwner);
-					
+					auctionMaxPrice = ZERO;
 					cancelOfferIfPresent();
+					if (UseSoulbound) {
+						unbound = false;
+					}
 				}
 				// current transaction will be refunded below
 			} else if (getCurrentTxAmount() > currentPrice) {
@@ -319,13 +336,15 @@ public class SignumArt2 extends Contract {
 				if(auctionMaxPrice > ZERO && currentPrice >= auctionMaxPrice) {
 					// max price reached, so we also end the auction
 					pay(); // pay the current owner
+					sendMessage(highestBidder.getId(), currentPrice,owner.getId(), trackNewOwner);
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
 					auctionMaxPrice = ZERO;
-					sendMessage(owner.getId(), currentPrice, trackNewOwner);
-					
 					cancelOfferIfPresent();
+					if (UseSoulbound) {
+						unbound = false;
+					}
 				}
 				return;
 			}
@@ -338,7 +357,28 @@ public class SignumArt2 extends Contract {
 		totalLikes++;
 		sendMessage(getCurrentTxSender().getId(), trackLikeReceived);
 	}
+	public SetMetaDataAlias() {
+		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
+		  MetaAlias = get.tx.message.argument1();
+		  saveValue(1,1,value:MetaAlias);
+		}
+	}
 	
+	public SetValues() {
+		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
+		keyvalue1 = get.tx.message.argument1();
+		keyvalue2 = get.tx.message.argument2();
+		value = get.tx.message.argument2();
+		if (keyvalue1 != 1){
+			saveValue(keyvalue1,keyvalue2,value);
+		   }
+		}
+  	}
+  
+	private void saveValue(long key1, long key2, long value) {
+		setMapValue(key1, key2, value);
+	}
+
 	private void pay() {
 		amountToPlatform = currentPrice * platformFee / THOUSAND;
 		amountToRoyalties = currentPrice * royaltiesFee / THOUSAND;
@@ -347,7 +387,6 @@ public class SignumArt2 extends Contract {
 		totalRoyaltiesFee += amountToRoyalties;
 		totalTimesSold++;
 		
-		sendMessage(owner.getId(), trackSetNotForSale);
 		sendAmount(amountToRoyalties, royaltiesOwner);
 		sendAmount(currentPrice - amountToPlatform - amountToRoyalties, owner);
 	}
