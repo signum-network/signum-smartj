@@ -42,8 +42,9 @@ public class ShieldSwap extends Contract {
 	
 	Address platformContract;
 	
-	long swapFeeDiv = Long.MAX_VALUE;
-	long platformFeeDiv = Long.MAX_VALUE;
+	long swapFeeDiv;
+	long platformFeeDiv;
+	long minSlippage;
 	
 	long tokenXY;
 	long reserveX;
@@ -69,6 +70,7 @@ public class ShieldSwap extends Contract {
 	long liquidity;
 	long liquidity2;
 	long fee, x1, y1;
+	long slippage;
 	
 	// We want the sqrt, so power is 0.5 = 5000_0000 / 10000_0000;
 	private static final long SQRT_POW = 5000_0000;
@@ -188,6 +190,12 @@ public class ShieldSwap extends Contract {
 					
 					if(-dy >= minOut && price > 0) {
 						if (priceMaxX == 0) {
+							// first accepted swap in this direction, check for a minimum slippage
+							slippage = calcMultDiv(price, 1000, reserveX);
+							if(slippage < minSlippage) {
+								// below minimum slippage
+								continue;
+							}
 							priceMaxX = price;
 						}
 						if (price <= priceMaxX){
@@ -209,6 +217,12 @@ public class ShieldSwap extends Contract {
 
 					if(-dx >= minOut && price > 0) {
 						if (priceMaxY == 0) {
+							// first accepted swap in this direction, check for a minimum slippage
+							slippage = calcMultDiv(price, 1000, reserveY);
+							if(slippage < minSlippage) {
+								// below minimum slippage
+								continue;
+							}
 							priceMaxY = price;
 						}
 						if (price <= priceMaxY){
@@ -330,6 +344,9 @@ public class ShieldSwap extends Contract {
 		emu.forgeBlock();
 		ShieldSwap contract = (ShieldSwap) lp.getContract();
 		contract.tokenY = BTC_ASSET_ID;
+		contract.swapFeeDiv = Long.MAX_VALUE;
+		contract.platformFeeDiv = Long.MAX_VALUE;
+		contract.minSlippage = 1010;
 
 		long reserveX = 10000*Contract.ONE_SIGNA;
 		long reserveY = 2*Contract.ONE_SIGNA;
