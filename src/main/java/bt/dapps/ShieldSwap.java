@@ -52,7 +52,7 @@ public class ShieldSwap extends Contract {
 	long totalSupply;
 	
 	long reserveXBlock, reserveYBlock;
-	long priceMaxX, priceMaxY, price;
+	long priceTimesReserveMaxX, priceTimesReserveMaxY, priceTimesReserve;
 	Timestamp lastProcessedLiquidity;
 	Timestamp lastProcessedSwapCheck;
 	Timestamp lastProcessedSwap;
@@ -159,8 +159,8 @@ public class ShieldSwap extends Contract {
 		// the reserve changes within the block
 		reserveXBlock = reserveX;
 		reserveYBlock = reserveY;
-		priceMaxX = 0;
-		priceMaxY = 0;
+		priceTimesReserveMaxX = 0;
+		priceTimesReserveMaxY = 0;
 		platformFeeBlockX = 0;
 		platformFeeBlockY = 0;
 		while(true) {
@@ -186,19 +186,19 @@ public class ShieldSwap extends Contract {
 					y1 = calcMultDiv(reserveXBlock, reserveYBlock, x1 - fee - platformFee);
 
 					dy = y1 - reserveYBlock;
-					price = calcMultDiv(dx, reserveY, minOut);
+					priceTimesReserve = calcMultDiv(dx, reserveY, minOut);
 					
-					if(-dy >= minOut && price > 0) {
-						if (priceMaxX == 0) {
+					if(-dy >= minOut && priceTimesReserve > 0) {
+						if (priceTimesReserveMaxX == 0) {
 							// first accepted swap in this direction, check for a minimum slippage
-							slippage = calcMultDiv(price, 1000, reserveX);
+							slippage = calcMultDiv(priceTimesReserve, 1000, reserveX);
 							if(slippage < minSlippage) {
 								// below minimum slippage
 								continue;
 							}
-							priceMaxX = price;
+							priceTimesReserveMaxX = priceTimesReserve;
 						}
-						if (price <= priceMaxX){
+						if (priceTimesReserve <= priceTimesReserveMaxX){
 							txApproved = true;
 							platformFeeBlockX += platformFee;
 						}
@@ -213,19 +213,19 @@ public class ShieldSwap extends Contract {
 					x1 = calcMultDiv(reserveXBlock, reserveYBlock, y1 - fee - platformFee);
 					
 					dx = x1 - reserveXBlock;
-					price = calcMultDiv(dy, reserveX, minOut);
+					priceTimesReserve = calcMultDiv(dy, reserveX, minOut);
 
-					if(-dx >= minOut && price > 0) {
-						if (priceMaxY == 0) {
+					if(-dx >= minOut && priceTimesReserve > 0) {
+						if (priceTimesReserveMaxY == 0) {
 							// first accepted swap in this direction, check for a minimum slippage
-							slippage = calcMultDiv(price, 1000, reserveY);
+							slippage = calcMultDiv(priceTimesReserve, 1000, reserveY);
 							if(slippage < minSlippage) {
 								// below minimum slippage
 								continue;
 							}
-							priceMaxY = price;
+							priceTimesReserveMaxY = priceTimesReserve;
 						}
-						if (price <= priceMaxY){
+						if (priceTimesReserve <= priceTimesReserveMaxY){
 							txApproved = true;
 							platformFeeBlockY += platformFee;
 						}
