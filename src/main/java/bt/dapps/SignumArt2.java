@@ -80,14 +80,37 @@ public class SignumArt2 extends Contract {
 	// Soulbound feature
 	boolean UseSoulbound;
 	boolean unbound = true;
+
+	//DynamicNFT
+	long MetaAlias;
+
+	// Bulk NFT
+	boolean bulkNFT;
+	long bulkSize;
+	long Buffer;
+	Register arguments;
+	Address seller;
+	long MaxSaleSize;
+	long SalePrice;
+	long Buying;
+	long Quantity;
+	long Position;
+	private static final long INDEX_OWNERS = 0;
+	private static final long INDEX_ONSALE = 1;
+	private static final long INDEX_PRICE_SELLER = 3;
+
+	// Index likes
+	private static final long INDEX_Likes = 3;
+
 	// Other constants
 	private static final long ZERO = 0;
 	private static final long STATUS_NOT_FOR_SALE = ZERO;
 	private static final long STATUS_FOR_SALE = 1;
 	private static final long STATUS_FOR_AUCTION = 2;
-	
+	private static final long STATUS_FOR_BULKNFT = 3;
+
 	private static final long THOUSAND = 1000;
-	
+	private static final long ONE = 1;
 	/** Use a contract fee of 0.3 SIGNA */
 	public static final long CONTRACT_FEES = 30000000;
 
@@ -99,7 +122,7 @@ public class SignumArt2 extends Contract {
 	 * @param newOwner
 	 */
 	public void transfer(Address newOwner) {
-		if (owner.equals(this.getCurrentTxSender()) && unbound) {
+		if (owner.equals(this.getCurrentTxSender()) && unbound && bulkNFT == false) {
 			// only the current owner can transfer
 			sendMessage(owner.getId(), newOwner.getId(), trackOwnershipTransferred);	
 			owner = newOwner;
@@ -144,7 +167,7 @@ public class SignumArt2 extends Contract {
 	 *                 this amount + gas fees)
 	 */
 	public void putForSale(long priceNQT) {
-		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound && bulkNFT == false) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			currentPrice = priceNQT;
@@ -165,7 +188,7 @@ public class SignumArt2 extends Contract {
 	 * @param reservePrice the minimum accepted price
 	 */
 	public void putForDuchAuction(long startPrice, long reservePrice, long priceDropPerBlock) {
-		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound && bulkNFT == false) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_SALE;
 			duchStartHeight = getBlockHeight();
@@ -177,6 +200,8 @@ public class SignumArt2 extends Contract {
 			sendMessage(owner.getId(), startPrice, reservePrice, priceDropPerBlock, trackDutchAuctionOpened);
 		}
 	}
+
+
 
 	/**
 	 * Put this token for auction with the minimum bid price and/or a max price
@@ -190,7 +215,7 @@ public class SignumArt2 extends Contract {
 	 * @param timeout  how many minutes the sale will be available
 	 */
 	public void putForAuction(long priceNQT, long maxPrice, int timeout) {
-		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound) {
+		if (highestBidder==null && owner.equals(this.getCurrentTxSender()) && unbound && bulkNFT == false) {
 			// only if there is no bidder and it is the current owner
 			status = STATUS_FOR_AUCTION;
 			auctionTimeout = getBlockTimestamp().addMinutes(timeout);
@@ -212,7 +237,7 @@ public class SignumArt2 extends Contract {
 	 * 
 	 */
 	public void makeOffer() {
-		if(getCurrentTxAmount() > offerPrice && highestBidder==null && unbound )  {
+		if(getCurrentTxAmount() > offerPrice && highestBidder==null && unbound && bulkNFT == false )  {
 			if(offerAddress != null) {
 				// send back the latest offer
 				sendAmount(offerPrice, offerAddress);
@@ -252,7 +277,7 @@ public class SignumArt2 extends Contract {
 	 * The owner accepts a posted offer.
 	 */
 	public void acceptOffer() {
-		if(highestBidder==null && getCurrentTxSender().equals(owner) && offerPrice > ZERO && unbound) {
+		if(highestBidder==null && getCurrentTxSender().equals(owner) && offerPrice > ZERO && unbound && bulkNFT == false) {
 			currentPrice = offerPrice;
 			pay();
 			if (status != STATUS_NOT_FOR_SALE) {
@@ -267,6 +292,56 @@ public class SignumArt2 extends Contract {
 				unbound = false;
 			}
 
+		}
+	}
+
+	// All functions needes for an BulkNFT
+	//Inital mint of the BulkSize to the owner
+	public void MintFromStack (long Quantity){
+		if (getCurrentTxSender() == owner && Quantity <= bulkSize-Buffer && bulkNFT){
+			Buffer += Quantity;
+			Position =  getValue(INDEX_OWNERS,getCurrentTxSender());
+			saveValue(INDEX_OWNERS,getCurrentTxSender(),Position+Quantity);
+
+		}
+	}
+
+	public void TransferNFTs (Address newOwner , long Quantity ) {
+		if (bulkNFT){
+			// Allow transfer only from owner if soulbound is activated (true)
+			if (getCurrentTxSender() == owner or  UseSoulbound not true){
+				Position =  getValue(INDEX_OWNERS,getCurrentTxSender())
+				if (Quantity <= Position){
+					// we transfer on the maps the positions
+					saveValue(INDEX_OWNERS,getCurrentTxSender(),Position-Quantity);
+					Position =  getValue(INDEX_OWNERS,newOwner)
+					saveValue(INDEX_OWNERS,newOwner,Position+Quantity);
+				}
+			}
+		}
+	}
+	// In this function we manage sale/ reduce & not for sale 
+	// If MaxSaleSize == 0 no sale even a price may still be set
+	public void BulkNFTSale(long Quantity,long SalePrice){
+		if (bulkNFT){
+			// Allow sales only from owner if soulbound is activated (true)
+			if (getCurrentTxSender() == owner or  UseSoulbound not true){
+				MaxSaleSize = getValue(INDEX_ONSALE,getCurrentTxSender())
+				Position =  getValue(INDEX_OWNERS,getCurrentTxSender())
+				//Saving new Sales price
+				saveValue(INDEX_PRICE_SELLER,getCurrentTxSender(),SalePrice)
+				//Check for quantity change
+				if  (Quantity <= MaxSaleSize){
+					//Remove from Sale
+					saveValue(INDEX_OWNERS,getCurrentTxSender(),Position+(MaxSaleSize-Quantity)));
+					saveValue(INDEX_ONSALE,getCurrentTxSender(),Quantity));
+				}
+				else{
+					//Add to Sale
+					saveValue(INDEX_OWNERS,getCurrentTxSender(),Position-(Quantity-MaxSaleSize));
+					saveValue(INDEX_ONSALE,getCurrentTxSender(),Quantity))
+				}
+			}
 		}
 	}
 
@@ -349,27 +424,59 @@ public class SignumArt2 extends Contract {
 				return;
 			}
 		}
+		if (status == STATUS_FOR_BULKNFT) {
+			arguments = tx.getMessage();
+			seller = arguments.getValue1();
+			MaxSaleSize = getValue(INDEX_ONSALE,seller);
+			SalePrice = getValue(INDEX_PRICE_SELLER,seller);
+			Buying = getCurrentTxAmount()/SalePrice;
+			if (Buying > ZERO && Buying <= MaxSaleSize ){
+				//Remmove size from sale
+				saveValue(INDEX_ONSALE,seller,MaxSaleSize-Buying);
+				//Add Size to buyer
+				Quantity =  getValue(INDEX_OWNERS,getCurrentTxSender());
+				saveValue(INDEX_OWNERS,getCurrentTxSender(),Buying+Quantity);
+				//Execution of Buy
+				currentPrice =  getCurrentTxAmount();
+				amountToPlatform = currentPrice * platformFee / THOUSAND;
+				amountToRoyalties = currentPrice * royaltiesFee / THOUSAND;
+				totalPlatformFee += amountToPlatform;
+				totalRoyaltiesFee += amountToRoyalties;
+				totalTimesSold++;
+				sendAmount(amountToRoyalties, royaltiesOwner);
+				sendAmount(currentPrice - amountToPlatform - amountToRoyalties, seller);
+				// We cant send messages as trackerAccount is always the same :( 
+			}
+			return;
+
+		}
+
 		// send back funds of an invalid order
 		sendAmount(getCurrentTxAmount(), getCurrentTxSender());
 	}
 	
 	public void likeIt() {
-		totalLikes++;
-		sendMessage(getCurrentTxSender().getId(), trackLikeReceived);
+		//Checking with maps that one account can only make one like
+		// I assume that if nothing is set for the key-value it returns 0
+		if 	(getValues(INDEX_PRICE_SELLER,getCurrentTxSender())  == ZERO){
+			totalLikes++;
+			saveValues(INDEX_PRICE_SELLER,getCurrentTxSender(),ONE);
+			sendMessage(getCurrentTxSender().getId(), trackLikeReceived);
+		}
 	}
-	public SetMetaDataAlias() {
+	public setMetaDataAlias() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
 		  MetaAlias = get.tx.message.argument1();
-		  saveValue(1,1,value:MetaAlias);
+		  saveValue(4,1,value:MetaAlias);
 		}
 	}
 	
-	public SetValues() {
+	public setValues() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
 		keyvalue1 = get.tx.message.argument1();
 		keyvalue2 = get.tx.message.argument2();
 		value = get.tx.message.argument3();
-		if (keyvalue1 != 1){
+		if (keyvalue1 >4){
 			saveValue(keyvalue1,keyvalue2,value);
 		   }
 		}
@@ -377,6 +484,9 @@ public class SignumArt2 extends Contract {
   
 	private void saveValue(long key1, long key2, long value) {
 		setMapValue(key1, key2, value);
+	}
+	private void getValue(long key1, long key2) {
+		getMapValue(key1, key2);
 	}
 
 	private void pay() {
