@@ -38,13 +38,13 @@ public class ShieldSwap extends Contract {
 	long decimalPlaces;
 	
 	long tokenX;
-	static long tokenY;
+	long tokenY;
 	
 	Address platformContract;
-	Address tracker;
 	
-	long swapFeeDiv = Long.MAX_VALUE;
-	long platformFeeDiv = Long.MAX_VALUE;
+	long swapFeeDiv;
+	long platformFeeDiv;
+	long minSlippage;
 	
 	long tokenXY;
 	long reserveX;
@@ -52,7 +52,7 @@ public class ShieldSwap extends Contract {
 	long totalSupply;
 	
 	long reserveXBlock, reserveYBlock;
-	long priceMaxX, priceMaxY, price;
+	long priceTimesReserveMaxX, priceTimesReserveMaxY, priceTimesReserve;
 	Timestamp lastProcessedLiquidity;
 	Timestamp lastProcessedSwapCheck;
 	Timestamp lastProcessedSwap;
@@ -70,16 +70,20 @@ public class ShieldSwap extends Contract {
 	long liquidity;
 	long liquidity2;
 	long fee, x1, y1;
+	long slippage;
 	
 	// We want the sqrt, so power is 0.5 = 5000_0000 / 10000_0000;
 	private static final long SQRT_POW = 5000_0000;
 
 	private static final long KEY_PROCESS_SWAP = 0;
+	private static final long KEY_RESERVE_X = 1;
+	private static final long KEY_RESERVE_Y = 2;
 
-	private static final long ADD_LIQUIDITY_METHOD = 1;
-	private static final long REMOVE_LIQUIDITY_METHOD = 2;
-	private static final long SWAP_XY_METHOD = 3;
-	private static final long SWAP_YX_METHOD = 4;
+	public static final long ADD_LIQUIDITY_METHOD = 1;
+	public static final long REMOVE_LIQUIDITY_METHOD = 2;
+	public static final long SWAP_XY_METHOD = 3;
+	public static final long SWAP_YX_METHOD = 4;
+	
 			
 	public ShieldSwap() {
 		// constructor, runs when the first TX arrives
@@ -92,7 +96,11 @@ public class ShieldSwap extends Contract {
 	 * This avoids the "sandwich attack" present in most liquidity pools available today.
 	 */
 	@Override
-	protected void blockStarted() {		
+	protected void blockStarted() {
+		if(tokenXY == 0L) {
+			// pool not initialized, do nothing
+			return;
+		}
 		// First we iterate to add/remove liquidity
 		while(true) {
 			tx = getTxAfterTimestamp(lastProcessedLiquidity);
@@ -126,9 +134,15 @@ public class ShieldSwap extends Contract {
 			else if(arguments.getValue1() == REMOVE_LIQUIDITY_METHOD) {
 		        liquidity = tx.getAmount(tokenXY);
 
+		        if(tokenX != 0L && tokenY != 0L) {
+		        	// this is a token-token pool, so we send out also the SIGNA balance "pro rata"
+		        	dx = calcMultDiv(liquidity, getCurrentBalance() - getActivationFee(), totalSupply);
+		        	sendAmount(dx, tx.getSenderAddress());
+		        }
+
 		        dx = calcMultDiv(liquidity, reserveX, totalSupply);
 		        dy = calcMultDiv(liquidity, reserveY, totalSupply);
-
+		        
 		        totalSupply = totalSupply - liquidity;
 		        reserveX -= dx;
 		        reserveY -= dy;
@@ -145,8 +159,8 @@ public class ShieldSwap extends Contract {
 		// the reserve changes within the block
 		reserveXBlock = reserveX;
 		reserveYBlock = reserveY;
-		priceMaxX = 0;
-		priceMaxY = 0;
+		priceTimesReserveMaxX = 0;
+		priceTimesReserveMaxY = 0;
 		platformFeeBlockX = 0;
 		platformFeeBlockY = 0;
 		while(true) {
@@ -156,7 +170,7 @@ public class ShieldSwap extends Contract {
 			}
 			lastProcessedSwapCheck = tx.getTimestamp();
 			
-			if(liquidity == 0) {
+			if(totalSupply == 0) {
 				// no liquidity to operate
 				continue;
 			}
@@ -172,13 +186,19 @@ public class ShieldSwap extends Contract {
 					y1 = calcMultDiv(reserveXBlock, reserveYBlock, x1 - fee - platformFee);
 
 					dy = y1 - reserveYBlock;
-					price = calcMultDiv(dx, reserveY, minOut);
+					priceTimesReserve = calcMultDiv(dx, reserveY, minOut);
 					
-					if(-dy >= minOut && price > 0) {
-						if (priceMaxX == 0) {
-							priceMaxX = price;
+					if(-dy >= minOut && priceTimesReserve > 0) {
+						if (priceTimesReserveMaxX == 0) {
+							// first accepted swap in this direction, check for a minimum slippage
+							slippage = calcMultDiv(priceTimesReserve, 1000, reserveX);
+							if(slippage < minSlippage) {
+								// below minimum slippage
+								continue;
+							}
+							priceTimesReserveMaxX = priceTimesReserve;
 						}
-						if (price <= priceMaxX){
+						if (priceTimesReserve <= priceTimesReserveMaxX){
 							txApproved = true;
 							platformFeeBlockX += platformFee;
 						}
@@ -193,13 +213,19 @@ public class ShieldSwap extends Contract {
 					x1 = calcMultDiv(reserveXBlock, reserveYBlock, y1 - fee - platformFee);
 					
 					dx = x1 - reserveXBlock;
-					price = calcMultDiv(dy, reserveX, minOut);
+					priceTimesReserve = calcMultDiv(dy, reserveX, minOut);
 
-					if(-dx >= minOut && price > 0) {
-						if (priceMaxY == 0) {
-							priceMaxY = price;
+					if(-dx >= minOut && priceTimesReserve > 0) {
+						if (priceTimesReserveMaxY == 0) {
+							// first accepted swap in this direction, check for a minimum slippage
+							slippage = calcMultDiv(priceTimesReserve, 1000, reserveY);
+							if(slippage < minSlippage) {
+								// below minimum slippage
+								continue;
+							}
+							priceTimesReserveMaxY = priceTimesReserve;
 						}
-						if (price <= priceMaxY){
+						if (priceTimesReserve <= priceTimesReserveMaxY){
 							txApproved = true;
 							platformFeeBlockY += platformFee;
 						}
@@ -210,7 +236,7 @@ public class ShieldSwap extends Contract {
 					// Update the amount exchanged and store the tx as processed
 					reserveXBlock += dx;
 					reserveYBlock += dy;
-					setMapValue(tx.getId(), KEY_PROCESS_SWAP, minOut);
+					setMapValue(KEY_PROCESS_SWAP, tx.getId(), minOut);
 				}
 			}			
 		}
@@ -226,7 +252,7 @@ public class ShieldSwap extends Contract {
 			arguments = tx.getMessage();
 			minOut = arguments.getValue2();
 			if(arguments.getValue1() == SWAP_XY_METHOD || arguments.getValue1() == SWAP_YX_METHOD) {
-				if(getMapValue(tx.getId(), KEY_PROCESS_SWAP) == 0) {
+				if(getMapValue(KEY_PROCESS_SWAP, tx.getId()) == 0) {
 					// this swap was not approved, refund
 					sendAmount(tokenX, tx.getAmount(tokenX), tx.getSenderAddress());
 					sendAmount(tokenY, tx.getAmount(tokenY), tx.getSenderAddress());
@@ -250,8 +276,6 @@ public class ShieldSwap extends Contract {
 						
 						sendAmount(tokenX, -dx, tx.getSenderAddress());
 					}
-					// send a message to more easily track the trades and prices
-					sendMessage(tx.getId(), arguments.getValue1(), dx, dy, tracker);
 				}
 			}
 		}
@@ -261,10 +285,38 @@ public class ShieldSwap extends Contract {
 		if(platformFeeBlockY > 0) {
 			sendAmount(tokenY, platformFeeBlockY, platformContract);
 		}
+		// store the price on this block
+		setMapValue(KEY_RESERVE_X, this.getBlockHeight(), reserveXBlock);
+		setMapValue(KEY_RESERVE_Y, this.getBlockHeight(), reserveYBlock);
 		
 		// update the reserves when the block finishes to reconcile any dust/revenue
 		reserveX = this.getCurrentBalance(tokenX);
 		reserveY = this.getCurrentBalance(tokenY);
+	}
+	
+	/**
+	 * This method removes/cleans-up an unwanted token.
+	 * 
+	 * @param tokenId the token ID
+	 */
+	public void cleanToken(long tokenId) {
+		if(tokenId == 0L || tokenId == tokenX || tokenId == tokenY) {
+			// invalid, so we do nothing
+			return;
+		}
+		sendAmount(tokenId, getCurrentBalance(tokenId), platformContract);
+	}
+	
+	/**
+	 * Allows to update the platform contract account.
+	 * 
+	 * @param newPlatformContractId
+	 */
+	public void upgradePlatformContract(long newPlatformContractId) {
+		if(getCurrentTxSender() == platformContract) {
+			// only the current platform can upgrade itself to a new account
+			platformContract = getAddress(newPlatformContractId);
+		}
 	}
 
 	@Override
@@ -285,12 +337,16 @@ public class ShieldSwap extends Contract {
 		Address lpProvider = emu.getAddress("LP_PROVIDER");
 		emu.airDrop(lpProvider, 10000*Contract.ONE_SIGNA);
 		long BTC_ASSET_ID = emu.issueAsset(lpProvider, 11111, 0, 8);
-		ShieldSwap.tokenY = BTC_ASSET_ID;
 		emu.mintAsset(lpProvider, BTC_ASSET_ID, 2*Contract.ONE_SIGNA);
 		
 		Address lp = Emulator.getInstance().getAddress("LP");
 		emu.createConctract(lpProvider, lp, ShieldSwap.class, Contract.ONE_SIGNA);
 		emu.forgeBlock();
+		ShieldSwap contract = (ShieldSwap) lp.getContract();
+		contract.tokenY = BTC_ASSET_ID;
+		contract.swapFeeDiv = Long.MAX_VALUE;
+		contract.platformFeeDiv = Long.MAX_VALUE;
+		contract.minSlippage = 1010;
 
 		long reserveX = 10000*Contract.ONE_SIGNA;
 		long reserveY = 2*Contract.ONE_SIGNA;
