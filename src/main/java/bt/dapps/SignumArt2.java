@@ -467,7 +467,7 @@ public class SignumArt2 extends Contract {
 	public setMetaDataAlias() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
 		  MetaAlias = get.tx.message.argument1();
-		  saveValue(4,1,value:MetaAlias);
+		  saveValue(4,1,MetaAlias);
 		}
 	}
 	

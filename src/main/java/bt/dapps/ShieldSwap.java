@@ -59,6 +59,10 @@ public class ShieldSwap extends Contract {
 	long platformFee;
 	long platformFeeBlockX;
 	long platformFeeBlockY;
+	long lpFeeBlockX;
+	long lpFeeBlockY;
+	long swapVolumeX;
+	long swapVolumeY;
 	
 	Transaction tx;
 	Register arguments;
@@ -78,12 +82,19 @@ public class ShieldSwap extends Contract {
 	private static final long KEY_PROCESS_SWAP = 0;
 	private static final long KEY_RESERVE_X = 1;
 	private static final long KEY_RESERVE_Y = 2;
+	private static final long KEY_LP_FEE_X  = 3;
+	private static final long KEY_LP_FEE_Y  = 4;
+	private static final long Key_PF_FEE_X  = 5;
+	private static final long Key_PF_FEE_Y  = 6
+	private static final long KEY_SWAP_X_VOLUME   = 7;
+	private static final long KEY_SWAP_Y_VOLUME   = 8;
 
 	public static final long ADD_LIQUIDITY_METHOD = 1;
 	public static final long REMOVE_LIQUIDITY_METHOD = 2;
 	public static final long SWAP_XY_METHOD = 3;
 	public static final long SWAP_YX_METHOD = 4;
 	
+	public static final long ZERO = 0;
 			
 	public ShieldSwap() {
 		// constructor, runs when the first TX arrives
@@ -114,7 +125,7 @@ public class ShieldSwap extends Contract {
 				dx = tx.getAmount(tokenX);
 				dy = tx.getAmount(tokenY);
 				
-				if(totalSupply == 0) {
+				if(totalSupply == ZERO) {
 					liquidity = calcPow(dx, SQRT_POW)*calcPow(dy, SQRT_POW);
 				}
 				else {
@@ -151,7 +162,7 @@ public class ShieldSwap extends Contract {
 		        sendAmount(tokenY, dy, tx.getSenderAddress());
 		        
 		        // burn the XY token
-		        sendAmount(tokenXY, liquidity, getAddress(0));
+		        sendAmount(tokenXY, liquidity, getAddress(ZERO));
 		    }
 		}
 
@@ -159,10 +170,15 @@ public class ShieldSwap extends Contract {
 		// the reserve changes within the block
 		reserveXBlock = reserveX;
 		reserveYBlock = reserveY;
-		priceTimesReserveMaxX = 0;
-		priceTimesReserveMaxY = 0;
-		platformFeeBlockX = 0;
-		platformFeeBlockY = 0;
+		priceTimesReserveMaxX = ZERO;
+		priceTimesReserveMaxY = ZERO;
+		platformFeeBlockX = ZERO;
+		platformFeeBlockY = ZERO;
+		lpFeeBlockX = ZERO;
+		lpFeeBlockY = ZERO;
+		swapVolumeX = ZERO;
+		swapVolumeY = ZERO;
+
 		while(true) {
 			tx = getTxAfterTimestamp(lastProcessedSwapCheck);
 			if(tx == null) {
@@ -170,14 +186,14 @@ public class ShieldSwap extends Contract {
 			}
 			lastProcessedSwapCheck = tx.getTimestamp();
 			
-			if(totalSupply == 0) {
+			if(totalSupply == ZERO) {
 				// no liquidity to operate
 				continue;
 			}
 			txApproved = false;
 			arguments = tx.getMessage();
 			minOut = arguments.getValue2();
-			if(minOut > 0) {
+			if(minOut > ZERO) {
 				if(arguments.getValue1() == SWAP_XY_METHOD) {
 					dx = tx.getAmount(tokenX);
 					fee = dx/swapFeeDiv;
@@ -188,8 +204,8 @@ public class ShieldSwap extends Contract {
 					dy = y1 - reserveYBlock;
 					priceTimesReserve = calcMultDiv(dx, reserveY, minOut);
 					
-					if(-dy >= minOut && priceTimesReserve > 0) {
-						if (priceTimesReserveMaxX == 0) {
+					if(-dy >= minOut && priceTimesReserve > ZERO) {
+						if (priceTimesReserveMaxX == ZERO) {
 							// first accepted swap in this direction, check for a minimum slippage
 							slippage = calcMultDiv(priceTimesReserve, 1000, reserveX);
 							if(slippage < minSlippage) {
@@ -201,6 +217,8 @@ public class ShieldSwap extends Contract {
 						if (priceTimesReserve <= priceTimesReserveMaxX){
 							txApproved = true;
 							platformFeeBlockX += platformFee;
+							lpFeeBlockX += fee;
+							swapVolumeX += dx;
 						}
 					}
 				}
@@ -215,8 +233,8 @@ public class ShieldSwap extends Contract {
 					dx = x1 - reserveXBlock;
 					priceTimesReserve = calcMultDiv(dy, reserveX, minOut);
 
-					if(-dx >= minOut && priceTimesReserve > 0) {
-						if (priceTimesReserveMaxY == 0) {
+					if(-dx >= minOut && priceTimesReserve > ZERO) {
+						if (priceTimesReserveMaxY == ZERO) {
 							// first accepted swap in this direction, check for a minimum slippage
 							slippage = calcMultDiv(priceTimesReserve, 1000, reserveY);
 							if(slippage < minSlippage) {
@@ -228,6 +246,8 @@ public class ShieldSwap extends Contract {
 						if (priceTimesReserve <= priceTimesReserveMaxY){
 							txApproved = true;
 							platformFeeBlockY += platformFee;
+							lpFeeBlockY += fee;
+							swapVolumeY += dy;
 						}
 					}
 				}
@@ -252,7 +272,7 @@ public class ShieldSwap extends Contract {
 			arguments = tx.getMessage();
 			minOut = arguments.getValue2();
 			if(arguments.getValue1() == SWAP_XY_METHOD || arguments.getValue1() == SWAP_YX_METHOD) {
-				if(getMapValue(KEY_PROCESS_SWAP, tx.getId()) == 0) {
+				if(getMapValue(KEY_PROCESS_SWAP, tx.getId()) == ZERO) {
 					// this swap was not approved, refund
 					sendAmount(tokenX, tx.getAmount(tokenX), tx.getSenderAddress());
 					sendAmount(tokenY, tx.getAmount(tokenY), tx.getSenderAddress());
@@ -279,16 +299,24 @@ public class ShieldSwap extends Contract {
 				}
 			}
 		}
-		if(platformFeeBlockX > 0) {
+		if(platformFeeBlockX > ZERO) {
 			sendAmount(tokenX, platformFeeBlockX, platformContract);
 		}
-		if(platformFeeBlockY > 0) {
+		if(platformFeeBlockY > ZERO) {
 			sendAmount(tokenY, platformFeeBlockY, platformContract);
 		}
 		// store the price on this block
 		setMapValue(KEY_RESERVE_X, this.getBlockHeight(), reserveXBlock);
 		setMapValue(KEY_RESERVE_Y, this.getBlockHeight(), reserveYBlock);
-		
+		// store the platform fee on this block
+		setMapValue(Key_PF_FEE_X ,this.getBlockHeight(), platformFeeBlockX);
+		setMapValue(Key_PF_FEE_Y, this.getBlockHeight(), platformFeeBlockY);
+		// store the  swap volume X and Y
+		setMapValue(KEY_SWAP_X_VOLUME ,this.getBlockHeight(), swapVolumeX);		
+		setMapValue(KEY_SWAP_Y_VOLUME ,this.getBlockHeight(), swapVolumeY);	
+		// store the lp fee for x and Y
+		setMapValue(KEY_LP_FEE_X ,this.getBlockHeight(), lpFeeBlockX);		
+		setMapValue(KEY_LP_FEE_Y ,this.getBlockHeight(), lpFeeBlockY);		
 		// update the reserves when the block finishes to reconcile any dust/revenue
 		reserveX = this.getCurrentBalance(tokenX);
 		reserveY = this.getCurrentBalance(tokenY);
