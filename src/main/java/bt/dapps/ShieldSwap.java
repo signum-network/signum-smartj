@@ -84,8 +84,8 @@ public class ShieldSwap extends Contract {
 	private static final long KEY_RESERVE_Y = 2;
 	private static final long KEY_LP_FEE_X  = 3;
 	private static final long KEY_LP_FEE_Y  = 4;
-	private static final long Key_PF_FEE_X  = 5;
-	private static final long Key_PF_FEE_Y  = 6
+	private static final long KEY_PF_FEE_X  = 5;
+	private static final long KEY_PF_FEE_Y  = 6
 	private static final long KEY_SWAP_X_VOLUME   = 7;
 	private static final long KEY_SWAP_Y_VOLUME   = 8;
 
@@ -309,8 +309,8 @@ public class ShieldSwap extends Contract {
 		setMapValue(KEY_RESERVE_X, this.getBlockHeight(), reserveXBlock);
 		setMapValue(KEY_RESERVE_Y, this.getBlockHeight(), reserveYBlock);
 		// store the platform fee on this block
-		setMapValue(Key_PF_FEE_X ,this.getBlockHeight(), platformFeeBlockX);
-		setMapValue(Key_PF_FEE_Y, this.getBlockHeight(), platformFeeBlockY);
+		setMapValue(KEY_PF_FEE_X ,this.getBlockHeight(), platformFeeBlockX);
+		setMapValue(KEY_PF_FEE_Y, this.getBlockHeight(), platformFeeBlockY);
 		// store the  swap volume X and Y
 		setMapValue(KEY_SWAP_X_VOLUME ,this.getBlockHeight(), swapVolumeX);		
 		setMapValue(KEY_SWAP_Y_VOLUME ,this.getBlockHeight(), swapVolumeY);	
