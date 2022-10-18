@@ -78,7 +78,7 @@ public class SignumArt3 extends Contract {
 	long amountToPlatform;
 
 	// Soulbound feature
-	boolean UseSoulbound;
+	boolean useSoulbound;
 	boolean unbound = true;
 
 	//DynamicNFT
@@ -87,23 +87,24 @@ public class SignumArt3 extends Contract {
 	// Bulk NFT
 	boolean bulkNFT;
 	long bulkSize;
-	long Buffer;
+	long buffer;
 	Register arguments;
 	Address seller;
-	long MaxSaleSize;
-	long SalePrice;
-	long Buying;
-	long Quantity;
-	long Position;
+	long maxSaleSize;
+	long salePrice;
+	long buying;
+	long quantity;
+	long position;
 	private static final long INDEX_OWNERS = 0;
 	private static final long INDEX_ONSALE = 1;
-	private static final long INDEX_PRICE_SELLER = 3;
+	private static final long INDEX_PRICE_SELLER = 2;
 
 	// Index likes
 	private static final long INDEX_Likes = 3;
 
 	// Other constants
 	private static final long ZERO = 0;
+	private static final long FOUR = 4;
 	private static final long STATUS_NOT_FOR_SALE = ZERO;
 	private static final long STATUS_FOR_SALE = 1;
 	private static final long STATUS_FOR_AUCTION = 2;
@@ -126,7 +127,7 @@ public class SignumArt3 extends Contract {
 			// only the current owner can transfer
 			sendMessage(owner.getId(), newOwner.getId(), trackOwnershipTransferred);	
 			owner = newOwner;
-			if (UseSoulbound) {
+			if (useSoulbound) {
 				unbound = false;
 			}
 		}
@@ -288,7 +289,7 @@ public class SignumArt3 extends Contract {
 			offerAddress = null;
 			offerPrice = ZERO;
 			status = STATUS_NOT_FOR_SALE;
-			if (UseSoulbound) {
+			if (useSoulbound) {
 				unbound = false;
 			}
 
@@ -297,49 +298,49 @@ public class SignumArt3 extends Contract {
 
 	// All functions needes for an BulkNFT
 	//Inital mint of the BulkSize to the owner
-	public void MintFromStack (long Quantity){
-		if (getCurrentTxSender() == owner && Quantity <= bulkSize-Buffer && bulkNFT){
-			Buffer += Quantity;
-			Position =  getValue(INDEX_OWNERS,getCurrentTxSender());
-			saveValue(INDEX_OWNERS,getCurrentTxSender(),Position+Quantity);
+	public void mintFromStack (long size){
+		if (getCurrentTxSender() == owner && size <= bulkSize-buffer && bulkNFT){
+			buffer += size;
+			position =  getValue(INDEX_OWNERS,getCurrentTxSender());
+			saveValue(INDEX_OWNERS,getCurrentTxSender(),position+size);
 
 		}
 	}
 
-	public void TransferNFTs (Address newOwner , long Quantity ) {
+	public void transferNFTs (Address newOwner , long size ) {
 		if (bulkNFT){
 			// Allow transfer only from owner if soulbound is activated (true)
-			if (getCurrentTxSender() == owner or  UseSoulbound not true){
-				Position =  getValue(INDEX_OWNERS,getCurrentTxSender())
-				if (Quantity <= Position){
+			if (getCurrentTxSender() == owner or  useSoulbound not true){
+				position =  getValue(INDEX_OWNERS,getCurrentTxSender())
+				if (size <= position){
 					// we transfer on the maps the positions
-					saveValue(INDEX_OWNERS,getCurrentTxSender(),Position-Quantity);
-					Position =  getValue(INDEX_OWNERS,newOwner)
-					saveValue(INDEX_OWNERS,newOwner,Position+Quantity);
+					saveValue(INDEX_OWNERS,getCurrentTxSender(),position-size);
+					position =  getValue(INDEX_OWNERS,newOwner)
+					saveValue(INDEX_OWNERS,newOwner,position+size);
 				}
 			}
 		}
 	}
 	// In this function we manage sale/ reduce & not for sale 
 	// If MaxSaleSize == 0 no sale even a price may still be set
-	public void BulkNFTSale(long Quantity,long SalePrice){
+	public void bulkNFTSale(long size,long salePrice){
 		if (bulkNFT){
 			// Allow sales only from owner if soulbound is activated (true)
-			if (getCurrentTxSender() == owner or  UseSoulbound not true){
-				MaxSaleSize = getValue(INDEX_ONSALE,getCurrentTxSender())
-				Position =  getValue(INDEX_OWNERS,getCurrentTxSender())
+			if (getCurrentTxSender() == owner or  useSoulbound not true){
+				maxSaleSize = getValue(INDEX_ONSALE,getCurrentTxSender())
+				position =  getValue(INDEX_OWNERS,getCurrentTxSender())
 				//Saving new Sales price
-				saveValue(INDEX_PRICE_SELLER,getCurrentTxSender(),SalePrice)
+				saveValue(INDEX_PRICE_SELLER,getCurrentTxSender(),salePrice)
 				//Check for quantity change
-				if  (Quantity <= MaxSaleSize){
+				if  (size <= maxSaleSize){
 					//Remove from Sale
-					saveValue(INDEX_OWNERS,getCurrentTxSender(),Position+(MaxSaleSize-Quantity)));
-					saveValue(INDEX_ONSALE,getCurrentTxSender(),Quantity));
+					saveValue(INDEX_OWNERS,getCurrentTxSender(),position+maxSaleSize-size));
+					saveValue(INDEX_ONSALE,getCurrentTxSender(),size));
 				}
 				else{
 					//Add to Sale
-					saveValue(INDEX_OWNERS,getCurrentTxSender(),Position-(Quantity-MaxSaleSize));
-					saveValue(INDEX_ONSALE,getCurrentTxSender(),Quantity))
+					saveValue(INDEX_OWNERS,getCurrentTxSender(),position-size-maxSaleSize));
+					saveValue(INDEX_ONSALE,getCurrentTxSender(),size))
 				}
 			}
 		}
@@ -374,7 +375,7 @@ public class SignumArt3 extends Contract {
 				owner = getCurrentTxSender(); // new owner
 				status = STATUS_NOT_FOR_SALE;
 				cancelOfferIfPresent();
-				if (UseSoulbound) {
+				if (useSoulbound) {
 					unbound = false;
 				}
 				return;
@@ -391,7 +392,7 @@ public class SignumArt3 extends Contract {
 					status = STATUS_NOT_FOR_SALE;
 					auctionMaxPrice = ZERO;
 					cancelOfferIfPresent();
-					if (UseSoulbound) {
+					if (useSoulbound) {
 						unbound = false;
 					}
 				}
@@ -417,7 +418,7 @@ public class SignumArt3 extends Contract {
 					status = STATUS_NOT_FOR_SALE;
 					auctionMaxPrice = ZERO;
 					cancelOfferIfPresent();
-					if (UseSoulbound) {
+					if (useSoulbound) {
 						unbound = false;
 					}
 				}
@@ -427,15 +428,15 @@ public class SignumArt3 extends Contract {
 		if (status == STATUS_FOR_BULKNFT) {
 			arguments = tx.getMessage();
 			seller = arguments.getValue1();
-			MaxSaleSize = getValue(INDEX_ONSALE,seller);
-			SalePrice = getValue(INDEX_PRICE_SELLER,seller);
-			Buying = getCurrentTxAmount()/SalePrice;
-			if (Buying > ZERO && Buying <= MaxSaleSize ){
+			maxSaleSize = getValue(INDEX_ONSALE,seller);
+			salePrice = getValue(INDEX_PRICE_SELLER,seller);
+			buying = getCurrentTxAmount()/salePrice;
+			if (buying > ZERO && buying <= maxSaleSize ){
 				//Remmove size from sale
-				saveValue(INDEX_ONSALE,seller,MaxSaleSize-Buying);
+				saveValue(INDEX_ONSALE,seller,maxSaleSize-buying);
 				//Add Size to buyer
-				Quantity =  getValue(INDEX_OWNERS,getCurrentTxSender());
-				saveValue(INDEX_OWNERS,getCurrentTxSender(),Buying+Quantity);
+				quantity =  getValue(INDEX_OWNERS,getCurrentTxSender());
+				saveValue(INDEX_OWNERS,getCurrentTxSender(),buying+quantity);
 				//Execution of Buy
 				currentPrice =  getCurrentTxAmount();
 				amountToPlatform = currentPrice * platformFee / THOUSAND;
@@ -458,16 +459,16 @@ public class SignumArt3 extends Contract {
 	public void likeIt() {
 		//Checking with maps that one account can only make one like
 		// I assume that if nothing is set for the key-value it returns 0
-		if 	(getValues(INDEX_PRICE_SELLER,getCurrentTxSender())  == ZERO){
+		if 	(getValues(INDEX_Likes,getCurrentTxSender())  == ZERO){
 			totalLikes++;
-			saveValues(INDEX_PRICE_SELLER,getCurrentTxSender(),ONE);
+			saveValues(INDEX_Likes,getCurrentTxSender(),ONE);
 			sendMessage(getCurrentTxSender().getId(), trackLikeReceived);
 		}
 	}
 	public setMetaDataAlias() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
 		  MetaAlias = get.tx.message.argument1();
-		  saveValue(4,1,MetaAlias);
+		  saveValue(FOUR,1,MetaAlias);
 		}
 	}
 	
@@ -476,7 +477,7 @@ public class SignumArt3 extends Contract {
 		keyvalue1 = get.tx.message.argument1();
 		keyvalue2 = get.tx.message.argument2();
 		value = get.tx.message.argument3();
-		if (keyvalue1 >4){
+		if (keyvalue1 >FOUR){
 			saveValue(keyvalue1,keyvalue2,value);
 		   }
 		}
