@@ -39,6 +39,8 @@ public class ShieldSwap extends Contract {
 	
 	long tokenX;
 	long tokenY;
+	long weightX;
+	long weightY;
 	
 	Address platformContract;
 	
