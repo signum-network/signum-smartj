@@ -204,9 +204,8 @@ public class SignumArt2 extends Contract {
 	 * The owner can accept the offer and the offer is cancelled/refunded if the item is
 	 * actually sold or a running auction ends.
 	 * 
-	 * @param offerNQT
 	 */
-	public void makeOffer(long offerNQT) {
+	public void makeOffer() {
 		if(getCurrentTxAmount() > offerPrice) {
 			if(offerAddress != null) {
 				// send back the latest offer
@@ -299,6 +298,7 @@ public class SignumArt2 extends Contract {
 					owner = highestBidder; // new owner
 					highestBidder = null;
 					status = STATUS_NOT_FOR_SALE;
+					auctionMaxPrice = ZERO;
 					sendMessage(owner.getId(), currentPrice, trackNewOwner);
 					
 					cancelOfferIfPresent();
