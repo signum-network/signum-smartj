@@ -470,7 +470,7 @@ public class SignumArt3 extends Contract {
 	
 	public void setMetaDataAlias() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
-		  saveValue(FOUR,1,getCurrentTx().getMessage().getValue1());
+		  saveValue(FOUR,ONE,getCurrentTx().getMessage().getValue1());
 		}
 	}
 	
