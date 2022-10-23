@@ -35,6 +35,7 @@ public class StakingContract {
     long staked;
     long distributedAmount;
 	Transaction tx;
+    long lastBlockDistributed=0;
     public static final long ZERO = 0;
     public static final long ONE = 1;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 1;
@@ -88,17 +89,20 @@ public class StakingContract {
 
         }
         //Check distribution and distribute - no clue how to call the function
+        // Min Intervall needs to be checked before paying (in blocks)
         // hope parameter are clear
-        if(this.getCurrentBalance(ZERO) >= dthMinimumAmount){
-            if (this.getCurrentBalance(ZERO) > dthMaximumAmount){
-                distributedAmount = dthMaximumAmount;
-                this.distribute(ZERO,dthMinimumQuantity,stakingToken,dthMaximumAmount);
+        if( this.getBlockHeight() - lastBlockDistributed >= dthinterval){
+            if(this.getCurrentBalance(ZERO) >= dthMinimumAmount){
+                if (this.getCurrentBalance(ZERO) > dthMaximumAmount){
+                    distributedAmount = dthMaximumAmount;
+                    this.distribute(ZERO,dthMinimumQuantity,stakingToken,dthMaximumAmount);
+                }
+                else{
+                    distributedAmount = this.getCurrentBalance(ZERO);
+                    this.distribute(ZERO,dthMinimumQuantity,stakingToken,this.getCurrentBalance(ZERO));
+                }
             }
-            else{
-                distributedAmount = this.getCurrentBalance(ZERO);
-                this.distribute(ZERO,dthMinimumQuantity,stakingToken,this.getCurrentBalance(ZERO));
-            }
-        }
+         }
         //Adding new stake / remove stake to maps also 
         // store the stake delta if any
         if (staked != ZERO){
