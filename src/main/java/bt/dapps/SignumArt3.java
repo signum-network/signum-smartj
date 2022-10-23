@@ -338,8 +338,10 @@ public class SignumArt3 extends Contract {
 				}
 				else{
 					//Add to Sale
+					if(size <= position){
 					saveValue(INDEX_OWNERS, getCurrentTxSender().getId(), position-size-maxSaleSize);
 					saveValue(INDEX_ONSALE, getCurrentTxSender().getId(), size);
+					}
 				}
 			}
 		}
@@ -442,10 +444,11 @@ public class SignumArt3 extends Contract {
 				amountToRoyalties = currentPrice * royaltiesFee / THOUSAND;
 				totalPlatformFee += amountToPlatform;
 				totalRoyaltiesFee += amountToRoyalties;
-				totalTimesSold++;
+				totalTimesSold += buying;
 				sendAmount(amountToRoyalties, royaltiesOwner);
 				sendAmount(currentPrice - amountToPlatform - amountToRoyalties, seller);
-				// We cant send messages as trackerAccount is always the same :( 
+				// We cant send messages to trackerAccount as we could have several sales in on block:( 
+
 			}
 			return;
 
@@ -467,18 +470,14 @@ public class SignumArt3 extends Contract {
 	
 	public void setMetaDataAlias() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
-		  MetaAlias = getCurrentTx().getMessage().getValue1();
-		  saveValue(FOUR,1,MetaAlias);
+		  saveValue(FOUR,ONE,getCurrentTx().getMessage().getValue1());
 		}
 	}
 	
 	public void setValues() {
 		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
-		long keyvalue1 = getCurrentTx().getMessage().getValue1();
-		long keyvalue2 = getCurrentTx().getMessage().getValue2();
-		long value = getCurrentTx().getMessage().getValue3();
-		if (keyvalue1 > FOUR){
-			saveValue(keyvalue1,keyvalue2,value);
+		if (getCurrentTx().getMessage().getValue1() > FOUR){
+			saveValue(getCurrentTx().getMessage().getValue1(),getCurrentTx().getMessage().getValue2(),getCurrentTx().getMessage().getValue3());
 		   }
 		}
   	}

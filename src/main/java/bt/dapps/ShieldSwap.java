@@ -87,7 +87,7 @@ public class ShieldSwap extends Contract {
 	private static final long KEY_LP_FEE_X  = 3;
 	private static final long KEY_LP_FEE_Y  = 4;
 	private static final long KEY_PF_FEE_X  = 5;
-	private static final long KEY_PF_FEE_Y  = 6
+	private static final long KEY_PF_FEE_Y  = 6;
 	private static final long KEY_SWAP_X_VOLUME   = 7;
 	private static final long KEY_SWAP_Y_VOLUME   = 8;
 
