@@ -38,11 +38,13 @@ public class StakingContract extends Contract {
     Timestamp lastProcessedTx;
     Register arguments;
     long staked;
+    long totalstaked = 0;
     long distributedAmount;
 	Transaction tx;
     long lastBlockDistributed=0;
     public static final long ZERO = 0;
     public static final long ONE = 1;
+    public static final long TWO = 2;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 1;
 
     public StakingContract() {
@@ -70,11 +72,13 @@ public class StakingContract extends Contract {
                 mintAsset(stakingToken,tx.getAmount(token));
                 sendAmount(stakingToken, tx.getAmount(token), tx.getSenderAddress());
                 staked += tx.getAmount(token);
+                totalstaked += tx.getAmount(token);
             }
             //User removes stakingToken
             if(tx.getAmount(stakingToken) > ZERO){
                 sendAmount(token, tx.getAmount(stakingToken), tx.getSenderAddress());
                 staked -= tx.getAmount(token);
+                totalstaked -= tx.getAmount(token);
                 // burn stakingToken
 		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
             }
@@ -108,10 +112,11 @@ public class StakingContract extends Contract {
         // store the stake delta if any
         if (staked != ZERO){
             setMapValue(ZERO, this.getBlockHeight(), staked);
+            setMapValue(ONE, this.getBlockHeight(), totalstaked);
         }
-        // stroe the distribution if any
+        // store the distribution if any
         if (distributedAmount >= ZERO){
-		    setMapValue(ONE, this.getBlockHeight(), distributedAmount);
+		    setMapValue(TWO, this.getBlockHeight(), distributedAmount);
         }
     }
 
