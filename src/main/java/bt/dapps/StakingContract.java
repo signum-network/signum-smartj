@@ -1,19 +1,15 @@
 package bt.dapps;
 
-import bt.Address;
-import bt.BT;
 import bt.Contract;
-import bt.Emulator;
 import bt.Register;
 import bt.Timestamp;
 import bt.Transaction;
-import bt.ui.EmulatorWindow;
+
 /**
  * 
  * @author frank_the_tank
  */
-
-public class StakingContract {
+public class StakingContract extends Contract {
     //stakingToken 
     long name;
 	long decimalPlaces;
@@ -43,7 +39,7 @@ public class StakingContract {
     public StakingContract() {
 	    // constructor, runs when the first TX arrives
 	    stakingToken = issueAsset(name, 0L, decimalPlaces);
-        }
+    }
 
     @Override
     protected void blockStarted() {
@@ -64,12 +60,12 @@ public class StakingContract {
             if(tx.getAmount(token) > ZERO){
                 mintAsset(stakingToken,tx.getAmount(token));
                 sendAmount(stakingToken, tx.getAmount(token), tx.getSenderAddress());
-                staked += tx.getAmount(token)
+                staked += tx.getAmount(token);
             }
             //User removes stakingToken
             if(tx.getAmount(stakingToken) > ZERO){
                 sendAmount(token, tx.getAmount(stakingToken), tx.getSenderAddress());
-                staked -= tx.getAmount(token)
+                staked -= tx.getAmount(token);
                 // burn stakingToken
 		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
             }
@@ -82,7 +78,10 @@ public class StakingContract {
                         //distribute the token
                         // no clue how to call the function for real
                         // params : tokenToDistribut;MinTokenSize,stakingToken
-                        this.distribute(arguments.getValue2(),dthMinimumQuantity,stakingToken,getCurrentBalance(arguments.getValue2())
+                      
+
+                      distributeToHolders(stakingToken, dthMinimumQuantity, ZERO,
+                          arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
                     }
                 }
             }
@@ -92,14 +91,14 @@ public class StakingContract {
         // Min Intervall needs to be checked before paying (in blocks)
         // hope parameter are clear
         if( this.getBlockHeight() - lastBlockDistributed >= dthinterval){
-            if(this.getCurrentBalance(ZERO) >= dthMinimumAmount){
-                if (this.getCurrentBalance(ZERO) > dthMaximumAmount){
+            if(this.getCurrentBalance() >= dthMinimumAmount){
+                if (this.getCurrentBalance() > dthMaximumAmount){
                     distributedAmount = dthMaximumAmount;
-                    this.distribute(ZERO,dthMinimumQuantity,stakingToken,dthMaximumAmount);
+                    distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
                 }
                 else{
-                    distributedAmount = this.getCurrentBalance(ZERO);
-                    this.distribute(ZERO,dthMinimumQuantity,stakingToken,this.getCurrentBalance(ZERO));
+                    distributedAmount = this.getCurrentBalance();
+                    distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
                 }
             }
          }
@@ -112,5 +111,10 @@ public class StakingContract {
         if (distributedAmount >= ZERO){
 		    setMapValue(ONE, this.getBlockHeight(), distributedAmount);
         }
+    }
+
+    @Override
+    public void txReceived() {
+      // do nothing, since we are using a loop on blockStarted over all transactions
     }
 }
