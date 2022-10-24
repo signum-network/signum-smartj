@@ -43,6 +43,7 @@ public class StakingContract extends Contract {
     long distributedAmount;
 	Transaction tx;
     long lastBlockDistributed=0;
+
     public static final long ZERO = 0;
     public static final long ONE = 1;
     public static final long TWO = 2;
@@ -94,12 +95,12 @@ public class StakingContract extends Contract {
                     }
                 }
             }
-
         }
         //Check interval/minAmount and distribute Signa
         if( this.getBlockHeight() - lastBlockDistributed >= dthinterval){
             if(this.getCurrentBalance() >= dthMinimumAmount){
-                if (this.getCurrentBalance() > dthMaximumAmount && dthMaximumAmount != ZERO){
+                lastBlockDistributed = this.getBlockHeight();
+                 if (this.getCurrentBalance() > dthMaximumAmount && dthMaximumAmount != ZERO){
                     distributedAmount = dthMaximumAmount;
                     distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
                 }
@@ -116,7 +117,7 @@ public class StakingContract extends Contract {
             setMapValue(ONE, this.getBlockHeight(), totalstaked);
         }
         // store the distribution if any
-        if (distributedAmount >= ZERO){
+        if (distributedAmount > ZERO){
 		    setMapValue(TWO, this.getBlockHeight(), distributedAmount);
         }
     }
