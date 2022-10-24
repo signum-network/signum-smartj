@@ -6,6 +6,15 @@ import bt.Timestamp;
 import bt.Transaction;
 
 /**
+ * A staking contract for the Signum Blockchain
+ * 
+ * The creator can define which token can be staked on this contract
+ * Any income of Signa to this contract will be distributed to the stakingToken holders.
+ * In the contract the following can be defined:
+ * dthinterval = Minimum blocks between distribution; 0 = no waiting
+ * dthMinimumAmount = Minimum Amount of Signa needed on the contract to trigger a distribution
+ * dthMaximumAmount = Maximum Amount of Signa which will be distributed when distribution is triggered
+ * dthMinimumQuantity = Minimum number of stakingToken needed to be eligible for the distribution
  * 
  * @author frank_the_tank
  */
@@ -29,11 +38,13 @@ public class StakingContract extends Contract {
     Timestamp lastProcessedTx;
     Register arguments;
     long staked;
+    long totalstaked = 0;
     long distributedAmount;
 	Transaction tx;
     long lastBlockDistributed=0;
     public static final long ZERO = 0;
     public static final long ONE = 1;
+    public static final long TWO = 2;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 1;
 
     public StakingContract() {
@@ -61,11 +72,13 @@ public class StakingContract extends Contract {
                 mintAsset(stakingToken,tx.getAmount(token));
                 sendAmount(stakingToken, tx.getAmount(token), tx.getSenderAddress());
                 staked += tx.getAmount(token);
+                totalstaked += tx.getAmount(token);
             }
             //User removes stakingToken
             if(tx.getAmount(stakingToken) > ZERO){
                 sendAmount(token, tx.getAmount(stakingToken), tx.getSenderAddress());
                 staked -= tx.getAmount(token);
+                totalstaked -= tx.getAmount(token);
                 // burn stakingToken
 		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
             }
@@ -76,23 +89,16 @@ public class StakingContract extends Contract {
                 //check ballance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY){
                         //distribute the token
-                        // no clue how to call the function for real
-                        // params : tokenToDistribut;MinTokenSize,stakingToken
-                      
-
-                      distributeToHolders(stakingToken, dthMinimumQuantity, ZERO,
-                          arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
+                        distributeToHolders(stakingToken, dthMinimumQuantity, ZERO,arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
                     }
                 }
             }
 
         }
-        //Check distribution and distribute - no clue how to call the function
-        // Min Intervall needs to be checked before paying (in blocks)
-        // hope parameter are clear
+        //Check interval/minAmount and distribute Signa
         if( this.getBlockHeight() - lastBlockDistributed >= dthinterval){
             if(this.getCurrentBalance() >= dthMinimumAmount){
-                if (this.getCurrentBalance() > dthMaximumAmount){
+                if (this.getCurrentBalance() > dthMaximumAmount && dthMaximumAmount != ZERO){
                     distributedAmount = dthMaximumAmount;
                     distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
                 }
@@ -106,10 +112,11 @@ public class StakingContract extends Contract {
         // store the stake delta if any
         if (staked != ZERO){
             setMapValue(ZERO, this.getBlockHeight(), staked);
+            setMapValue(ONE, this.getBlockHeight(), totalstaked);
         }
-        // stroe the distribution if any
+        // store the distribution if any
         if (distributedAmount >= ZERO){
-		    setMapValue(ONE, this.getBlockHeight(), distributedAmount);
+		    setMapValue(TWO, this.getBlockHeight(), distributedAmount);
         }
     }
 
