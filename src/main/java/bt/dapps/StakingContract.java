@@ -22,7 +22,6 @@ public class StakingContract extends Contract {
     //stakingToken 
     long name;
 	long decimalPlaces;
-	long stakingToken;
 
     //Token for staking
     long token;
@@ -33,6 +32,8 @@ public class StakingContract extends Contract {
     long dthinterval;
     long dthMinimumQuantity; 
     long MinimumTokenXY;
+    
+    long stakingToken;
 
     // temporary variables
     Timestamp lastProcessedTx;
