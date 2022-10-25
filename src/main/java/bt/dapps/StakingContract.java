@@ -49,6 +49,9 @@ public class StakingContract extends Contract {
     public static final long TWO = 2;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 1;
 
+	/** Use a contract fee of 0.3 SIGNA */
+	public static final long CONTRACT_FEES = 120000000;
+
     public StakingContract() {
 	    // constructor, runs when the first TX arrives
 	    stakingToken = issueAsset(name, 0L, decimalPlaces);
@@ -98,19 +101,19 @@ public class StakingContract extends Contract {
         }
         //Check interval/minAmount and distribute Signa
         if( this.getBlockHeight() - lastBlockDistributed >= dthinterval){
-            if(this.getCurrentBalance() >= dthMinimumAmount){
+            if(this.getCurrentBalance()-CONTRACT_FEES  >= dthMinimumAmount){
                 lastBlockDistributed = this.getBlockHeight();
-                 if (this.getCurrentBalance() > dthMaximumAmount && dthMaximumAmount != ZERO){
+                 if (this.getCurrentBalance()-CONTRACT_FEES > dthMaximumAmount && dthMaximumAmount != ZERO){
                     distributedAmount = dthMaximumAmount;
                     distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
                 }
                 else{
-                    distributedAmount = this.getCurrentBalance();
+                    distributedAmount = this.getCurrentBalance()-CONTRACT_FEES;
                     distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
                 }
             }
          }
-        //Adding new stake / remove stake to maps also 
+        // Adding new stake / remove stake to maps also 
         // store the stake delta if any
         if (staked != ZERO){
             setMapValue(ZERO, this.getBlockHeight(), staked);
