@@ -82,8 +82,8 @@ public class StakingContract extends Contract {
             //User removes stakingToken
             if(tx.getAmount(stakingToken) > ZERO){
                 sendAmount(token, tx.getAmount(stakingToken), tx.getSenderAddress());
-                staked -= tx.getAmount(token);
-                totalstaked -= tx.getAmount(token);
+                staked -= tx.getAmount(stakingToken);
+                totalstaked -= tx.getAmount(stakingToken);
                 // burn stakingToken
 		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
             }
