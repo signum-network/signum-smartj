@@ -8,14 +8,20 @@ import bt.Transaction;
 /**
  * A staking contract for the Signum Blockchain
  * 
- * The creator can define which token can be staked on this contract
- * Any income of Signa and n to this contract will be distributed to the stakingToken holders.
- * Also a token can be automated distributed to the holders.
+ * The creator defines which token can be staked on this contract
+ * The contract will mint 1:1 for each token a stakingToken
+ * And send to the address which send the token.
+ * Any income of Signa to this contract will be distributed to the stakingToken holders.
+ * Also another token can be automated distributed to the holders.
+ * The contract can have an end-date; after a final payment nothing more is paid out.
+ *
  * In the contract the following can be defined:
  * dthinterval = Minimum blocks between distribution; 0 = no waiting
  * dthMinimumAmount = Minimum Amount of Signa needed on the contract to trigger a distribution
  * dthMaximumAmount = Maximum Amount of Signa which will be distributed when distribution is triggered
  * dthMinimumQuantity = Minimum number of stakingToken needed to be eligible for the distribution
+ * timeout = Staking end-time in minutes ( 0 = infinite)
+ * 
  * 
  * @author frank_the_tank
  */
@@ -37,6 +43,9 @@ public class StakingContract extends Contract {
     long dthinterval;
     long dthMinimumQuantity; 
     long MinimumTokenXY;
+    int timeout;
+    Timestamp stakingTimeout;    
+    boolean stakingTimeoutLastPayment;
     
     long stakingToken;
 
@@ -58,22 +67,25 @@ public class StakingContract extends Contract {
     public static final long DISTRIBUTION_FEE_PER_HOLDER = 1000000;
     public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 10000000;
     public static final long DISTRIBUTION_FEE_MINIMUM = 20000000;
-	/** Use a contract fee of 0.3 SIGNA */
+	/** Use a contract fee of XX SIGNA */
+    /**To do set the correct fee currently 1.2 Signa */
 	public static final long CONTRACT_FEES = 120000000;
 
     public StakingContract() {
 	    // constructor, runs when the first TX arrives
 	    stakingToken = issueAsset(name, 0L, decimalPlaces);
+        if(timeout > ZERO){
+            stakingTimeout= getBlockTimestamp().addMinutes(timeout);
+        }
     }
 
     @Override
     protected void blockStarted() {
 		if(stakingToken == 0L && distributeToken == token) {
 			// stakingpool not initialized, do nothing
-            // distributionToken = Token is not possible
+            // distributionToken = Token is not possible , never start
 			return;
 		}
-        
         staked = ZERO;
         distributedAmount = ZERO;
         while(true) {
@@ -103,9 +115,9 @@ public class StakingContract extends Contract {
                 // burn stakingToken
 		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
             }
-            // User calls the distribution method for any token beside Token, StakingToken
+            // User calls the distribution method for any token beside Token, StakingToken or distrubteToken
             if  (arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
-                // only execute if token-id is not stakingToken or Token
+                // only execute if token-id is not stakingToken or Token or distributeToken
                 if (arguments.getValue2() != stakingToken && arguments.getValue1() !=token && arguments.getValue1() !=distributeToken){
                     //check ballance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY){
@@ -118,26 +130,23 @@ public class StakingContract extends Contract {
             }
         }
         //Check interval/minAmount and distribute Signa
-        if(this.getBlockHeight() - lastBlockDistributed >= dthinterval ){
-            if(this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES  >= ZERO){
-                if(this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES  >= dthMinimumAmount){
-                    if (this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES > dthMaximumAmount && dthMaximumAmount != ZERO){
-                        distributedAmount = dthMaximumAmount;
-                    }
-                    else{
-                        distributedAmount = this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES;
-
-                }
-                lastBlockDistributed = this.getBlockHeight();
-                if (this.getCurrentBalance(distributeToken)>= distributionTokenMinAmount && distributeToken != ZERO ) {
-                    distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, this.getCurrentBalance(distributeToken));
-                }
-                else{
-                    distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
-                }
-                }
+        if(timeout == ZERO){
+            if(this.getBlockHeight() - lastBlockDistributed >= dthinterval ){
+                DistributeToStakingToken();
             }
         }
+        if(getBlockTimestamp().ge(stakingTimeout)){
+            if(this.getBlockHeight() - lastBlockDistributed >= dthinterval ){
+                DistributeToStakingToken();
+            }
+        }
+        else if(stakingTimeoutLastPayment == false){
+            DistributeToStakingToken();
+            // last payment is done - no payment anymore
+            stakingTimeoutLastPayment = true;
+
+        }
+
         // Adding new stake / remove stake to maps also store the stake delta if any
         if (staked != ZERO){
             setMapValue(ZERO, this.getBlockHeight(), staked);
@@ -155,6 +164,28 @@ public class StakingContract extends Contract {
         }
         return (checkPlanckForDistribution);
     }
+
+    private void DistributeToStakingToken(){
+        if(this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES  >= ZERO){
+            if(this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES  >= dthMinimumAmount){
+                if (this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES > dthMaximumAmount && dthMaximumAmount != ZERO){
+                    distributedAmount = dthMaximumAmount;
+                }
+                else{
+                    distributedAmount = this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES;
+
+            }
+            lastBlockDistributed = this.getBlockHeight();
+            if (this.getCurrentBalance(distributeToken)>= distributionTokenMinAmount && distributeToken != ZERO ) {
+                distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, this.getCurrentBalance(distributeToken));
+            }
+            else{
+                distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
+            }
+            }
+        }
+    }
+
     @Override
     public void txReceived() {
       // do nothing, since we are using a loop on blockStarted over all transactions
