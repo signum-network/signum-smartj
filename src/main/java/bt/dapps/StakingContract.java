@@ -21,7 +21,9 @@ import bt.Transaction;
  * dthMaximumAmount = Maximum Amount of Signa which will be distributed when distribution is triggered
  * dthMinimumQuantity = Minimum number of stakingToken needed to be eligible for the distribution
  * timeout = Staking end-time in minutes ( 0 = infinite)
- * 
+ * distributeToken = Token to distribute by default
+ * distributionTokenMinAmount = Minimum quantity nedded before distributed
+ * distributionTokenMaxAmount = Maximum quantity distributed 
  * 
  * @author frank_the_tank
  */
@@ -36,6 +38,7 @@ public class StakingContract extends Contract {
     //Token to distribute by default
     long distributeToken;
     long distributionTokenMinAmount;
+    long distributionTokenMaxAmount;
 
     //Distribution parameter
     long dthMinimumAmount;
@@ -177,7 +180,12 @@ public class StakingContract extends Contract {
             }
             lastBlockDistributed = this.getBlockHeight();
             if (this.getCurrentBalance(distributeToken)>= distributionTokenMinAmount && distributeToken != ZERO ) {
-                distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, this.getCurrentBalance(distributeToken));
+                if( this.getCurrentBalance(distributeToken)> distributionTokenMaxAmount && distributionTokenMaxAmount != ZERO){
+                    distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, distributionTokenMaxAmount);
+                }
+                else{
+                    distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, this.getCurrentBalance(distributeToken));
+                }
             }
             else{
                 distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, ZERO, ZERO);
