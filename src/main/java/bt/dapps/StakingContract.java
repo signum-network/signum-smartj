@@ -59,6 +59,7 @@ public class StakingContract extends Contract {
     long totalstaked = 0;
     long stakingholders;
     long distributedAmount;
+    long distributedQuantity;
 	Transaction tx;
     long lastBlockDistributed=0;
     long checkPlanckForDistribution;
@@ -91,6 +92,7 @@ public class StakingContract extends Contract {
 		}
         staked = ZERO;
         distributedAmount = ZERO;
+        distributedQuantity = ZERO;
         while(true) {
             tx = getTxAfterTimestamp(lastProcessedTx);
             arguments = tx.getMessage();
@@ -155,9 +157,13 @@ public class StakingContract extends Contract {
             setMapValue(ZERO, this.getBlockHeight(), staked);
             setMapValue(ONE, this.getBlockHeight(), totalstaked);
         }
-        // store the distribution if any
+        // store the distribution of SIGNA if any
         if (distributedAmount > ZERO){
 		    setMapValue(TWO, this.getBlockHeight(), distributedAmount);
+        }
+        // store distribution of distrubteToken if any
+        if (distributedQuantity > ZERO){
+            setMapValue(distributeToken, this.getBlockHeight(), distributedQuantity);
         }
     }
     private long DistributionFee(){
@@ -181,9 +187,11 @@ public class StakingContract extends Contract {
             lastBlockDistributed = this.getBlockHeight();
             if (this.getCurrentBalance(distributeToken)>= distributionTokenMinAmount && distributeToken != ZERO ) {
                 if( this.getCurrentBalance(distributeToken)> distributionTokenMaxAmount && distributionTokenMaxAmount != ZERO){
+                    distributedQuantity = distributionTokenMaxAmount;
                     distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, distributionTokenMaxAmount);
                 }
                 else{
+                    distributedQuantity =  this.getCurrentBalance(distributeToken);
                     distributeToHolders(stakingToken, dthMinimumQuantity, distributedAmount, distributeToken, this.getCurrentBalance(distributeToken));
                 }
             }
