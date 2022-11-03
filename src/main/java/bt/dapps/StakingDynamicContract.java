@@ -154,9 +154,15 @@ public class StakingDynamicContract extends Contract {
         //Check interval/dynamic maximal amounts and distribute Signa/Token
         if(dynamicSignaPayout == true){
             dtnMaximumAmount = (totalstaked / SignaRatio) * PLANCK_TO_SIGNA;
+            if (dtnMaximumAmount < dtnMinimumAmount){
+                dtnMaximumAmount = dtnMinimumAmount;
+            }
         }
         if(dynamicTokenPayout == true){
             dtnTokenMaxQuantity = (totalstaked / TokenRatio) * digitFacorToken;
+            if (dtnTokenMaxQuantity < dtnTokenMinQuantity){
+                dtnTokenMaxQuantity = dtnTokenMinQuantity;
+            }
         }
         if(timeout == ZERO){
             if(this.getBlockHeight() - lastBlockDistributed >= dtninterval ){
