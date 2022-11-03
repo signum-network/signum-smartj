@@ -28,23 +28,23 @@ import bt.Transaction;
  * @author frank_the_tank
  */
 public class StakingDynamicContract extends Contract {
-    //stakingToken parameter
+    // stakingToken parameter
     long name;
 	long decimalPlaces;
     // Decimals should be the same as from the token
 
-    //Token for staking
+    // Token for staking
     long token;
 
-    //Token to distribute by default
+    // Token to distribute by default
     long distributeToken;
     long digitFacorToken; 
     // digit 0 = 1 ; digit 1 = 10 ... digit 8 = 100000000
 
-    //Minimum Quantity for any other token (without digit adjustment)
+    // Minimum Quantity for any other token (without digit adjustment)
     long MinimumTokenXY;
 
-    //Distribution parameter
+    // Distribution parameter
     boolean dynamicSignaPayout;
     boolean dynamicTokenPayout;
     long dtninterval;
@@ -54,13 +54,15 @@ public class StakingDynamicContract extends Contract {
     long dtnMinimumAmount;
     long dtnTokenMinQuantity;
 
-    //Distribution parameter for fixed payouts
+    // Distribution parameter for fixed payouts
     long dtnMaximumAmount; 
     long dtnTokenMaxQuantity;
 
-    //Distribution paramter for dynamic payouts
-    long SignaRatio; //   100 stakedToken getting 1 SIGNA = 100:1 = 100
-    long TokenRatio; // 1000 staked Token getting 0.2 distribute Token = 200 : 1 = 200
+    // Distribution parameter for dynamic payouts
+    long SignaRatio; 
+    // Example: 100 stakedToken getting 1 SIGNA = 100:1 = 100
+    long TokenRatio; 
+    // Exampüle: 1000 stakedToken getting 0.2 distribute Token = 200 : 1 = 200
 
     // stakingToken created by contract
     long stakingToken;
