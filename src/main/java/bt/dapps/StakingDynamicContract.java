@@ -154,7 +154,7 @@ public class StakingDynamicContract extends Contract {
             dtnMaximumAmount = totalstaked / SignaRatio;
         }
         if(dynamicTokenPayout == true){
-            dtnTokenMaxQuantity = totalstaked / TokenRatio;
+            dtnTokenMaxQuantity = (totalstaked / TokenRatio) * digitFacorToken;
         }
         if(timeout == ZERO){
             if(this.getBlockHeight() - lastBlockDistributed >= dtninterval ){
