@@ -87,7 +87,7 @@ public class StakingDynamicContract extends Contract {
     public static final long DISTRIBUTION_FEE_PER_HOLDER = 1000000;
     public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 10000000;
     public static final long DISTRIBUTION_FEE_MINIMUM = 20000000;
-
+    public static final long PLANCK_TO_SIGNA = 100000000;
     /** Use a contract fee of XX SIGNA */
     /**To do set the correct fee currently 1.2 Signa */
 	public static final long CONTRACT_FEES = 120000000;
@@ -153,7 +153,7 @@ public class StakingDynamicContract extends Contract {
         }
         //Check interval/dynamic maximal amounts and distribute Signa/Token
         if(dynamicSignaPayout == true){
-            dtnMaximumAmount = totalstaked / SignaRatio;
+            dtnMaximumAmount = (totalstaked / SignaRatio) * PLANCK_TO_SIGNA;
         }
         if(dynamicTokenPayout == true){
             dtnTokenMaxQuantity = (totalstaked / TokenRatio) * digitFacorToken;
