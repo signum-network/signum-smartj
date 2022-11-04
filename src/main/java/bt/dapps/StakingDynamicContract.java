@@ -40,7 +40,7 @@ public class StakingDynamicContract extends Contract {
 
     // Token to distribute by default
     long distributeToken;
-    long digitFacorToken; 
+    long digitFactorToken; 
     // digit 0 = 1 ; digit 1 = 10 ... digit 8 = 100000000
 
     // Minimum Quantity for any other token (without digit adjustment)
@@ -158,7 +158,7 @@ public class StakingDynamicContract extends Contract {
             }
         }
         if(dynamicTokenPayout){
-            dtnTokenMaxQuantity = calcMultDiv(totalstaked,  digitFacorToken, TokenRatio);
+            dtnTokenMaxQuantity = calcMultDiv(totalstaked,  digitFactorToken, TokenRatio);
             if (dtnTokenMaxQuantity < dtnTokenMinQuantity){
                 dtnTokenMaxQuantity = dtnTokenMinQuantity;
             }
