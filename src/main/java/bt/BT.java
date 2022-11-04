@@ -127,12 +127,19 @@ public class BT {
      * Build the message for a method call
      */
     public static byte[] callMethodMessage(Method method, byte []extraPages, Object... args) {
+    	return callMethodMessage(method.getHash(), method.getNArgs(), extraPages, args);
+    }
+
+    /**
+     * Build the message for a method call
+     */
+    public static byte[] callMethodMessage(long methodHash, int methodNArgs, byte []extraPages, Object... args) {
 
         ByteBuffer b = ByteBuffer.allocate(32 + (extraPages == null ? 0 : extraPages.length));
         b.order(ByteOrder.LITTLE_ENDIAN);
 
         // Start with the method hash
-        b.putLong(method.getHash());
+        b.putLong(methodHash);
 
         // Followed by up to 3 arguments
         int nargs = 0;
@@ -154,9 +161,9 @@ public class BT {
             else
                 throw new InvalidParameterException("Unsupported argument type: " + arg.getClass().getName());
         }
-        if (nargs != method.getNArgs()) {
+        if (nargs != methodNArgs) {
             throw new InvalidParameterException(
-                    "Expecting " + method.getNArgs() + " but received " + nargs + " parameters");
+                    "Expecting " + methodNArgs + " but received " + nargs + " parameters");
         }
         
         if(extraPages != null) {

@@ -124,6 +124,8 @@ public class Transaction {
 	 * @return the message in this transaction
 	 */
 	public Register getMessage() {
+	    if(msg == null || msg.size() == 0)
+	      return new Register();
 		return msg.get(0);
 	}
 	

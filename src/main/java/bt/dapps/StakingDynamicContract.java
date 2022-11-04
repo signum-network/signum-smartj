@@ -1,6 +1,8 @@
 package bt.dapps;
+import bt.Address;
 import bt.BT;
 import bt.Contract;
+import bt.Emulator;
 import bt.Register;
 import bt.Timestamp;
 import bt.Transaction;
@@ -237,8 +239,33 @@ public class StakingDynamicContract extends Contract {
       // do nothing, since we are using a loop on blockStarted over all transactions
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         BT.activateSIP37(true);
+        
+        Emulator emu = Emulator.getInstance();
+
+        Address creator = emu.getAddress("CREATOR");
+        emu.airDrop(creator, 10000*Contract.ONE_SIGNA);
+
+        Address staker = emu.getAddress("STAKER");
+        emu.airDrop(staker, 1000*Contract.ONE_SIGNA);
+
+        long TOKEN_ID = emu.issueAsset(creator, 11111, 0, 4);
+        emu.mintAsset(creator, TOKEN_ID, 2000_0000);
+        
+        emu.send(creator, staker, 0, TOKEN_ID, 1000_0000, false);
+        emu.forgeBlock();
+        
+        Address contractAddress = Emulator.getInstance().getAddress("CONTRACT");
+        emu.createConctract(creator, contractAddress, StakingDynamicContract.class, Contract.ONE_SIGNA);
+        emu.forgeBlock();
+        StakingDynamicContract contract = (StakingDynamicContract)contractAddress.getContract();
+        contract.token = TOKEN_ID;
+        emu.forgeBlock();        
+
+        emu.send(staker, contractAddress, Contract.ONE_SIGNA, TOKEN_ID, 1000_000, false);
+        emu.forgeBlock();
+        
     	new EmulatorWindow(StakingDynamicContract.class);
     }
 }

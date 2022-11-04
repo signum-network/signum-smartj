@@ -221,9 +221,11 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 			static final int SENDER_COL = 0;
 			static final int RECEIVER_COL = 1;
 			static final int AMOUNT_COL = 2;
-			static final int TYPE_COL = 3;
-			static final int MSG_COL = 4;
-			static final int CONF_COL = 5;
+            static final int TOKEN_COL = 3;
+            static final int QUANTITY_COL = 4;
+            static final int TYPE_COL = 5;
+			static final int MSG_COL = 6;
+			static final int CONF_COL = 7;
 
 			@Override
 			public String getColumnName(int column) {
@@ -232,8 +234,12 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 					return "Sender";
 				case RECEIVER_COL:
 					return "Receiver";
-				case AMOUNT_COL:
-					return "Amount";
+                case AMOUNT_COL:
+                  return "Amount";
+                case TOKEN_COL:
+                  return "Token";
+                case QUANTITY_COL:
+                  return "Quantity";
 				case TYPE_COL:
 					return "Type";
 				case MSG_COL:
@@ -265,8 +271,12 @@ public class EmulatorWindow extends JFrame implements ActionListener {
 					return tx.getReceiverAddress() == null ? null : tx.getReceiverAddress().getRsAddress();
 				case MSG_COL:
 					return tx.getMessageString() != null ? tx.getMessageString() : tx.getMessage();
-				case AMOUNT_COL:
-					return ((double) tx.getAmount()) / Contract.ONE_BURST;
+                case AMOUNT_COL:
+                  return ((double) tx.getAmount()) / Contract.ONE_BURST;
+                case TOKEN_COL:
+                  return tx.getAssetIds().getValue1();
+                case QUANTITY_COL:
+                  return tx.getAssetIds().getValue1() == 0 ? 0 : tx.getAmount(tx.getAssetIds().getValue1());
 				default:
 					break;
 				}
