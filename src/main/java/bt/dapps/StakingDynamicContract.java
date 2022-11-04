@@ -38,10 +38,11 @@ public class StakingDynamicContract extends Contract {
 
     // Token for staking
     long token;
+    long digitFactorToken;
 
     // Token to distribute by default
     long distributeToken;
-    long digitFactorToken; 
+    long digitFactorDisToken;
     // digit 0 = 1 ; digit 1 = 10 ... digit 8 = 100000000
 
     // Minimum Quantity for any other token (without digit adjustment)
@@ -98,11 +99,8 @@ public class StakingDynamicContract extends Contract {
 
     public StakingDynamicContract() {
 	    // constructor, runs when the first TX arrives
-	    stakingToken = issueAsset(name, 0L, decimalPlaces);
-        if(timeout > ZERO){
-            stakingTimeout= getBlockTimestamp().addMinutes(timeout);
-        }
-    
+        stakingToken = issueAsset(name, 0L, decimalPlaces);
+        stakingTimeout= getBlockTimestamp().addMinutes(timeout);
     }
 
     @Override
@@ -154,13 +152,15 @@ public class StakingDynamicContract extends Contract {
         }
         //Check interval/dynamic maximal amounts and distribute Signa/Token
         if(dynamicSignaPayout){
-            dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, SignaRatio);
+            //dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, SignaRatio);
+            dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, digitFactorToken) / SignaRatio;
             if (dtnMaximumAmount < dtnMinimumAmount){
                 dtnMaximumAmount = dtnMinimumAmount;
             }
         }
         if(dynamicTokenPayout){
-            dtnTokenMaxQuantity = calcMultDiv(totalstaked,  digitFactorToken, TokenRatio);
+            //dtnTokenMaxQuantity = calcMultDiv(totalstaked,  digitFactorToken, TokenRatio);
+            dtnTokenMaxQuantity = (totalstaked/ digitFactorToken ) * digitFactorDisToken / TokenRatio;
             if (dtnTokenMaxQuantity < dtnTokenMinQuantity){
                 dtnTokenMaxQuantity = dtnTokenMinQuantity;
             }
