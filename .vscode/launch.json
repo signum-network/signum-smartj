@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch TokenPlusSignaEchoHalf",
+            "request": "launch",
+            "mainClass": "bt.sample.TokenPlusSignaEchoHalf",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
             "name": "Launch StakingDeploy",
             "request": "launch",
             "mainClass": "bt.StakingDeploy",
