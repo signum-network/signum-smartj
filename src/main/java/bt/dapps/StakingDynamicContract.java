@@ -1,9 +1,11 @@
 package bt.dapps;
 
+import bt.BT;
 import bt.Contract;
 import bt.Register;
 import bt.Timestamp;
 import bt.Transaction;
+import bt.ui.EmulatorWindow;
 
 /**
  * A staking contract for the Signum Blockchain
@@ -49,7 +51,6 @@ public class StakingDynamicContract extends Contract {
     boolean dynamicTokenPayout;
     long dtninterval;
     int timeout;
-    Timestamp stakingTimeout;    
     long dtnMinimumQuantity;
     long dtnMinimumAmount;
     long dtnTokenMinQuantity;
@@ -68,6 +69,7 @@ public class StakingDynamicContract extends Contract {
     long stakingToken;
 
     // temporary variables
+    Timestamp stakingTimeout; 
     boolean stakingTimeoutLastPayment;
     Timestamp lastProcessedTx;
     Register arguments;
@@ -79,11 +81,12 @@ public class StakingDynamicContract extends Contract {
 	Transaction tx;
     long lastBlockDistributed=0;
     long checkPlanckForDistribution;
+    long distributionFee;
 
     public static final long ZERO = 0;
     public static final long ONE = 1;
     public static final long TWO = 2;
-    public static final long DISTRIBUTE_TOKEN_BALANCE = 1;
+    public static final long DISTRIBUTE_TOKEN_BALANCE = 99;
     public static final long DISTRIBUTION_FEE_PER_HOLDER = 1000000;
     public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 10000000;
     public static final long DISTRIBUTION_FEE_MINIMUM = 20000000;
@@ -112,10 +115,10 @@ public class StakingDynamicContract extends Contract {
         distributedQuantity = ZERO;
         while(true) {
             tx = getTxAfterTimestamp(lastProcessedTx);
-            arguments = tx.getMessage();
             if(tx == null) {
 				break;
 			}
+            arguments = tx.getMessage();
             lastProcessedTx = tx.getTimestamp();
             //User is adding Token
             if(tx.getAmount(token) > ZERO){
@@ -123,43 +126,39 @@ public class StakingDynamicContract extends Contract {
                 sendAmount(stakingToken, tx.getAmount(token), tx.getSenderAddress());
                 staked += tx.getAmount(token);
                 totalstaked += tx.getAmount(token);
-                stakingholders += ONE;
             }
             //User removes stakingToken
             if(tx.getAmount(stakingToken) > ZERO){
                 sendAmount(token, tx.getAmount(stakingToken), tx.getSenderAddress());
                 staked -= tx.getAmount(stakingToken);
                 totalstaked -= tx.getAmount(stakingToken);
-                stakingholders -= ONE;
-                if (totalstaked == ZERO || stakingholders < ZERO){
-                    stakingholders = ZERO;
-                }
                 // burn stakingToken
 		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
             }
             // User calls the distribution method for any token beside Token, StakingToken or distrubteToken
             if  (arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
                 // only execute if token-id is not stakingToken or Token or distributeToken
-                if (arguments.getValue2() != stakingToken && arguments.getValue1() !=token && arguments.getValue1() !=distributeToken){
-                    //check ballance of contract - only execute if above MimimumSize
-                    if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY){
-                        if(DistributionFee() > getCurrentTxAmount()){
+                if (arguments.getValue2() != stakingToken && arguments.getValue1() !=token && arguments.getValue2() !=distributeToken && arguments.getValue2() != ZERO){
+                    //check balance of contract - only execute if above MimimumSize
+                    if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY && this.getCurrentBalance(arguments.getValue2()) > ZERO){
+                        stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
+                        if(DistributionFee(stakingholders) > getCurrentTxAmount()){
                             //distribute the token
-                            distributeToHolders(stakingToken, dtnMinimumQuantity, ZERO,arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
+                            distributeToHolders(dtnMinimumQuantity,stakingToken, ZERO,arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
                         }
                     }
                 }
             }
         }
         //Check interval/dynamic maximal amounts and distribute Signa/Token
-        if(dynamicSignaPayout == true){
-            dtnMaximumAmount = (totalstaked / SignaRatio) * PLANCK_TO_SIGNA;
+        if(dynamicSignaPayout){
+            dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, SignaRatio);
             if (dtnMaximumAmount < dtnMinimumAmount){
                 dtnMaximumAmount = dtnMinimumAmount;
             }
         }
-        if(dynamicTokenPayout == true){
-            dtnTokenMaxQuantity = (totalstaked / TokenRatio) * digitFacorToken;
+        if(dynamicTokenPayout){
+            dtnTokenMaxQuantity = calcMultDiv(totalstaked,  digitFacorToken, TokenRatio);
             if (dtnTokenMaxQuantity < dtnTokenMinQuantity){
                 dtnTokenMaxQuantity = dtnTokenMinQuantity;
             }
@@ -169,12 +168,12 @@ public class StakingDynamicContract extends Contract {
                 DistributeToStakingToken();
             }
         }
-        if(getBlockTimestamp().ge(stakingTimeout)){
+        else if(getBlockTimestamp().ge(stakingTimeout)){
             if(this.getBlockHeight() - lastBlockDistributed >= dtninterval ){
-                DistributeToStakingToken();
+            DistributeToStakingToken();
             }
         }
-        else if(stakingTimeoutLastPayment == false){
+        else if(!stakingTimeoutLastPayment){
             DistributeToStakingToken();
             // last payment is done - no payment anymore
             stakingTimeoutLastPayment = true;
@@ -195,7 +194,7 @@ public class StakingDynamicContract extends Contract {
             setMapValue(distributeToken, this.getBlockHeight(), distributedQuantity);
         }
     }
-    private long DistributionFee(){
+    private long DistributionFee(long stakingholders){
         checkPlanckForDistribution = (stakingholders * DISTRIBUTION_FEE_PER_HOLDER)+ DISTRIBUTION_FEE_MINIMUM_HOLDER;
         if(checkPlanckForDistribution < DISTRIBUTION_FEE_MINIMUM){
             checkPlanckForDistribution = DISTRIBUTION_FEE_MINIMUM;
@@ -204,29 +203,31 @@ public class StakingDynamicContract extends Contract {
     }
 
     private void DistributeToStakingToken(){
-        if(this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES  >= ZERO){
-            if(this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES  >= dtnMinimumAmount){
-                if (this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES > dtnMaximumAmount && dtnMaximumAmount != ZERO){
-                    distributedAmount = dtnMaximumAmount;
+        stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
+        if (stakingholders > ZERO){
+            distributionFee = DistributionFee(stakingholders);
+            if(this.getCurrentBalance()-distributionFee-CONTRACT_FEES  >= ZERO){
+                if(this.getCurrentBalance()-distributionFee-CONTRACT_FEES  >= dtnMinimumAmount){
+                    if (this.getCurrentBalance()-distributionFee-CONTRACT_FEES > dtnMaximumAmount && dtnMaximumAmount != ZERO){
+                        distributedAmount = dtnMaximumAmount;
+                    }
+                    else{
+                        distributedAmount = this.getCurrentBalance()-distributionFee-CONTRACT_FEES;
+                }
+                lastBlockDistributed = this.getBlockHeight();
+                if (this.getCurrentBalance(distributeToken)>= dtnTokenMinQuantity && distributeToken != ZERO ) {
+                    if( this.getCurrentBalance(distributeToken)> dtnTokenMaxQuantity && dtnTokenMaxQuantity != ZERO){
+                        distributedQuantity = dtnTokenMaxQuantity;
+                    }
+                    else{
+                        distributedQuantity =  this.getCurrentBalance(distributeToken);
+                    }
+                    distributeToHolders( dtnMinimumQuantity, stakingToken, distributedAmount, distributeToken, distributedQuantity);
                 }
                 else{
-                    distributedAmount = this.getCurrentBalance()-DistributionFee()-CONTRACT_FEES;
-
-            }
-            lastBlockDistributed = this.getBlockHeight();
-            if (this.getCurrentBalance(distributeToken)>= dtnTokenMinQuantity && distributeToken != ZERO ) {
-                if( this.getCurrentBalance(distributeToken)> dtnTokenMaxQuantity && dtnTokenMaxQuantity != ZERO){
-                    distributedQuantity = dtnTokenMaxQuantity;
-                    distributeToHolders(stakingToken, dtnMinimumQuantity, distributedAmount, distributeToken, distributedQuantity);
+                    distributeToHolders(dtnMinimumQuantity,stakingToken, distributedAmount, ZERO, ZERO);
                 }
-                else{
-                    distributedQuantity =  this.getCurrentBalance(distributeToken);
-                    distributeToHolders(stakingToken, dtnMinimumQuantity, distributedAmount, distributeToken, this.getCurrentBalance(distributeToken));
                 }
-            }
-            else{
-                distributeToHolders(stakingToken, dtnMinimumQuantity, distributedAmount, ZERO, ZERO);
-            }
             }
         }
     }
@@ -235,4 +236,11 @@ public class StakingDynamicContract extends Contract {
     public void txReceived() {
       // do nothing, since we are using a loop on blockStarted over all transactions
     }
+    
+    public static void main(String[] args) {
+    	BT.activateCIP20(true);
+        BT.activateSIP37(true);
+    	new EmulatorWindow(StakingDynamicContract.class);
+    }
 }
+

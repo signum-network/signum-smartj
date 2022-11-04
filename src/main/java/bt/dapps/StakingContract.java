@@ -95,10 +95,10 @@ public class StakingContract extends Contract {
         distributedQuantity = ZERO;
         while(true) {
             tx = getTxAfterTimestamp(lastProcessedTx);
-            arguments = tx.getMessage();
             if(tx == null) {
 				break;
 			}
+            arguments = tx.getMessage();
             lastProcessedTx = tx.getTimestamp();
             //User is adding Token
             if(tx.getAmount(token) > ZERO){

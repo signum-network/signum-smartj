@@ -1,5 +1,6 @@
 package bt.dapps;
 
+import bt.Address;
 import bt.Contract;
 import bt.Register;
 import bt.Timestamp;
@@ -21,29 +22,31 @@ public class PlasmaBridge extends Contract {
     public static final long TEN = 10;
     public static final long MAXFEE = 250;
     public static final long THOUSAND = 1000;
-
+	public static final long CONTRACT_FEES = 120000000;
     //temporariy variables
-    long registerFee = 5000000000000;
+    long registerFee = 5000000000000L;
     long checkValue;
     long ValidatorToken;
     long decimalPlaces = 4;
     long temp1, temp2, temp3, temp4,temp5;
+    long TokenDecimalFactor;
 
     public void registerChain(){
-        if(getValue(INDEX_OWNER_KEY1,this.getId()) == ZERO){
+        if(getValue(INDEX_OWNER_KEY1,this.getCurrentTx().getId()) == ZERO){
             //Set Owner of the chain
-            setMapValue(INDEX_OWNER_KEY1,this.getId(),this.getCurrentTxSender());
+            saveValue(INDEX_OWNER_KEY1,this.getCurrentTx().getId(),this.getCurrentTxSender().getId());
             //Set first validator for chain = owner
-            setMapValue(this.getCurrentTxSender(),this.getId(),ONE);
+            saveValue(this.getCurrentTxSender().getId(),this.getCurrentTx().getId(),ONE);
             //Set minimum proofs
-            setMapValue(INDEX_NUMBER_OF_PROOFS_KEY1,this.getId(),THREE);
+            saveValue(INDEX_NUMBER_OF_PROOFS_KEY1,this.getCurrentTx().getId(),THREE);
             //SET Withdrawal Fee
-            setMapValue(INDEX_WITHDRAWAL_FEE_KEY1,this.getId(),TEN);
+            saveValue(INDEX_WITHDRAWAL_FEE_KEY1,this.getCurrentTx().getId(),TEN);
             //Set Fee-Amouint collected 
-            setMapValue(INDEX_WITHDRAWAL_FEE_QUANTITY_KEY1,this.getId(),ZERO);
+            saveValue(INDEX_WITHDRAWAL_FEE_QUANTITY_KEY1,this.getCurrentTx().getId(),ZERO);
         }
     }
-    public void registerChainToken(long genesisBlockID, long wrappedTokenID, long ValidatorTokenName, long TokenDecimalFactor){
+    public void registerChainToken(long genesisBlockID, long wrappedTokenID, long ValidatorTokenName){
+        TokenDecimalFactor = getCurrentTx().getMessage(ONE).getValue1();
         if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getId()){
             // check if token is not set yet
             if(getValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID) == ZERO){
@@ -51,40 +54,39 @@ public class PlasmaBridge extends Contract {
                 if(this.getCurrentTxAmount() >= registerFee){
                     //Mint Token for validators and set token 
                     ValidatorToken = issueAsset(ValidatorTokenName, 0L, decimalPlaces);
-                    setMapValue(INDEX_DAO_TOKEN_KEY1,genesisBlockID,ValidatorToken.getID());
-                    setMapValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID,wrappedTokenID);
-                    setMapValue(INDEX_TOKEN_DECIMALS_TO_BRIDGE_KEY1,genesisBlockID,TokenDecimalFactor);
+                    saveValue(INDEX_DAO_TOKEN_KEY1,genesisBlockID,ValidatorToken);
+                    saveValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID,wrappedTokenID);
+                    saveValue(INDEX_TOKEN_DECIMALS_TO_BRIDGE_KEY1,genesisBlockID,TokenDecimalFactor);
                     // TokenDecimalFactor = 1 , 10 .... depending on decimals of the token 0 - 8
                     //sending RegisterFee-MintingFees to contract creator and also dust
-                    sendAmount(getCurrentBalance(), getContractCreator());
-                    continue;
+                    sendAmount(getCurrentBalance()-CONTRACT_FEES, getCreator());
                 }
             }
 
         }
         //if not able to register, pay back the amount
-        sendAmount(this.getCurrentTxAmount(),this.getCurrentTxSender())
+        sendAmount(this.getCurrentTxAmount(),this.getCurrentTxSender());
     }
-    public void withdrawWrappedToken(long sisterChainTxId, long accountIdSisterChain, long SisterChainAmount, long genesisBlockID ){
+    public void withdrawWrappedToken(long sisterChainTxId, Address accountIdSisterChain, long SisterChainAmount, long genesisBlockID ){
         //check if sender is validator and wrappedToken defined 
-        if (getValue(this.getCurrentTxSender().getID(),genesisBlockID) == ONE && getMapValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID) != ZERO){
+        if (getValue(this.getCurrentTxSender().getId(),genesisBlockID) == ONE && getMapValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID) != ZERO){
             //check if Validator already voted
-            if(getValue(sisterChainTxId,this.getCurrentTxSender().getID()) == ZERO ){
+            if(getValue(sisterChainTxId,this.getCurrentTxSender().getId()) == ZERO ){
                 // check if vote was already initiated
                 if (getValue(genesisBlockID,sisterChainTxId) == ZERO){
-                    setValue(genesisBlockID,sisterChainTxId,this.getCurrentTX.getID());
-                    checkValue = this.getCurrentTX.getID();
+                    saveValue(genesisBlockID,sisterChainTxId,this.getCurrentTx().getId());
+                    checkValue = this.getCurrentTx().getId();
                 }
                 else{
-                    checkValue = getValue(genesisBlockID,sisterChainTxId)
+                    checkValue = getValue(genesisBlockID,sisterChainTxId);
                 }
                 //Adding the vote  per amount and account
                 temp1 = getValue(checkValue,SisterChainAmount) + ONE;
-                setValue(checkValue,SisterChainAmount,temp1)
-                temp2 = getValue(checkValue,accountIdSisterChain) + ONE;
-                setValue(checkValue,accountIdSisterChain,temp2)
+                saveValue(checkValue,SisterChainAmount,temp1);
+                temp2 = getValue(checkValue,accountIdSisterChain.getId()) + ONE;
+                saveValue(checkValue,accountIdSisterChain.getId(),temp2);
                 //Set voted for validator - so he can´t do it again
-                setValue(sisterChainTxId,this.getCurrentTxSender().getID(), ONE)
+                saveValue(sisterChainTxId,this.getCurrentTxSender().getId(), ONE);
                 //Check if vote reached min proof
                 if(temp1 >= getMapValue(INDEX_NUMBER_OF_PROOFS_KEY1,genesisBlockID) && temp2 >= getMapValue(INDEX_NUMBER_OF_PROOFS_KEY1,genesisBlockID)){
                     //min proof is done
@@ -94,9 +96,9 @@ public class PlasmaBridge extends Contract {
                     temp1 = SisterChainAmount * temp2- temp3;
                     //Add fees to index
                     temp4 = getMapValue(INDEX_WITHDRAWAL_FEE_QUANTITY_KEY1,genesisBlockID) + temp3;
-                    setValue(INDEX_WITHDRAWAL_FEE_QUANTITY_KEY1,genesisBlockID,temp4);
+                    saveValue(INDEX_WITHDRAWAL_FEE_QUANTITY_KEY1,genesisBlockID,temp4);
                     //pay amount to account if balance covers it
-                    temp5 = getMapValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID)
+                    temp5 = getMapValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID);
                     if (getCurrentBalance(temp5)> temp1){
                         sendAmount(getMapValue(INDEX_TOKEN_ID_TO_BRIDGE_KEY1,genesisBlockID),temp1,accountIdSisterChain);
                     }
@@ -106,32 +108,32 @@ public class PlasmaBridge extends Contract {
 
         }
     }
-    public void changeOwner(long genesisBlockID, long newOwner){
-        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getID()){
-            setMapValue(INDEX_OWNER_KEY1,this.getId(),newOwner);
+    public void changeContractOwner(long genesisBlockID, long newOwner){
+        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getId()){
+            setMapValue(INDEX_OWNER_KEY1,genesisBlockID,newOwner);
         }
     }
     public void changeMinProof(long genesisBlockID, long minimumProofs){
-        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getID()){
+        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getId()){
             if(minimumProofs > THREE){
                 setMapValue(INDEX_NUMBER_OF_PROOFS_KEY1,genesisBlockID,minimumProofs);
             }
         }
     }
     public void changeWithdrawalFee(long genesisBlockID, long fee){
-        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getID() && fee >= ZERO && fee <= MAXFEE){
-           setMapValue(INDEX_NUMBER_OF_PROOFS_KEY1,genesisBlockID,fee)
+        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getId() && fee >= ZERO && fee <= MAXFEE){
+           setMapValue(INDEX_NUMBER_OF_PROOFS_KEY1,genesisBlockID,fee);
         }
    }
 
     public void addValidator(long genesisBlockID, long Validator){
-         if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getID()){
-            setMapValue(Validator,genesisBlockID,ONE)
+         if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getId()){
+            setMapValue(Validator,genesisBlockID,ONE);
          }
     }
     public void removeValidator(long genesisBlockID, long Validator){
-        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getID()){
-           setMapValue(Validator,genesisBlockID,ZERO)
+        if (getValue(INDEX_OWNER_KEY1,genesisBlockID) == this.getCurrentTxSender().getId()){
+           setMapValue(Validator,genesisBlockID,ZERO);
         }
    }
 
@@ -141,4 +143,7 @@ public class PlasmaBridge extends Contract {
 	private long getValue(long key1, long key2) {
 		return getMapValue(key1, key2);
 	}
+    public void txReceived() {
+        // do nothing, since we are using a loop on blockStarted over all transactions
+      }
 }
