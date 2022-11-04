@@ -1380,7 +1380,7 @@ public class Compiler {
 							code.putInt(assetId.address);
 
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
-							code.putShort(OpCode.ISSUE_ASSET);
+							code.putShort(OpCode.GET_ASSET_HOLDERS_COUNT);
 							code.putInt(tmpVar1); // resulting counter
 							pushVar(m, tmpVar1);
 						}

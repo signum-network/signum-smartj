@@ -214,6 +214,9 @@ public class Printer {
 			case OpCode.e_op_code_XOR_DAT:
 			case OpCode.e_op_code_MOD_DAT:
 			case OpCode.e_op_code_POW_DAT:
+			case OpCode.e_op_code_SHL_DAT:
+			case OpCode.e_op_code_SHR_DAT:
+
 				p += printOp(code, p, 1, out);
 				switch (op) {
 				case OpCode.e_op_code_ADD_DAT:
@@ -240,9 +243,15 @@ public class Printer {
 				case OpCode.e_op_code_MOD_DAT:
 					out.println("\tMOD_DAT");
 					break;
-				case OpCode.e_op_code_POW_DAT:
-					out.println("\tPOW_DAT");
-					break;
+                case OpCode.e_op_code_POW_DAT:
+                  out.println("\tPOW_DAT");
+                  break;
+                case OpCode.e_op_code_SHR_DAT:
+                  out.println("\tSHR_DAT");
+                  break;
+                case OpCode.e_op_code_SHL_DAT:
+                  out.println("\tSHL_DAT");
+                  break;
 				default:
 					out.println();
 				}
@@ -379,9 +388,6 @@ public class Printer {
 				p += printOp(code, p, 1, out);
 				out.println("\tFIN");
 				break;
-
-			case OpCode.e_op_code_SHL_DAT:
-			case OpCode.e_op_code_SHR_DAT:
 
 			case OpCode.e_op_code_FIZ_DAT:
 			case OpCode.e_op_code_STZ_DAT:
