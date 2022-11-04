@@ -76,14 +76,15 @@ public class StakingDynamicContract extends Contract {
     Timestamp lastProcessedTx;
     Register arguments;
     long staked;
-    long totalstaked = 0;
+    long totalstaked ;
     long stakingholders;
     long distributedAmount;
     long distributedQuantity;
 	Transaction tx;
-    long lastBlockDistributed=0;
+    long lastBlockDistributed;
     long checkPlanckForDistribution;
     long distributionFee;
+    long blockheight;
 
     public static final long ZERO = 0;
     public static final long ONE = 1;
@@ -100,7 +101,9 @@ public class StakingDynamicContract extends Contract {
     public StakingDynamicContract() {
 	    // constructor, runs when the first TX arrives
         stakingToken = issueAsset(name, 0L, decimalPlaces);
-        stakingTimeout= getBlockTimestamp().addMinutes(timeout);
+        if ( timeout > ZERO){
+            stakingTimeout= getBlockTimestamp().addMinutes(timeout);
+        }
     }
 
     @Override
@@ -165,13 +168,14 @@ public class StakingDynamicContract extends Contract {
                 dtnTokenMaxQuantity = dtnTokenMinQuantity;
             }
         }
+        blockheight = this.getBlockHeight();
         if(timeout == ZERO){
-            if(this.getBlockHeight() - lastBlockDistributed >= dtninterval ){
+            if(blockheight - lastBlockDistributed >= dtninterval ){
                 DistributeToStakingToken();
             }
         }
-        else if(getBlockTimestamp().ge(stakingTimeout)){
-            if(this.getBlockHeight() - lastBlockDistributed >= dtninterval ){
+        else if(getBlockTimestamp().le(stakingTimeout)){
+            if(blockheight - lastBlockDistributed >= dtninterval ){
             DistributeToStakingToken();
             }
         }
@@ -184,16 +188,16 @@ public class StakingDynamicContract extends Contract {
 
         // Adding new stake / remove stake to maps also store the stake delta if any
         if (staked != ZERO){
-            setMapValue(ZERO, this.getBlockHeight(), staked);
-            setMapValue(ONE, this.getBlockHeight(), totalstaked);
+            setMapValue(ZERO, blockheight, staked);
+            setMapValue(ONE, blockheight, totalstaked);
         }
         // store the distribution of SIGNA if any
         if (distributedAmount > ZERO){
-		    setMapValue(TWO, this.getBlockHeight(), distributedAmount);
+		    setMapValue(TWO, blockheight, distributedAmount);
         }
         // store distribution of distrubteToken if any
         if (distributedQuantity > ZERO){
-            setMapValue(distributeToken, this.getBlockHeight(), distributedQuantity);
+            setMapValue(distributeToken, blockheight, distributedQuantity);
         }
     }
     private long DistributionFee(long stakingholders){
@@ -216,7 +220,7 @@ public class StakingDynamicContract extends Contract {
                     else{
                         distributedAmount = this.getCurrentBalance()-distributionFee-CONTRACT_FEES;
                 }
-                lastBlockDistributed = this.getBlockHeight();
+                lastBlockDistributed =blockheight;
                 if (this.getCurrentBalance(distributeToken)>= dtnTokenMinQuantity && distributeToken != ZERO ) {
                     if( this.getCurrentBalance(distributeToken)> dtnTokenMaxQuantity && dtnTokenMaxQuantity != ZERO){
                         distributedQuantity = dtnTokenMaxQuantity;
@@ -261,6 +265,21 @@ public class StakingDynamicContract extends Contract {
         emu.forgeBlock();
         StakingDynamicContract contract = (StakingDynamicContract)contractAddress.getContract();
         contract.token = TOKEN_ID;
+		contract.distributeToken = 0;
+		contract.digitFactorToken  = 1000000;
+		contract.digitFactorDisToken =  100000000;
+		contract.MinimumTokenXY = 10000;
+		contract.dynamicSignaPayout = true;
+		contract.dynamicTokenPayout = true;
+		contract.dtninterval = 5;
+	    contract.timeout = 0;
+    	contract.dtnMinimumQuantity = 10000000;
+    	contract.dtnMinimumAmount = 10000000000L;
+        contract.dtnTokenMinQuantity = 100 ;
+		contract.dtnMaximumAmount =0; 
+		contract.dtnTokenMaxQuantity =0;
+		contract.SignaRatio = 100; 
+		contract.TokenRatio = 200; 
         emu.forgeBlock();        
 
         emu.send(staker, contractAddress, Contract.ONE_SIGNA, TOKEN_ID, 1000_000, false);
