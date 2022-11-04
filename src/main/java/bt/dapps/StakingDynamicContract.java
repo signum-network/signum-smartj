@@ -1,5 +1,4 @@
 package bt.dapps;
-
 import bt.BT;
 import bt.Contract;
 import bt.Register;
@@ -101,11 +100,12 @@ public class StakingDynamicContract extends Contract {
         if(timeout > ZERO){
             stakingTimeout= getBlockTimestamp().addMinutes(timeout);
         }
+    
     }
 
     @Override
     protected void blockStarted() {
-		if(stakingToken == 0L && distributeToken == token) {
+		if(stakingToken == 0L || distributeToken == token) {
 			// stakingpool not initialized, do nothing
             // distributionToken = Token is not possible , never start
 			return;
@@ -238,7 +238,6 @@ public class StakingDynamicContract extends Contract {
     }
     
     public static void main(String[] args) {
-    	BT.activateCIP20(true);
         BT.activateSIP37(true);
     	new EmulatorWindow(StakingDynamicContract.class);
     }
