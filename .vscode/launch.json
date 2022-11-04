@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch StakingDeploy",
+            "request": "launch",
+            "mainClass": "bt.StakingDeploy",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "Launch StakingDynamicContract",
+            "request": "launch",
+            "mainClass": "bt.dapps.StakingDynamicContract",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
             "name": "Launch SignumArt2",
             "request": "launch",
             "mainClass": "bt.dapps.SignumArt2",
