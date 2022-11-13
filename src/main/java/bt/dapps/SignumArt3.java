@@ -469,13 +469,13 @@ public class SignumArt3 extends Contract {
 	}
 	
 	public void setMetaDataAlias() {
-		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
+		if(getCurrentTx().getSenderAddress().equals(getCreator())){
 		  saveValue(FOUR,ONE,getCurrentTx().getMessage().getValue1());
 		}
 	}
 	
 	public void setValues() {
-		if(!getCurrentTx().getSenderAddress().equals(getCreator())){
+		if(getCurrentTx().getSenderAddress().equals(getCreator())){
 		if (getCurrentTx().getMessage().getValue1() > FOUR){
 			saveValue(getCurrentTx().getMessage().getValue1(),getCurrentTx().getMessage().getValue2(),getCurrentTx().getMessage().getValue3());
 		   }
