@@ -111,6 +111,9 @@ public class StakingDynamicContract extends Contract {
         if ( timeout > ZERO){
             stakingTimeout= getBlockTimestamp().addMinutes(timeout);
         }
+        if(lastBlockDistributed == ZERO){
+            lastBlockDistributed = this.getBlockHeight();
+        }
     }
 
     @Override
