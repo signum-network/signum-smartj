@@ -90,6 +90,7 @@ public class StakingDynamicContract extends Contract {
     long blockheight;
     long quantityCheck;
     long balanceCheck;
+    Address creator;
 
 
     public static final long ZERO = 0;
@@ -97,6 +98,7 @@ public class StakingDynamicContract extends Contract {
     public static final long TWO = 2;
     public static final long THREE = 3;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 99;
+    public static final long CLEANUP_BY_CREATOR =100 ;    
     public static final long DISTRIBUTION_FEE_PER_HOLDER = 1000000;
     public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 10000000;
     public static final long DISTRIBUTION_FEE_MINIMUM = 20000000;
@@ -160,6 +162,13 @@ public class StakingDynamicContract extends Contract {
                         }
                     }
                 }
+            }
+            // after timeout and last payment the creator can get the balance 
+            if (arguments.getValue1() == CLEANUP_BY_CREATOR && stakingTimeoutLastPayment && getCurrentTx().getSenderAddress().equals(getCreator())){
+                creator = tx.getSenderAddress();
+                sendAmount(distributeToken,getCurrentBalance(distributeToken),creator);
+                sendBalance(creator);
+
             }
         }
         blockheight = this.getBlockHeight();
