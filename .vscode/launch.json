@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch Arguments",
+            "request": "launch",
+            "mainClass": "bt.Arguments",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "Launch Arguments",
+            "request": "launch",
+            "mainClass": "bt.contracts.Arguments",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
             "name": "Launch TokenPlusSignaEchoHalf",
             "request": "launch",
             "mainClass": "bt.sample.TokenPlusSignaEchoHalf",

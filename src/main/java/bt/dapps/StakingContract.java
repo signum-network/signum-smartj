@@ -126,7 +126,7 @@ public class StakingContract extends Contract {
                 if (arguments.getValue2() != stakingToken && arguments.getValue1() !=token && arguments.getValue1() !=distributeToken){
                     //check ballance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY){
-                        if(DistributionFee() > getCurrentTxAmount()){
+                        if(getCurrentTxAmount() >= DistributionFee()){
                             //distribute the token
                             distributeToHolders(stakingToken, dthMinimumQuantity, ZERO,arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
                         }

@@ -13,12 +13,14 @@ import bt.ui.EmulatorWindow;
  * 
  * The creator defines which token can be staked on this contract
  * The contract will mint 1:1 for each token a stakingToken
- * And send to the address which send the token.
+ * And send to the address which send the token in.
+ * 
  * Any income of Signa to this contract will be distributed to the stakingToken holders.
  * Also another token can be automated distributed to the holders.
  * The contract can have an end-date; after a final payment nothing more is paid out.
  *
  * In the contract the following can be defined:
+ * 
  * dtninterval = Minimum blocks between distribution; 0 = no waiting
  * dthMinimumAmount = Minimum Amount of Signa needed on the contract to trigger a distribution
  * dtnMaximumAmount = Maximum Amount of Signa which will be distributed when distribution is triggered
@@ -27,6 +29,10 @@ import bt.ui.EmulatorWindow;
  * distributeToken = Token to distribute by default
  * dtnTokenMinQuantity = Minimum quantity nedded before distributed
  * dtnTokenMaxQuantity = Maximum quantity distributed 
+ * signaRatio = Ratio for the distribution stakingToken:1 Signa
+ * tokenRatio = Ratio for the distribution stakingRoken:1 distributeToken 
+ * If signaRatio = 0 dtnMaximumAmount is used as static value
+ * If tokenRatio = 0 dtnTokenMaxQuantity is used as static value
  * 
  * @author frank_the_tank
  */
@@ -38,19 +44,17 @@ public class StakingDynamicContract extends Contract {
 
     // Token for staking
     long token;
-    long digitFactorToken;
+    long digitsFactorToken;
 
     // Token to distribute by default
     long distributeToken;
-    long digitFactorDisToken;
+    long digitsFactorDisToken;
     // digit 0 = 1 ; digit 1 = 10 ... digit 8 = 100000000
 
     // Minimum Quantity for any other token (without digit adjustment)
     long MinimumTokenXY;
 
     // Distribution parameter
-    boolean dynamicSignaPayout;
-    boolean dynamicTokenPayout;
     long dtninterval;
     int timeout;
     long dtnMinimumQuantity;
@@ -62,9 +66,9 @@ public class StakingDynamicContract extends Contract {
     long dtnTokenMaxQuantity;
 
     // Distribution parameter for dynamic payouts
-    long SignaRatio; 
+    long signaRatio; 
     // Example: 100 stakedToken getting 1 SIGNA = 100:1 = 100
-    long TokenRatio; 
+    long tokenRatio; 
     // Exampüle: 1000 stakedToken getting 0.2 distribute Token = 200 : 1 = 200
 
     // stakingToken created by contract
@@ -75,7 +79,6 @@ public class StakingDynamicContract extends Contract {
     boolean stakingTimeoutLastPayment;
     Timestamp lastProcessedTx;
     Register arguments;
-    long staked;
     long totalstaked ;
     long stakingholders;
     long distributedAmount;
@@ -85,10 +88,14 @@ public class StakingDynamicContract extends Contract {
     long checkPlanckForDistribution;
     long distributionFee;
     long blockheight;
+    long quantityCheck;
+    long balanceCheck;
+
 
     public static final long ZERO = 0;
     public static final long ONE = 1;
     public static final long TWO = 2;
+    public static final long THREE = 3;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 99;
     public static final long DISTRIBUTION_FEE_PER_HOLDER = 1000000;
     public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 10000000;
@@ -96,7 +103,7 @@ public class StakingDynamicContract extends Contract {
     public static final long PLANCK_TO_SIGNA = 100000000;
     /** Use a contract fee of XX SIGNA */
     /**To do set the correct fee currently 1.2 Signa */
-	public static final long CONTRACT_FEES = 120000000;
+	public static final long CONTRACT_FEES = 70000000;
 
     public StakingDynamicContract() {
 	    // constructor, runs when the first TX arrives
@@ -113,7 +120,6 @@ public class StakingDynamicContract extends Contract {
             // distributionToken = Token is not possible , never start
 			return;
 		}
-        staked = ZERO;
         distributedAmount = ZERO;
         distributedQuantity = ZERO;
         while(true) {
@@ -124,19 +130,19 @@ public class StakingDynamicContract extends Contract {
             arguments = tx.getMessage();
             lastProcessedTx = tx.getTimestamp();
             //User is adding Token
-            if(tx.getAmount(token) > ZERO){
-                mintAsset(stakingToken,tx.getAmount(token));
-                sendAmount(stakingToken, tx.getAmount(token), tx.getSenderAddress());
-                staked += tx.getAmount(token);
-                totalstaked += tx.getAmount(token);
+            quantityCheck = tx.getAmount(token);
+            if(quantityCheck > ZERO){
+                mintAsset(stakingToken,quantityCheck);
+                sendAmount(stakingToken,quantityCheck, tx.getSenderAddress());
+                totalstaked += quantityCheck;
             }
             //User removes stakingToken
-            if(tx.getAmount(stakingToken) > ZERO){
-                sendAmount(token, tx.getAmount(stakingToken), tx.getSenderAddress());
-                staked -= tx.getAmount(stakingToken);
-                totalstaked -= tx.getAmount(stakingToken);
+            quantityCheck = tx.getAmount(stakingToken);
+            if(quantityCheck > ZERO){
+                sendAmount(token, quantityCheck, tx.getSenderAddress());
+                totalstaked -= quantityCheck;
                 // burn stakingToken
-		        sendAmount(stakingToken, tx.getAmount(stakingToken), getAddress(ZERO));
+		        sendAmount(stakingToken, quantityCheck, getAddress(ZERO));
             }
             // User calls the distribution method for any token beside Token, StakingToken or distrubteToken
             if  (arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
@@ -145,7 +151,7 @@ public class StakingDynamicContract extends Contract {
                     //check balance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY && this.getCurrentBalance(arguments.getValue2()) > ZERO){
                         stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
-                        if(DistributionFee(stakingholders) > getCurrentTxAmount()){
+                        if(getCurrentTxAmount()- distributionFee(stakingholders)-CONTRACT_FEES  >= ZERO ){
                             //distribute the token
                             distributeToHolders(dtnMinimumQuantity,stakingToken, ZERO,arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
                         }
@@ -153,54 +159,38 @@ public class StakingDynamicContract extends Contract {
                 }
             }
         }
-        //Check interval/dynamic maximal amounts and distribute Signa/Token
-        if(dynamicSignaPayout){
-            //dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, SignaRatio);
-            dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, digitFactorToken) / SignaRatio;
-            if (dtnMaximumAmount < dtnMinimumAmount){
-                dtnMaximumAmount = dtnMinimumAmount;
-            }
-        }
-        if(dynamicTokenPayout){
-            //dtnTokenMaxQuantity = calcMultDiv(totalstaked,  digitFactorToken, TokenRatio);
-            dtnTokenMaxQuantity = (totalstaked/ digitFactorToken ) * digitFactorDisToken / TokenRatio;
-            if (dtnTokenMaxQuantity < dtnTokenMinQuantity){
-                dtnTokenMaxQuantity = dtnTokenMinQuantity;
-            }
-        }
         blockheight = this.getBlockHeight();
         if(timeout == ZERO){
             if(blockheight - lastBlockDistributed >= dtninterval ){
-                DistributeToStakingToken();
+                checkRatio();
+                distributeToStakingToken();
             }
         }
         else if(getBlockTimestamp().le(stakingTimeout)){
             if(blockheight - lastBlockDistributed >= dtninterval ){
-            DistributeToStakingToken();
+                checkRatio();
+                distributeToStakingToken();
             }
         }
         else if(!stakingTimeoutLastPayment){
-            DistributeToStakingToken();
+            checkRatio();
+            distributeToStakingToken();
             // last payment is done - no payment anymore
             stakingTimeoutLastPayment = true;
-
         }
 
-        // Adding new stake / remove stake to maps also store the stake delta if any
-        if (staked != ZERO){
-            setMapValue(ZERO, blockheight, staked);
-            setMapValue(ONE, blockheight, totalstaked);
-        }
+        // Storing current total staking
+        setMapValue(ONE, blockheight, totalstaked);
         // store the distribution of SIGNA if any
         if (distributedAmount > ZERO){
 		    setMapValue(TWO, blockheight, distributedAmount);
         }
         // store distribution of distrubteToken if any
         if (distributedQuantity > ZERO){
-            setMapValue(distributeToken, blockheight, distributedQuantity);
+            setMapValue(THREE, blockheight, distributedQuantity);
         }
     }
-    private long DistributionFee(long stakingholders){
+    private long distributionFee(long stakingholders){
         checkPlanckForDistribution = (stakingholders * DISTRIBUTION_FEE_PER_HOLDER)+ DISTRIBUTION_FEE_MINIMUM_HOLDER;
         if(checkPlanckForDistribution < DISTRIBUTION_FEE_MINIMUM){
             checkPlanckForDistribution = DISTRIBUTION_FEE_MINIMUM;
@@ -208,33 +198,46 @@ public class StakingDynamicContract extends Contract {
         return (checkPlanckForDistribution);
     }
 
-    private void DistributeToStakingToken(){
+    private void checkRatio(){
+        if(signaRatio > ZERO){
+            dtnMaximumAmount = calcMultDiv(totalstaked, PLANCK_TO_SIGNA, digitsFactorToken) / signaRatio;
+            if (dtnMaximumAmount < dtnMinimumAmount){
+                dtnMaximumAmount = dtnMinimumAmount;
+            }
+        }
+        if(tokenRatio > ZERO){
+            dtnTokenMaxQuantity = (totalstaked/ digitsFactorToken) * digitsFactorDisToken / tokenRatio;
+            if (dtnTokenMaxQuantity < dtnTokenMinQuantity){
+                dtnTokenMaxQuantity = dtnTokenMinQuantity;
+            }
+        }
+    }
+    private void distributeToStakingToken(){
         stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
         if (stakingholders > ZERO){
-            distributionFee = DistributionFee(stakingholders);
-            if(this.getCurrentBalance()-distributionFee-CONTRACT_FEES  >= ZERO){
-                if(this.getCurrentBalance()-distributionFee-CONTRACT_FEES  >= dtnMinimumAmount){
-                    if (this.getCurrentBalance()-distributionFee-CONTRACT_FEES > dtnMaximumAmount && dtnMaximumAmount != ZERO){
-                        distributedAmount = dtnMaximumAmount;
-                    }
-                    else{
-                        distributedAmount = this.getCurrentBalance()-distributionFee-CONTRACT_FEES;
-                }
-                lastBlockDistributed =blockheight;
-                if (this.getCurrentBalance(distributeToken)>= dtnTokenMinQuantity && distributeToken != ZERO ) {
-                    if( this.getCurrentBalance(distributeToken)> dtnTokenMaxQuantity && dtnTokenMaxQuantity != ZERO){
-                        distributedQuantity = dtnTokenMaxQuantity;
-                    }
-                    else{
-                        distributedQuantity =  this.getCurrentBalance(distributeToken);
-                    }
-                    distributeToHolders( dtnMinimumQuantity, stakingToken, distributedAmount, distributeToken, distributedQuantity);
+            distributionFee = distributionFee(stakingholders);
+            balanceCheck = this.getCurrentBalance() -distributionFee-CONTRACT_FEES ;
+            if(balanceCheck  >= dtnMinimumAmount ){
+                if (balanceCheck > dtnMaximumAmount && dtnMaximumAmount != ZERO){
+                    distributedAmount = dtnMaximumAmount;
                 }
                 else{
-                    distributeToHolders(dtnMinimumQuantity,stakingToken, distributedAmount, ZERO, ZERO);
-                }
+                    distributedAmount = balanceCheck;               
                 }
             }
+            quantityCheck = this.getCurrentBalance(distributeToken);
+            if ( quantityCheck >= dtnTokenMinQuantity && distributeToken != ZERO ) {
+                if( quantityCheck > dtnTokenMaxQuantity && dtnTokenMaxQuantity != ZERO){
+                    distributedQuantity = dtnTokenMaxQuantity;
+                }
+                else{
+                    distributedQuantity = quantityCheck;
+                }
+            }
+            if(distributedAmount + distributedQuantity > ZERO){
+                lastBlockDistributed =blockheight;
+                distributeToHolders( dtnMinimumQuantity, stakingToken, distributedAmount, distributeToken, distributedQuantity);                
+            }   
         }
     }
 
@@ -266,11 +269,9 @@ public class StakingDynamicContract extends Contract {
         StakingDynamicContract contract = (StakingDynamicContract)contractAddress.getContract();
         contract.token = TOKEN_ID;
 		contract.distributeToken = 0;
-		contract.digitFactorToken  = 1000000;
-		contract.digitFactorDisToken =  100000000;
+		contract.digitsFactorToken  = 1000000;
+		contract.digitsFactorDisToken =  100000000;
 		contract.MinimumTokenXY = 10000;
-		contract.dynamicSignaPayout = true;
-		contract.dynamicTokenPayout = true;
 		contract.dtninterval = 5;
 	    contract.timeout = 0;
     	contract.dtnMinimumQuantity = 10000000;
@@ -278,8 +279,8 @@ public class StakingDynamicContract extends Contract {
         contract.dtnTokenMinQuantity = 100 ;
 		contract.dtnMaximumAmount =0; 
 		contract.dtnTokenMaxQuantity =0;
-		contract.SignaRatio = 100; 
-		contract.TokenRatio = 200; 
+		contract.signaRatio = 100; 
+		contract.tokenRatio = 200; 
         emu.forgeBlock();        
 
         emu.send(staker, contractAddress, Contract.ONE_SIGNA, TOKEN_ID, 1000_000, false);
