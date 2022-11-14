@@ -99,9 +99,9 @@ public class StakingDynamicContract extends Contract {
     public static final long THREE = 3;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 99;
     public static final long CLEANUP_BY_CREATOR =100 ;    
-    public static final long DISTRIBUTION_FEE_PER_HOLDER = 1000000;
-    public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 10000000;
-    public static final long DISTRIBUTION_FEE_MINIMUM = 20000000;
+    public static final long DISTRIBUTION_FEE_PER_HOLDER = 100000;
+    public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 1000000;
+    public static final long DISTRIBUTION_FEE_MINIMUM = 2000000;
     public static final long PLANCK_TO_SIGNA = 100000000;
     /** Use a contract fee of XX SIGNA */
     /**To do set the correct fee currently 1.2 Signa */
