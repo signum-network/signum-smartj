@@ -152,7 +152,7 @@ public class StakingDynamicContract extends Contract {
             // User calls the distribution method for any token beside Token, StakingToken or distrubteToken
             if  (arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
                 // only execute if token-id is not stakingToken or Token or distributeToken
-                if (arguments.getValue2() != stakingToken && arguments.getValue1() !=token && arguments.getValue2() !=distributeToken && arguments.getValue2() != ZERO){
+                if (arguments.getValue2() != stakingToken && arguments.getValue2() !=token && arguments.getValue2() !=distributeToken && arguments.getValue2() != ZERO){
                     //check balance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY && this.getCurrentBalance(arguments.getValue2()) > ZERO){
                         stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
@@ -168,7 +168,6 @@ public class StakingDynamicContract extends Contract {
                 creator = tx.getSenderAddress();
                 sendAmount(distributeToken,getCurrentBalance(distributeToken),creator);
                 sendBalance(creator);
-
             }
         }
         blockheight = this.getBlockHeight();
