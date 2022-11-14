@@ -80,7 +80,6 @@ public class StakingDynamicContract extends Contract {
     // boolean intervall;
 
     // temporary variables
-    long check1,check2;
     Timestamp stakingTimeout; 
     boolean stakingTimeoutLastPayment;
     Timestamp lastProcessedTx;
@@ -96,7 +95,7 @@ public class StakingDynamicContract extends Contract {
     long blockheight;
     long quantityCheck;
     long balanceCheck;
-
+    boolean distributionDone;
 
     public static final long ZERO = 0;
     public static final long ONE = 1;
@@ -138,6 +137,7 @@ public class StakingDynamicContract extends Contract {
 		}
         distributedAmount = ZERO;
         distributedQuantity = ZERO;
+        distributionDone = false;
         while(true) {
             tx = getTxAfterTimestamp(lastProcessedTx);
             if(tx == null) {
@@ -161,17 +161,19 @@ public class StakingDynamicContract extends Contract {
 		        sendAmount(stakingToken, quantityCheck, getAddress(ZERO));
             }
             // User calls the distribution method for any token beside Token, StakingToken or distrubteToken
-            if  (arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
+            if(arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
                 // only execute if token-id is not stakingToken or Token or distributeToken
                 if (arguments.getValue2() != stakingToken && arguments.getValue2() !=token && arguments.getValue2() !=distributeToken && arguments.getValue2() != ZERO){
                     //check balance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY && this.getCurrentBalance(arguments.getValue2()) > ZERO){
                         stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
                         if(tx.getAmount() >= distributionFee(stakingholders)){
-                            check1 = 164;
-                            check2 =  this.getCurrentBalance(arguments.getValue2());
                             //distribute the token
-                            distributeToHolders(dtnMinimumQuantity,stakingToken, ZERO,arguments.getValue2(), this.getCurrentBalance(arguments.getValue2()));
+                            if(!distributionDone){
+                                distributeToHolders(dtnMinimumQuantity,stakingToken, ZERO,arguments.getValue2(), this.getCurrentBalance(arguments.getValue2()));
+                                distributionDone =true;
+                            }
+
                         }
                     }
                 }
@@ -258,8 +260,10 @@ public class StakingDynamicContract extends Contract {
                 }
             }
             if(distributedAmount + distributedQuantity > ZERO){
-                lastBlockDistributed =blockheight;
-                distributeToHolders( dtnMinimumQuantity, stakingToken, distributedAmount, distributeToken, distributedQuantity);                
+                if(!distributionDone){
+                    lastBlockDistributed =blockheight;
+                    distributeToHolders( dtnMinimumQuantity, stakingToken, distributedAmount, distributeToken, distributedQuantity);                         
+                }
             }   
         }
     }
