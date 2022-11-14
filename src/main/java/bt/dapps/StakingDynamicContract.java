@@ -74,7 +74,13 @@ public class StakingDynamicContract extends Contract {
     // stakingToken created by contract
     long stakingToken;
 
+    // lockPeriod - If set user can´t convert stakingToken into token
+    // int lockPeriodInMinutes;
+    // Timestamp lockPeriodTimeEnd;
+    // boolean intervall;
+
     // temporary variables
+    long check1,check2;
     Timestamp stakingTimeout; 
     boolean stakingTimeoutLastPayment;
     Timestamp lastProcessedTx;
@@ -90,7 +96,6 @@ public class StakingDynamicContract extends Contract {
     long blockheight;
     long quantityCheck;
     long balanceCheck;
-    Address creator;
 
 
     public static final long ZERO = 0;
@@ -116,6 +121,12 @@ public class StakingDynamicContract extends Contract {
         if(lastBlockDistributed == ZERO){
             lastBlockDistributed = this.getBlockHeight();
         }
+        //if (lockPeriodInMinutes > ZERO){
+        //    lockPeriodTimeEnd = getBlockTimestamp().addMinutes(lockPeriodInMinutes);
+        //}
+        // else{
+        //    lockPeriodTimeEnd = getBlockTimestamp();
+        // }
     }
 
     @Override
@@ -156,18 +167,19 @@ public class StakingDynamicContract extends Contract {
                     //check balance of contract - only execute if above MimimumSize
                     if (this.getCurrentBalance(arguments.getValue2())>= MinimumTokenXY && this.getCurrentBalance(arguments.getValue2()) > ZERO){
                         stakingholders = getAssetHoldersCount(dtnMinimumQuantity, stakingToken);
-                        if(getCurrentTxAmount()- distributionFee(stakingholders)-CONTRACT_FEES  >= ZERO ){
+                        if(tx.getAmount() >= distributionFee(stakingholders)){
+                            check1 = 164;
+                            check2 =  this.getCurrentBalance(arguments.getValue2());
                             //distribute the token
-                            distributeToHolders(dtnMinimumQuantity,stakingToken, ZERO,arguments.getValue2(), getCurrentBalance(arguments.getValue2()));
+                            distributeToHolders(dtnMinimumQuantity,stakingToken, ZERO,arguments.getValue2(), this.getCurrentBalance(arguments.getValue2()));
                         }
                     }
                 }
             }
             // after timeout and last payment the creator can get the balance 
-            if (arguments.getValue1() == CLEANUP_BY_CREATOR && stakingTimeoutLastPayment && getCurrentTx().getSenderAddress().equals(getCreator())){
-                creator = tx.getSenderAddress();
-                sendAmount(distributeToken,getCurrentBalance(distributeToken),creator);
-                sendBalance(creator);
+            if (arguments.getValue1() == CLEANUP_BY_CREATOR && stakingTimeoutLastPayment &&  tx.getSenderAddress().equals(getCreator())){
+                sendAmount(distributeToken,getCurrentBalance(distributeToken),getCreator());
+                sendBalance(getCreator());
             }
         }
         blockheight = this.getBlockHeight();
