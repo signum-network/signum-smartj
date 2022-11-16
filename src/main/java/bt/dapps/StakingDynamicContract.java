@@ -71,13 +71,12 @@ public class StakingDynamicContract extends Contract {
     long tokenRatio; 
     // Exampüle: 1000 stakedToken getting 0.2 distribute Token = 200 : 1 = 200
 
-    // stakingToken created by contract
-    long stakingToken;
+     // lockPeriod - If set user can´t convert stakingToken into token
+    int lockPeriodInMinutes;
+    Timestamp lockPeriodTimeEnd;
 
-    // lockPeriod - If set user can´t convert stakingToken into token
-    // int lockPeriodInMinutes;
-    // Timestamp lockPeriodTimeEnd;
-    // boolean intervall;
+   // stakingToken created by contract
+    long stakingToken;
 
     // temporary variables
     Timestamp stakingTimeout; 
@@ -95,12 +94,16 @@ public class StakingDynamicContract extends Contract {
     long blockheight;
     long quantityCheck;
     long balanceCheck;
+    long lockUpCheck;
     boolean distributionDone;
+
+    
 
     public static final long ZERO = 0;
     public static final long ONE = 1;
     public static final long TWO = 2;
     public static final long THREE = 3;
+    public static final long FOUR = 4;
     public static final long DISTRIBUTE_TOKEN_BALANCE = 99;
     public static final long CLEANUP_BY_CREATOR =100 ;    
     public static final long DISTRIBUTION_FEE_PER_HOLDER = 100000;
@@ -120,12 +123,9 @@ public class StakingDynamicContract extends Contract {
         if(lastBlockDistributed == ZERO){
             lastBlockDistributed = this.getBlockHeight();
         }
-        //if (lockPeriodInMinutes > ZERO){
-        //    lockPeriodTimeEnd = getBlockTimestamp().addMinutes(lockPeriodInMinutes);
-        //}
-        // else{
-        //    lockPeriodTimeEnd = getBlockTimestamp();
-        // }
+        if (lockPeriodInMinutes > ZERO){
+            lockPeriodTimeEnd = getBlockTimestamp().addMinutes(lockPeriodInMinutes);
+        }
     }
 
     @Override
@@ -138,6 +138,12 @@ public class StakingDynamicContract extends Contract {
         distributedAmount = ZERO;
         distributedQuantity = ZERO;
         distributionDone = false;
+        if(lockPeriodInMinutes > ZERO){
+            lockPeriodTimeEnd = getBlockTimestamp().addMinutes(lockPeriodInMinutes);
+            if(timeout > ZERO && lockPeriodTimeEnd.ge(stakingTimeout) ){
+                lockPeriodTimeEnd = stakingTimeout;
+            }
+        }
         while(true) {
             tx = getTxAfterTimestamp(lastProcessedTx);
             if(tx == null) {
@@ -151,14 +157,34 @@ public class StakingDynamicContract extends Contract {
                 mintAsset(stakingToken,quantityCheck);
                 sendAmount(stakingToken,quantityCheck, tx.getSenderAddress());
                 totalstaked += quantityCheck;
+                if( lockPeriodInMinutes > ZERO){
+                    setMapValue(FOUR,tx.getSenderAddress().getId(),lockPeriodTimeEnd.getValue());
+                }
+
             }
             //User removes stakingToken
             quantityCheck = tx.getAmount(stakingToken);
+
             if(quantityCheck > ZERO){
-                sendAmount(token, quantityCheck, tx.getSenderAddress());
-                totalstaked -= quantityCheck;
-                // burn stakingToken
-		        sendAmount(stakingToken, quantityCheck, getAddress(ZERO));
+                lockUpCheck=getMapValue(FOUR,tx.getSenderAddress().getId());
+                if (lockUpCheck > ZERO){
+                    if (getTimestamp(lockUpCheck).ge(getBlockTimestamp())){
+                        sendAmount(token, quantityCheck, tx.getSenderAddress());
+                        totalstaked -= quantityCheck;
+                        // burn stakingToken
+                        sendAmount(stakingToken, quantityCheck, getAddress(ZERO));
+                    }
+                    else{
+                        //send back stakingtokens - lockup period not reached
+                        sendAmount(stakingToken, quantityCheck, tx.getSenderAddress());
+                    }
+                }
+                else{
+                    //send back stakingtokens
+                    sendAmount(stakingToken, quantityCheck, tx.getSenderAddress());
+                    //regsiter address 
+                    setMapValue(FOUR,tx.getSenderAddress().getId(),lockPeriodTimeEnd.getValue());
+                }
             }
             // User calls the distribution method for any token beside Token, StakingToken or distrubteToken
             if(arguments.getValue1() == DISTRIBUTE_TOKEN_BALANCE){
