@@ -16,7 +16,7 @@ import bt.ui.EmulatorWindow;
  * And send to the address which send the token in.
  * 
  * Any income of Signa to this contract will be distributed to the stakingToken holders.
- * Also another token can be automated distributed to the holders.
+ * Also, another token can be automated distributed to the holders.
  * The contract can have an end-date; after a final payment nothing more is paid out.
  *
  * In the contract the following can be defined:
@@ -25,14 +25,17 @@ import bt.ui.EmulatorWindow;
  * dthMinimumAmount = Minimum Amount of Signa needed on the contract to trigger a distribution
  * dtnMaximumAmount = Maximum Amount of Signa which will be distributed when distribution is triggered
  * dtnMinimumQuantity = Minimum number of stakingToken needed to be eligible for the distribution
- * timeout = Staking end-time in minutes ( 0 = infinite)
- * distributeToken = Token to distribute by default
- * dtnTokenMinQuantity = Minimum quantity nedded before distributed
- * dtnTokenMaxQuantity = Maximum quantity distributed 
- * signaRatio = Ratio for the distribution stakingToken:1 Signa
- * tokenRatio = Ratio for the distribution stakingRoken:1 distributeToken 
- * If signaRatio = 0 dtnMaximumAmount is used as static value
- * If tokenRatio = 0 dtnTokenMaxQuantity is used as static value
+ * contractEnds = Staking end-time in minutes ( 0 = infinite)
+ * distributeToken = Token to distribute if set
+ * dtnTokenMinQuantity = Minimum quantity of distributeToken nedded before distributed
+ * dtnTokenMaxQuantity = Maximum quantity of distributeToken  whichg will be distributed 
+ * signaRatio = Ratio for the distribution = stakingToken:1  for Signa
+ * tokenRatio = Ratio for the distribution = stakingRoken:1  for distributeToken 
+ * If signaRatio = 0 dtnMaximumAmount is used as static value otherwise staking volume will define the macimum
+ * If tokenRatio = 0 dtnTokenMaxQuantity is used as static value otherwise staking volume will define the macimum
+ * 
+ * lockPeriodInMinutes = Time of lock period in minutes for every token transfer send to the contract ( 0 = no lockup period set)
+ * If contractEnds is set the lockPeriodTimeEnd will be maximum the contractEnds time. 
  * 
  * @author frank_the_tank
  */
@@ -56,7 +59,7 @@ public class StakingDynamicContract extends Contract {
 
     // Distribution parameter
     long dtninterval;
-    int timeout;
+    int contractEnds;
     long dtnMinimumQuantity;
     long dtnMinimumAmount;
     long dtnTokenMinQuantity;
@@ -95,6 +98,7 @@ public class StakingDynamicContract extends Contract {
     long quantityCheck;
     long balanceCheck;
     long lockUpCheck;
+    boolean contractActiveCheck;
     boolean distributionDone;
 
     
@@ -117,8 +121,8 @@ public class StakingDynamicContract extends Contract {
     public StakingDynamicContract() {
 	    // constructor, runs when the first TX arrives
         stakingToken = issueAsset(name, 0L, decimalPlaces);
-        if ( timeout > ZERO){
-            stakingTimeout= getBlockTimestamp().addMinutes(timeout);
+        if ( contractEnds > ZERO){
+            stakingTimeout= getBlockTimestamp().addMinutes(contractEnds);
         }
         if(lastBlockDistributed == ZERO){
             lastBlockDistributed = this.getBlockHeight();
@@ -138,10 +142,16 @@ public class StakingDynamicContract extends Contract {
         distributedAmount = ZERO;
         distributedQuantity = ZERO;
         distributionDone = false;
+        contractActiveCheck = true;
         if(lockPeriodInMinutes > ZERO){
             lockPeriodTimeEnd = getBlockTimestamp().addMinutes(lockPeriodInMinutes);
-            if(timeout > ZERO && lockPeriodTimeEnd.ge(stakingTimeout) ){
+            if(contractEnds > ZERO && lockPeriodTimeEnd.ge(stakingTimeout) ){
                 lockPeriodTimeEnd = stakingTimeout;
+            }
+        }
+        if(contractEnds > ZERO){
+            if(stakingTimeout.le(getBlockTimestamp())){
+                contractActiveCheck =false;
             }
         }
         while(true) {
@@ -154,13 +164,18 @@ public class StakingDynamicContract extends Contract {
             //User is adding Token
             quantityCheck = tx.getAmount(token);
             if(quantityCheck > ZERO){
-                mintAsset(stakingToken,quantityCheck);
-                sendAmount(stakingToken,quantityCheck, tx.getSenderAddress());
-                totalstaked += quantityCheck;
-                if( lockPeriodInMinutes > ZERO){
-                    setMapValue(FOUR,tx.getSenderAddress().getId(),lockPeriodTimeEnd.getValue());
+                if(contractActiveCheck){
+                    mintAsset(stakingToken,quantityCheck);
+                    sendAmount(stakingToken,quantityCheck, tx.getSenderAddress());
+                    totalstaked += quantityCheck;
+                    if( lockPeriodInMinutes > ZERO){
+                        setMapValue(FOUR,tx.getSenderAddress().getId(),lockPeriodTimeEnd.getValue());
+                    }
                 }
-
+                else{
+                    //Send back token as contract ended
+                    sendAmount(token,quantityCheck, tx.getSenderAddress());
+                }
             }
             //User removes stakingToken
             quantityCheck = tx.getAmount(stakingToken);
@@ -211,7 +226,7 @@ public class StakingDynamicContract extends Contract {
             }
         }
         blockheight = this.getBlockHeight();
-        if(timeout == ZERO){
+        if(contractEnds == ZERO){
             if(blockheight - lastBlockDistributed >= dtninterval ){
                 checkRatio();
                 distributeToStakingToken();
@@ -326,7 +341,7 @@ public class StakingDynamicContract extends Contract {
 		contract.digitsFactorDisToken =  100000000;
 		contract.MinimumTokenXY = 10000;
 		contract.dtninterval = 5;
-	    contract.timeout = 0;
+	    contract.contractEnds = 0;
     	contract.dtnMinimumQuantity = 10000000;
     	contract.dtnMinimumAmount = 10000000000L;
         contract.dtnTokenMinQuantity = 100 ;
