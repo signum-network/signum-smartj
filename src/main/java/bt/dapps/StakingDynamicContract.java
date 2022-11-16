@@ -168,7 +168,7 @@ public class StakingDynamicContract extends Contract {
             if(quantityCheck > ZERO){
                 lockUpCheck=getMapValue(FOUR,tx.getSenderAddress().getId());
                 if (lockUpCheck > ZERO){
-                    if (getTimestamp(lockUpCheck).ge(getBlockTimestamp())){
+                    if (getTimestamp(lockUpCheck).le(getBlockTimestamp())){
                         sendAmount(token, quantityCheck, tx.getSenderAddress());
                         totalstaked -= quantityCheck;
                         // burn stakingToken
