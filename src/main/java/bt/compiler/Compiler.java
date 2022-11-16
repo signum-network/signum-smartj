@@ -1147,6 +1147,12 @@ public class Compiler {
 							
 							pushVar(m, arg1.address);
 						}
+	                    else if (mi.name.equals("getTimestamp")) {
+                            arg1 = popVar(m, tmpVar1, false); // the timestamp
+                            popThis();
+                            
+                            pushVar(m, arg1.address);
+                        }
 						else if (mi.name.equals("getCreator")) {
 							if(mi.desc.equals("(Lbt/Address;)Lbt/Address;")) {
 								// asking for the creator of another contract

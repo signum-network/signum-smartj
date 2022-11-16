@@ -19,9 +19,18 @@ public class Timestamp {
 	/**
 	 * Users are not allowed to instantiate this class, called by the emulator only.
 	 */
+	@EmulatorWarning
 	Timestamp(long block, long txid) {
 		value = block << 32;
 		value += txid;
+	}
+	
+	/**
+     * Users are not allowed to instantiate this class, called by the emulator only.
+     */
+	@EmulatorWarning
+	Timestamp(long value){
+	    this.value = value;
 	}
 
 	@Override

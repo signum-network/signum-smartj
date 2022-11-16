@@ -79,6 +79,15 @@ public abstract class Contract {
 		// TODO: implement on the emulator
 		return null;
 	}
+	
+	/**
+     * Utility function that return the timestamp of a given long variable
+     * @param id the signed long id
+     * @return the address
+     */
+    protected Timestamp getTimestamp(long value) {
+        return new Timestamp(value);
+    }
 
 	/**
 	 * Send the entire balance to the given address.
