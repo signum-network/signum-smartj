@@ -95,6 +95,9 @@ public class SignumArt3 extends Contract {
 	long buying;
 	long quantity;
 	long position;
+	
+	//Internal variables
+	long accountId;
 	private static final long INDEX_OWNERS = 0;
 	private static final long INDEX_ONSALE = 1;
 	private static final long INDEX_PRICE_SELLER = 2;
@@ -326,21 +329,22 @@ public class SignumArt3 extends Contract {
 		if (bulkNFT){
 			// Allow sales only from owner if soulbound is activated (true)
 			if (getCurrentTxSender() == owner || !useSoulbound){
-				maxSaleSize = getValue(INDEX_ONSALE, getCurrentTxSender().getId());
-				position =  getValue(INDEX_OWNERS, getCurrentTxSender().getId());
+				accountId = getCurrentTxSender().getId();
+				maxSaleSize = getValue(INDEX_ONSALE, accountId);
+				position =  getValue(INDEX_OWNERS, accountId);
 				//Saving new Sales price
-				saveValue(INDEX_PRICE_SELLER, getCurrentTxSender().getId(), salePrice);
+				saveValue(INDEX_PRICE_SELLER, accountId, salePrice);
 				//Check for quantity change
 				if  (size <= maxSaleSize){
 					//Remove from Sale
-					saveValue(INDEX_OWNERS, getCurrentTxSender().getId(), position+maxSaleSize-size);
-					saveValue(INDEX_ONSALE, getCurrentTxSender().getId(), size);
+					saveValue(INDEX_OWNERS,accountId, position+maxSaleSize-size);
+					saveValue(INDEX_ONSALE, accountId, size);
 				}
 				else{
 					//Add to Sale
 					if(size <= position){
-					saveValue(INDEX_OWNERS, getCurrentTxSender().getId(), position-size-maxSaleSize);
-					saveValue(INDEX_ONSALE, getCurrentTxSender().getId(), size);
+					saveValue(INDEX_OWNERS, accountId, position-size-maxSaleSize);
+					saveValue(INDEX_ONSALE, accountId, size);
 					}
 				}
 			}
@@ -434,10 +438,11 @@ public class SignumArt3 extends Contract {
 			buying = getCurrentTxAmount()/salePrice;
 			if (buying > ZERO && buying <= maxSaleSize ){
 				//Remmove size from sale
+				accountId = getCurrentTxSender().getId();
 				saveValue(INDEX_ONSALE, seller.getId(), maxSaleSize-buying);
 				//Add Size to buyer
-				quantity =  getValue(INDEX_OWNERS, getCurrentTxSender().getId());
-				saveValue(INDEX_OWNERS, getCurrentTxSender().getId(), buying+quantity);
+				quantity =  getValue(INDEX_OWNERS, accountId);
+				saveValue(INDEX_OWNERS, accountId, buying+quantity);
 				//Execution of Buy
 				currentPrice =  getCurrentTxAmount();
 				amountToPlatform = currentPrice * platformFee / THOUSAND;
@@ -461,10 +466,11 @@ public class SignumArt3 extends Contract {
 	public void likeIt() {
 		//Checking with maps that one account can only make one like
 		// I assume that if nothing is set for the key-value it returns 0
-		if 	(getValue(INDEX_Likes, getCurrentTxSender().getId()) == ZERO){
+		accountId = getCurrentTxSender().getId();
+		if 	(getValue(INDEX_Likes,accountId) == ZERO){
 			totalLikes++;
-			saveValue(INDEX_Likes, getCurrentTxSender().getId(), ONE);
-			sendMessage(getCurrentTxSender().getId(), trackLikeReceived);
+			saveValue(INDEX_Likes, accountId, ONE);
+			sendMessage(accountId, trackLikeReceived);
 		}
 	}
 	
