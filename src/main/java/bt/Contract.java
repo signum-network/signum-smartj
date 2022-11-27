@@ -498,6 +498,10 @@ public abstract class Contract {
 	protected Register performSHA256(Register input) {
 		return performSHA256_(input);
 	}
+	
+	protected boolean checkSHA256(Register secretHash, Register secret) {
+	    return performSHA256_(secret).equals(secretHash);
+	}
 
 	/**
 	 * A utility function returning only the first 64 bits of a SHA256 for two long

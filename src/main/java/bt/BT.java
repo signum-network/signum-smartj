@@ -167,6 +167,10 @@ public class BT {
         }
         
         if(extraPages != null) {
+            for(int i = nargs; i < 3; i++) {
+              // fill the first page if not yet filled
+              b.putLong(0L);
+            }
         	b.put(extraPages);
         }
 

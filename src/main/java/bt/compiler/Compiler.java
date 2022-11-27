@@ -1524,7 +1524,46 @@ public class Compiler {
 								pushVar(m, tmpVar1);
 							}
 						}
-						else if (mi.name.equals("setMapValue")) {
+						else if (mi.name.equals("checkSHA256")) {
+						  // boolean checkSHA256(Register secretHash, Register secret)
+						  
+						  // secret goes to A
+                          arg4 = popVar(m, tmpVar1, false);
+                          arg3 = popVar(m, tmpVar2, false);
+                          arg2 = popVar(m, tmpVar3, false);
+                          arg1 = popVar(m, tmpVar4, false);
+                          code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+                          code.putShort(OpCode.Set_A1_A2);
+                          code.putInt(arg1.address); // address
+                          code.putInt(arg2.address); // address
+                          code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+                          code.putShort(OpCode.Set_A3_A4);
+                          code.putInt(arg3.address); // address
+                          code.putInt(arg4.address); // address
+                          
+                          // secret hash in B
+                          arg4 = popVar(m, tmpVar4, false);
+                          arg3 = popVar(m, tmpVar3, false);
+                          arg2 = popVar(m, tmpVar2, false);
+                          arg1 = popVar(m, tmpVar1, false);
+                          code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+                          code.putShort(OpCode.Set_B1_B2);
+                          code.putInt(arg1.address); // address
+                          code.putInt(arg2.address); // address
+                          code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+                          code.putShort(OpCode.Set_B3_B4);
+                          code.putInt(arg3.address); // address
+                          code.putInt(arg4.address); // address
+                          
+                          popThis();
+
+                          code.put(OpCode.e_op_code_EXT_FUN_RET);
+                          code.putShort(OpCode.Check_SHA256_A_With_B);
+                          code.putInt(tmpVar1);
+                          
+                          pushVar(m, tmpVar1);
+                      }
+					  else if (mi.name.equals("setMapValue")) {
 							if(!BT.isSIP37Activated())
 								addError(insn, "activate SIP37 to support: " + mi.name);
 							
