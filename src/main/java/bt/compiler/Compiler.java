@@ -1063,7 +1063,7 @@ public class Compiler {
 						}
 						else if (mi.name.equals("getCurrentBalance")) {
 							if(mi.desc.equals("(J)J")) {
-								// asking for the balance of another contract
+								// asking for the balance of an asset
 								if(!BT.isSIP37Activated())
 									addError(insn, "activate SIP37 to support: " + mi.name);
 								
@@ -1081,6 +1081,25 @@ public class Compiler {
 							popThis();
 							code.put(OpCode.e_op_code_EXT_FUN_RET);
 							code.putShort(OpCode.Get_Current_Balance);
+							code.putInt(tmpVar1);
+							pushVar(m, tmpVar1);
+						}
+						else if (mi.name.equals("getAccountBalance")) {
+							// asking for the balance of a give
+							if(!BT.isSIP37Activated())
+								addError(insn, "activate SIP37 to support: " + mi.name);
+
+							StackVar accountId = popVar(m, tmpVar1, false);
+							StackVar assetId = popVar(m, tmpVar2, false);
+
+							code.put(OpCode.e_op_code_EXT_FUN_DAT_2);
+							code.putShort(OpCode.Set_B1_B2);
+							code.putInt(accountId.address);
+							code.putInt(assetId.address);
+
+							popThis();
+							code.put(OpCode.e_op_code_EXT_FUN_RET);
+							code.putShort(OpCode.GET_ACCOUNT_BALANCE);
 							code.putInt(tmpVar1);
 							pushVar(m, tmpVar1);
 						}

@@ -412,6 +412,15 @@ public abstract class Contract {
 	}
 	
 	/**
+	 * @param assetId the asset id we want the balance (0 for SIGNA)
+	 * @param account the account id we want to check the balance
+	 * @return the asset balance of given account
+	 */
+	protected long getAccountBalance(long assetId, long account) {
+		return address.getBalance(assetId);
+	}
+	
+	/**
 	 * @param key1
 	 * @param key2
 	 * @return the map value associated with this contract and given keys
