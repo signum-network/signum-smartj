@@ -6,6 +6,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "SignumArt3",
+            "request": "launch",
+            "mainClass": "bt.dapps.SignumArt3",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "Launch MessageCheck",
+            "request": "launch",
+            "mainClass": "MessageCheck",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
+            "name": "Launch MessageCheck",
+            "request": "launch",
+            "mainClass": "bt.MessageCheck",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
             "name": "Launch Arguments",
             "request": "launch",
             "mainClass": "bt.Arguments",
