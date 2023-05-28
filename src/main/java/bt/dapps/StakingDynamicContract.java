@@ -40,13 +40,14 @@ import bt.ui.EmulatorWindow;
  */
 public class StakingDynamicContract extends Contract {
     // stakingToken parameter
-    long stakingTokenTicker;
-	long stakingTokenDecimals;
+    long stakingTokenTicker; 
+	long stakingTokenDecimals ;
     // Decimals should be the same as from the token
 
     // Token to pledge
     long pledgeToken;
     long digitsFactorPledgeToken;
+    // digit 0 = 1 ; digit 1 = 10 ... digit 8 = 100000000
 
     // yieldToken to distribute by default
     long yieldToken;
