@@ -562,6 +562,11 @@ public class Printer {
 			return "GET_MAP_VALUE_KEYS_IN_A";
 		case OpCode.SET_MAP_VALUE_KEYS_IN_A:
 			return "SET_MAP_VALUE_KEYS_IN_A";
+		
+		case OpCode.GET_ASSET_CIRCULATING:
+			return "GET_ASSET_CIRCULATING";
+		case OpCode.GET_ACCOUNT_BALANCE:
+			return "GET_ACCOUNT_BALANCE";
 
 		default:
 			return "UNKNOWN FUNCTION";

@@ -10,11 +10,13 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.junit.Test;
 
 import bt.compiler.Compiler;
 import bt.compiler.Compiler.Error;
+import bt.contracts.CheckAccountBalance;
 import bt.contracts.DistributeToHolders;
 import bt.sample.AssetQuantityReceived;
 import bt.sample.TokenFactory;
@@ -436,5 +438,64 @@ public class AssetTest extends BT {
         	unknownTx = e;
 		}
         assertNotNull(unknownTx);
+	}
+	
+	@Test
+	public void testCheckBalance() throws Exception {
+		
+		SignumCrypto crypto = SignumCrypto.getInstance();
+		
+		Compiler comp = BT.compileContract(CheckAccountBalance.class);
+		for(Error e : comp.getErrors()) {
+			System.err.println(e.getMessage());
+		}
+		assertTrue(comp.getErrors().size() == 0);
+		
+		BT.forgeBlock();
+		byte[] unsigned = BT.getNode().generateIssueAssetTransaction(BT.bc.getPublicKey(BT.PASSPHRASE), "TESTD", "Test token for the distribution",
+				SignumValue.fromNQT(2_000_000), 3, SignumValue.fromSigna(150), 1000).blockingGet();
+		
+		byte[] signedTransactionBytes = BT.bc.signTransaction(BT.PASSPHRASE, unsigned);
+        TransactionBroadcast tb = BT.getNode().broadcastTransaction(signedTransactionBytes).blockingGet();
+        forgeBlock(tb);
+        
+        SignumID assetId = tb.getTransactionId();
+		System.out.println("asset :" + assetId.getID());
+		
+		String passphrase = Long.toString(new Random().nextLong());
+		SignumAddress receiver = crypto.getAddressFromPassphrase(passphrase);
+
+		// send asset and signa to account "1"
+		BT.sendAsset(BT.PASSPHRASE, receiver, assetId, SignumValue.fromNQT(1000),
+				SignumValue.fromSigna(1.5), SignumValue.fromSigna(0.1),	1000, null);
+		BT.forgeBlock();
+		BT.forgeBlock();
+		
+		SignumValue activationFee = SignumValue.fromSigna(2);
+		String name = "dist" + System.currentTimeMillis();
+		tb = BT.registerContract(BT.PASSPHRASE, comp.getCode(), comp.getDataPages(),
+				name, name, new long[] {assetId.getSignedLongId()}, activationFee,
+				SignumValue.fromSigna(.5), 1000, null).blockingGet();
+		BT.forgeBlock(tb);
+
+		AT contract = BT.getContract(tb.getTransactionId());
+
+		System.out.println("at :" + contract.getId().getID());
+		
+		tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("retrieveBalance"),
+				activationFee, SignumValue.fromSigna(0.01), 1000, assetId.getSignedLongId(), receiver.getSignedLongId());
+		BT.forgeBlock(tb);
+		BT.forgeBlock();
+		
+		long balance = BT.getContractFieldValue(contract, 0);
+		assertEquals(1000, balance);
+		
+		tb = BT.callMethod(BT.PASSPHRASE, contract.getId(), comp.getMethod("retrieveBalance"),
+				activationFee, SignumValue.fromSigna(0.01), 1000, 0L, receiver.getSignedLongId());
+		BT.forgeBlock(tb);
+		BT.forgeBlock();
+		
+		balance = BT.getContractFieldValue(contract, 0);
+		assertEquals(150000000, balance);
 	}
 }
