@@ -29,24 +29,25 @@ import bt.ui.EmulatorWindow;
  * minQuantityToDistributeYieldToken = Minimum quantity of yieldToken nedded before distributed per paymentInterval
  * maxQuantityPerPayment = Maximum quantity of yieldToken which will be distributed per paymentInterval
  * signaRatio = Ratio for the distribution = stakingToken:1  for Signa
- * tokenRatio = Ratio for the distribution = stakingRoken:1  for yieldToken 
+ * tokenRatio = Ratio for the distribution = stakingToken:1  for yieldToken 
  * If signaRatio = 0 maxAmountPerPayment is used as static value otherwise pledgeToken on contract balance will define the maximum
  * If tokenRatio = 0 maxQuantityPerPayment is used as static value otherwise pledgeToken on contract balance  will define the maximum
  * 
  * lockPeriodInMinutes = Time of lock period in minutes for every token transfer send to the contract ( 0 = no lockup period set)
- * If contractExpiryInMinutes is set, the lockPeriodTimeEnd will be at most equal to the time of contractExpiryInMinutes calcualted as datetime. 
+ * If contractExpiryInMinutes is set, the lockPeriodTimeEnd will be at most equal to the time of contractExpiryInMinutes calculaled as datetime. 
  * 
  * @author frank_the_tank
  */
 public class StakingDynamicContract extends Contract {
     // stakingToken parameter
-    long stakingTokenTicker;
-	long stakingTokenDecimals;
+    long stakingTokenTicker; 
+	long stakingTokenDecimals ;
     // Decimals should be the same as from the token
 
     // Token to pledge
     long pledgeToken;
     long digitsFactorPledgeToken;
+    // digit 0 = 1 ; digit 1 = 10 ... digit 8 = 100000000
 
     // yieldToken to distribute by default
     long yieldToken;
@@ -113,9 +114,8 @@ public class StakingDynamicContract extends Contract {
     public static final long DISTRIBUTION_FEE_MINIMUM_HOLDER = 1000000;
     public static final long DISTRIBUTION_FEE_MINIMUM = 2000000;
     public static final long PLANCK_TO_SIGNA = 100000000;
-    /** Use a contract fee of XX SIGNA */
-    /**To do set the correct fee currently 1.2 Signa */
-	public static final long CONTRACT_FEES = 70000000;
+    /**To do set the correct fee currently 0.9 Signa */
+	public static final long CONTRACT_FEES = 90000000;
 
     public StakingDynamicContract() {
 	    // constructor, runs when the first TX arrives
@@ -194,10 +194,18 @@ public class StakingDynamicContract extends Contract {
                     }
                 }
                 else{
-                    //send back stakingtokens
-                    sendAmount(stakingToken, quantityCheck, tx.getSenderAddress());
-                    //regsiter address 
-                    setMapValue(FOUR,tx.getSenderAddress().getId(),lockPeriodTimeEnd.getValue());
+                    if (lockPeriodInMinutes == ZERO){
+                        sendAmount(pledgeToken, quantityCheck, tx.getSenderAddress());
+                        totalstaked -= quantityCheck;
+                        // burn stakingToken
+                        sendAmount(stakingToken, quantityCheck, getAddress(ZERO));
+                    }
+                    else{
+                        //send back stakingtokens
+                        sendAmount(stakingToken, quantityCheck, tx.getSenderAddress());
+                        //regsiter address 
+                        setMapValue(FOUR,tx.getSenderAddress().getId(),lockPeriodTimeEnd.getValue());
+                    }
                 }
             }
             // Distribute airdropped tokens - calls the distribution method for airdropped tokens beside pledgeToken, stakingToken or yieldToken
@@ -247,11 +255,11 @@ public class StakingDynamicContract extends Contract {
         // Storing current total staking
         setMapValue(ONE, blockheight, totalstaked);
         // store the distribution of SIGNA if any
-        if (distributedAmount > ZERO){
+        if (distributedAmount > ZERO && !distributionDone){
 		    setMapValue(TWO, blockheight, distributedAmount);
         }
         // store distribution of distrubteToken if any
-        if (distributedQuantity > ZERO){
+        if (distributedQuantity > ZERO && !distributionDone){
             setMapValue(THREE, blockheight, distributedQuantity);
         }
     }
