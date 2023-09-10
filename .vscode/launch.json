@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ShieldSwap",
+            "request": "launch",
+            "mainClass": "bt.dapps.ShieldSwap",
+            "projectName": "blocktalk"
+        },
+        {
+            "type": "java",
             "name": "SignumArt3",
             "request": "launch",
             "mainClass": "bt.dapps.SignumArt3",
