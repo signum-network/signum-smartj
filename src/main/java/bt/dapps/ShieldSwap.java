@@ -78,7 +78,7 @@ public class ShieldSwap extends Contract {
 	long slippage;
 	long checkFirstLP;
 	long checkFirstLPFlag;
-	 Address SenderAccount; 
+	Address SenderAccount; 
 	// We want the sqrt, so power is 0.5 = 5000_0000 / 10000_0000;
 	private static final long SQRT_POW = 5000_0000;
 
@@ -104,9 +104,9 @@ public class ShieldSwap extends Contract {
 	public static final long TENTHOUSAND = 10000;	
 	public static final long minSlippage= 1010;	
 
-	private static final long LP_CHECK_1 = 100000000;
-	private static final long LP_CHECK_2 = 10000000;
-	private static final long LP_CHECK_3 = 1000000;
+	private static final long LP_CHECK_1 = 10000000;
+	private static final long LP_CHECK_2 = 1000000;
+	private static final long LP_CHECK_3 = 100000;
 
 	// 1010 means  minSlippage needs to be 0.1%
 	public ShieldSwap() {
@@ -186,7 +186,7 @@ public class ShieldSwap extends Contract {
 		        reserveY -= dy;
 		        
 		        sendAmount(tokenX, dx,SenderAccount);
-		        sendAmount(tokenY, dy, SenderAccount);
+		        sendAmount(tokenY, dy,SenderAccount);
 		        // burn the XY token
 		        sendAmount(tokenXY, liquidity, getAddress(ZERO));
 		    }
@@ -334,9 +334,6 @@ public class ShieldSwap extends Contract {
 		if(platformFeeBlockY > ZERO) {
 			sendAmount(tokenY, platformFeeBlockY, platformContract);
 		}
-		// store the price on this block
-		setMapValue(KEY_RESERVE_X, this.getBlockHeight(), reserveXBlock);
-		setMapValue(KEY_RESERVE_Y, this.getBlockHeight(), reserveYBlock);
 		// store the platform fee on this block
 		setMapValue(KEY_PF_FEE_X ,this.getBlockHeight(), platformFeeBlockX);
 		setMapValue(KEY_PF_FEE_Y, this.getBlockHeight(), platformFeeBlockY);
@@ -349,6 +346,9 @@ public class ShieldSwap extends Contract {
 		// update the reserves when the block finishes to reconcile any dust/revenue
 		reserveX = this.getCurrentBalance(tokenX);
 		reserveY = this.getCurrentBalance(tokenY);
+		// store the price on this block
+		setMapValue(KEY_RESERVE_X, this.getBlockHeight(), reserveX);
+		setMapValue(KEY_RESERVE_Y, this.getBlockHeight(), reserveY);
 		if(totalSupply == ZERO && tokenXY != 0L ){
 			if(tokenX != 0L && tokenY != 0L ) {
 				dx =  getCurrentBalance() - getActivationFee();
