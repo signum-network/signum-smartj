@@ -79,6 +79,7 @@ public class ShieldSwap extends Contract {
 	long checkFirstLP;
 	long checkFirstLPFlag;
 	Address SenderAccount; 
+	long TransactionId;
 	// We want the sqrt, so power is 0.5 = 5000_0000 / 10000_0000;
 	private static final long SQRT_POW = 5000_0000;
 
@@ -89,8 +90,13 @@ public class ShieldSwap extends Contract {
 	private static final long KEY_LP_FEE_Y  = 4;
 	private static final long KEY_PF_FEE_X  = 5;
 	private static final long KEY_PF_FEE_Y  = 6;
-	private static final long KEY_SWAP_X_VOLUME   = 7;
-	private static final long KEY_SWAP_Y_VOLUME   = 8;
+	private static final long KEY_SWAP_X_VOLUME  = 7;
+	private static final long KEY_SWAP_Y_VOLUME  = 8;
+	private static final long KEY_REMOVE_LP_X  = 9;
+	private static final long KEY_REMOVE_LP_Y  = 10;
+	private static final long KEY_SWAP_XY_Y  = 11;
+	private static final long KEY_SWAP_YX_X  = 12;
+
 
 	public static final long ADD_LIQUIDITY_METHOD = 1;
 	public static final long REMOVE_LIQUIDITY_METHOD = 2;
@@ -171,7 +177,6 @@ public class ShieldSwap extends Contract {
 				
 				mintAsset(tokenXY, liquidity);
 				sendAmount(tokenXY, liquidity, SenderAccount);
-				
 				totalSupply = totalSupply + liquidity;
 				reserveX += dx;
 				reserveY += dy;
@@ -179,6 +184,7 @@ public class ShieldSwap extends Contract {
 			else if(arguments.getValue1() == REMOVE_LIQUIDITY_METHOD) {
 		        liquidity = tx.getAmount(tokenXY);
 				SenderAccount = tx.getSenderAddress();
+				TransactionId = tx.getId();
 		        dx = calcMultDiv(liquidity, reserveX, totalSupply);
 		        dy = calcMultDiv(liquidity, reserveY, totalSupply);
 		        totalSupply = totalSupply - liquidity;
@@ -189,6 +195,9 @@ public class ShieldSwap extends Contract {
 		        sendAmount(tokenY, dy,SenderAccount);
 		        // burn the XY token
 		        sendAmount(tokenXY, liquidity, getAddress(ZERO));
+				//Connect payout with original tx
+				setMapValue(KEY_REMOVE_LP_X, TransactionId, dx);
+				setMapValue(KEY_REMOVE_LP_Y,TransactionId, dy);
 		    }
 		}
 
@@ -298,6 +307,7 @@ public class ShieldSwap extends Contract {
 			}
 			lastProcessedSwap = tx.getTimestamp();
 			SenderAccount = tx.getSenderAddress();
+			TransactionId =tx.getId();
 			arguments = tx.getMessage();
 			minOut = arguments.getValue2();
 			if(arguments.getValue1() == SWAP_XY_METHOD || arguments.getValue1() == SWAP_YX_METHOD) {
@@ -314,6 +324,7 @@ public class ShieldSwap extends Contract {
 						dy = calcMultDiv(-dx, reserveY, reserveXBlock);
 							
 						sendAmount(tokenY, -dy, SenderAccount);
+						setMapValue(KEY_SWAP_XY_Y, TransactionId, -dy);
 					}
 					else {
 						// swap YX
@@ -324,6 +335,7 @@ public class ShieldSwap extends Contract {
 						dx = calcMultDiv(-dy, reserveX, reserveYBlock);
 						
 						sendAmount(tokenX, -dx, SenderAccount);
+						setMapValue(KEY_SWAP_YX_X, TransactionId, -dx);
 					}
 				}
 			}
