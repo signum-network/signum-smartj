@@ -9,6 +9,13 @@
             "name": "ShieldSwap",
             "request": "launch",
             "mainClass": "bt.dapps.ShieldSwap",
+            "projectName": "signum-smartj"
+        },
+        {
+            "type": "java",
+            "name": "ShieldSwap",
+            "request": "launch",
+            "mainClass": "bt.dapps.ShieldSwap",
             "projectName": "blocktalk"
         },
         {

@@ -108,13 +108,13 @@ public class ShieldSwap extends Contract {
 	public static final long ONE = 1;
 	public static final long TWO = 1;
 	public static final long TENTHOUSAND = 10000;	
+	public static final long THOUSAND = 1000;
 	public static final long minSlippage= 1010;	
-
+	// 1010 means minSlippage needs to be 0.1%
 	private static final long LP_CHECK_1 = 10000000;
 	private static final long LP_CHECK_2 = 1000000;
 	private static final long LP_CHECK_3 = 100000;
 
-	// 1010 means  minSlippage needs to be 0.1%
 	public ShieldSwap() {
 		// constructor, runs when the first TX arrives
 		tokenXY = issueAsset(name, 0L, ZERO);
@@ -122,7 +122,6 @@ public class ShieldSwap extends Contract {
 	
 	/**
 	 * We process all the swap transactions that will be approved so all swaps will pay the same price.
-	 * 
 	 * This avoids the "sandwich attack" present in most liquidity pools available today.
 	 */
 	@Override
@@ -225,7 +224,7 @@ public class ShieldSwap extends Contract {
 				// no liquidity to operate
 				continue;
 			}
-			// Set dx and dy to ZERO otherwise double count at line 289
+			// Set dx and dy to ZERO otherwise double count at line 294,295
 			dx = ZERO;
 			dy = ZERO;
 			txApproved = false;
@@ -245,7 +244,7 @@ public class ShieldSwap extends Contract {
 					if(-dy >= minOut && priceTimesReserve > ZERO) {
 						if (priceTimesReserveMaxX == ZERO) {
 							// first accepted swap in this direction, check for a minimum slippage
-							slippage = calcMultDiv(priceTimesReserve, 1000, reserveX);
+							slippage = calcMultDiv(priceTimesReserve, THOUSAND, reserveX);
 							if(slippage < minSlippage) {
 								// below minimum slippage
 								continue;
@@ -274,7 +273,7 @@ public class ShieldSwap extends Contract {
 					if(-dx >= minOut && priceTimesReserve > ZERO) {
 						if (priceTimesReserveMaxY == ZERO) {
 							// first accepted swap in this direction, check for a minimum slippage
-							slippage = calcMultDiv(priceTimesReserve, 1000, reserveY);
+							slippage = calcMultDiv(priceTimesReserve, THOUSAND, reserveY);
 							if(slippage < minSlippage) {
 								// below minimum slippage
 								continue;
