@@ -109,8 +109,8 @@ public class ShieldSwap extends Contract {
 	public static final long TWO = 1;
 	public static final long TENTHOUSAND = 10000;	
 	public static final long THOUSAND = 1000;
-	public static final long minSlippage= 1010;	
-	// 1010 means minSlippage needs to be 0.1%
+	public static final long minSlippage= 1001;	
+	// 1001 means minSlippage needs to be 0.1%
 	private static final long LP_CHECK_1 = 10000000;
 	private static final long LP_CHECK_2 = 1000000;
 	private static final long LP_CHECK_3 = 100000;
