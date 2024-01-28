@@ -321,9 +321,14 @@ public class ShieldSwap extends Contract {
 						fee = calcMultDiv(dx, swapFee,TENTHOUSAND)+ calcMultDiv(dx, platformFeeSet,TENTHOUSAND);
 						dx -= fee;
 						dy = calcMultDiv(-dx, reserveY, reserveXBlock);
-							
-						sendAmount(tokenY, -dy, SenderAccount);
-						setMapValue(KEY_SWAP_XY_Y, TransactionId, -dy);
+						if(minOut > -dy){
+							sendAmount(tokenY, minOut, SenderAccount);
+							setMapValue(KEY_SWAP_XY_Y, TransactionId, minOut);
+						}
+						else{
+							sendAmount(tokenY, -dy, SenderAccount);
+							setMapValue(KEY_SWAP_XY_Y, TransactionId, -dy);
+						}
 					}
 					else {
 						// swap YX
@@ -332,9 +337,15 @@ public class ShieldSwap extends Contract {
 						fee = calcMultDiv(dy, swapFee,TENTHOUSAND) + calcMultDiv(dy, platformFeeSet,TENTHOUSAND);
 						dy -= fee;
 						dx = calcMultDiv(-dy, reserveX, reserveYBlock);
-						
-						sendAmount(tokenX, -dx, SenderAccount);
-						setMapValue(KEY_SWAP_YX_X, TransactionId, -dx);
+						if(minOut > -dx){
+							sendAmount(tokenX, minOut, SenderAccount);
+							setMapValue(KEY_SWAP_YX_X, TransactionId, minOut);
+						}
+						else{
+							sendAmount(tokenX, -dx, SenderAccount);
+							setMapValue(KEY_SWAP_YX_X, TransactionId, -dx);
+						}
+	
 					}
 				}
 			}
